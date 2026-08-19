@@ -30,15 +30,61 @@ export function blockedDevServerReason(command: string): string | undefined {
     return "Do not start dev servers in the background. The challenge runner verifies startup after Pi exits.";
   }
 
-  if (/\b(pgrep|pkill)\b/.test(lower)) {
-    return "Process inspection is blocked. The challenge runner verifies startup on port 3000 after Pi exits.";
+  if (/\bpkill\b.*\b(vite|3000)\b/.test(lower) || /\bpkill\s+-f\s+vite\b/.test(lower)) {
+    return "Do not kill dev-server processes. The challenge runner verifies startup on port 3000 after Pi exits.";
   }
 
-  if (/\bps\b/.test(lower)) {
-    return "Process inspection is blocked. The challenge runner verifies startup on port 3000 after Pi exits.";
+  if (/\bpgrep\b.*\b(vite|3000)\b/.test(lower) || /\bpgrep\s+-f\s+vite\b/.test(lower)) {
+    return "Process inspection for dev servers is blocked. The challenge runner verifies startup on port 3000 after Pi exits.";
+  }
+
+  if (/\blsof\b.*:3000\b/.test(lower)) {
+    return "Port inspection is blocked. The challenge runner verifies startup on port 3000 after Pi exits.";
   }
 
   return undefined;
+}
+
+export function testTimeoutSec(): number {
+  const raw = process.env.TEST_TIMEOUT_SEC ?? "60";
+  const value = Number(raw);
+  if (!Number.isFinite(value) || value < 5) return 60;
+  return Math.floor(value);
+}
+
+export function isTestExecutionCommand(command: string): boolean {
+  const lower = command.replace(/\s+/g, " ").trim().toLowerCase();
+  if (/\bnpm\s+test\b/.test(lower)) return true;
+  if (/\bnpm\s+run\s+test\b/.test(lower)) return true;
+  if (/\bvitest\s+run\b/.test(lower)) return true;
+  if (/\bnpx\s+vitest\s+run\b/.test(lower)) return true;
+  if (/\.bin\/vitest\s+run\b/.test(lower)) return true;
+  return false;
+}
+
+export function stripTestCommandPipes(command: string): string {
+  let trimmed = command.trim();
+  const pipeIndex = trimmed.search(/\s+\|\s+/);
+  if (pipeIndex >= 0) {
+    trimmed = trimmed.slice(0, pipeIndex).trim();
+  }
+  return trimmed.replace(/\s+2>&1\s*$/, "").trim();
+}
+
+export function wrapTestCommand(command: string, wrapperPath: string): string {
+  const inner = stripTestCommandPipes(command);
+  const escaped = inner.replace(/'/g, "'\\''");
+  return `'${wrapperPath}' '${escaped}'`;
+}
+
+export function detectTestTimedOut(output: string): boolean {
+  return /TEST RUN TIMED OUT/i.test(output);
+}
+
+export function shouldInvalidateVerificationOnPath(relativePath: string): boolean {
+  const normalized = relativePath.replace(/\\/g, "/").replace(/^\.\/+/, "");
+  if (normalized === "report.partial.json") return false;
+  return true;
 }
 
 export function isFullTestSuiteCommand(command: string): boolean {
@@ -67,6 +113,7 @@ export function extractToolText(result: unknown): string {
 }
 
 export function detectTestsPassed(command: string, output: string): boolean {
+  if (detectTestTimedOut(output)) return false;
   if (!isFullTestSuiteCommand(command)) return false;
   if (/Tests\s+\d+\s+failed/i.test(output) || /Test Files\s+\d+\s+failed/i.test(output)) {
     return false;
@@ -102,7 +149,7 @@ export function buildFinalizeSteerMessage(): string {
     "Verification complete: npm test and npm run build both passed.",
     "Finalize immediately:",
     '1. Write report.partial.json with status "success", accurate tests_run for every journey you tested, and final summary/assumptions.',
-    "2. Do not run npm run dev, vite, pgrep, pkill, ps, or any background server. The outer runner verifies startup.",
+    "2. Do not run npm run dev, vite, or any background server. The outer runner verifies startup.",
     "3. Do not add features, edit unrelated files, or run more tests. Stop after report.partial.json is written.",
   ].join("\n");
 }

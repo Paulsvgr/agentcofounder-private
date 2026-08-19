@@ -8,8 +8,11 @@ import {
   detectBuildPassed,
   detectTestsPassed,
   extractToolText,
+  isTestExecutionCommand,
   remainingMinutes,
+  shouldInvalidateVerificationOnPath,
   shouldWarnTimeBudget,
+  wrapTestCommand,
 } from "./challenge-guards.js";
 
 export const PI_DOCUMENTATION_HEADING = "Pi documentation (read only when ";
@@ -37,12 +40,20 @@ export function stripPiDocumentationBlock(systemPrompt: string): string {
 
 export default function protectedPaths(pi: ExtensionAPI) {
   const appRoot = process.cwd();
+  const repoRoot = path.resolve(appRoot, "..", "..");
+  const testWrapperPath = path.join(repoRoot, "solution", "scripts", "run-test-with-timeout.sh");
   const bashCommands = new Map<string, string>();
   let testsPassed = false;
   let buildPassed = false;
   let finalizeSteered = false;
   let timeBudgetSteered = false;
   let agentStartedAt = 0;
+
+  function invalidateVerificationState(): void {
+    testsPassed = false;
+    buildPassed = false;
+    finalizeSteered = false;
+  }
 
   pi.on("before_agent_start", async (event) => ({
     systemPrompt: stripPiDocumentationBlock(event.systemPrompt),
@@ -70,18 +81,18 @@ export default function protectedPaths(pi: ExtensionAPI) {
     });
   });
 
-  pi.on("tool_execution_start", (event) => {
-    if (event.toolName !== "bash") return;
-    const args = event.args as Record<string, unknown>;
-    bashCommands.set(event.toolCallId, String(args.command ?? ""));
-  });
-
   pi.on("tool_call", async (event, context) => {
     if (event.toolName === "bash") {
-      const reason = blockedDevServerReason(String(event.input.command ?? ""));
+      const original = String(event.input.command ?? "");
+      const reason = blockedDevServerReason(original);
       if (reason) {
         if (context.hasUI) context.ui.notify("Blocked dev-server command", "warning");
         return { block: true, reason };
+      }
+
+      if (isTestExecutionCommand(original)) {
+        bashCommands.set(event.toolCallId, original);
+        event.input.command = wrapTestCommand(original, testWrapperPath);
       }
       return undefined;
     }
@@ -100,10 +111,15 @@ export default function protectedPaths(pi: ExtensionAPI) {
       basename === "result.json" ||
       basename === ".env" ||
       basename.startsWith(".env.");
-    if (!protectedPath) return undefined;
+    if (protectedPath) {
+      if (context.hasUI) context.ui.notify(`Blocked write to protected path: ${candidate}`, "warning");
+      return { block: true, reason: "Path is outside the app workspace or is runner-owned" };
+    }
 
-    if (context.hasUI) context.ui.notify(`Blocked write to protected path: ${candidate}`, "warning");
-    return { block: true, reason: "Path is outside the app workspace or is runner-owned" };
+    if (shouldInvalidateVerificationOnPath(relative)) {
+      invalidateVerificationState();
+    }
+    return undefined;
   });
 
   pi.on("tool_execution_end", (event) => {

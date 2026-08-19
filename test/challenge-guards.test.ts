@@ -3,10 +3,15 @@ import {
   blockedDevServerReason,
   buildFinalizeSteerMessage,
   detectBuildPassed,
+  detectTestTimedOut,
   detectTestsPassed,
   extractToolText,
+  isTestExecutionCommand,
   remainingMinutes,
+  shouldInvalidateVerificationOnPath,
   shouldWarnTimeBudget,
+  stripTestCommandPipes,
+  wrapTestCommand,
 } from "../solution/extensions/challenge-guards.js";
 
 describe("blockedDevServerReason", () => {
@@ -18,17 +23,42 @@ describe("blockedDevServerReason", () => {
     expect(blockedDevServerReason("npm run preview")).toBeDefined();
   });
 
-  it("blocks server-related process inspection", () => {
+  it("blocks vite-related process inspection only", () => {
     expect(blockedDevServerReason("pgrep -f vite")).toBeDefined();
     expect(blockedDevServerReason("pkill -f vite")).toBeDefined();
-    expect(blockedDevServerReason("ps aux | grep vite")).toBeDefined();
+    expect(blockedDevServerReason("lsof -i :3000")).toBeDefined();
   });
 
-  it("allows tests, build, and grep", () => {
+  it("allows tests, build, general ps, and grep", () => {
     expect(blockedDevServerReason("npm test")).toBeUndefined();
     expect(blockedDevServerReason("npm run build")).toBeUndefined();
     expect(blockedDevServerReason("grep vite vite.config.ts")).toBeUndefined();
     expect(blockedDevServerReason("cat vite.config.ts")).toBeUndefined();
+    expect(blockedDevServerReason("ps aux | grep node")).toBeUndefined();
+    expect(blockedDevServerReason("pgrep node")).toBeUndefined();
+  });
+});
+
+describe("test command wrapping", () => {
+  const wrapper = "/repo/solution/scripts/run-test-with-timeout.sh";
+
+  it("detects test execution commands", () => {
+    expect(isTestExecutionCommand("npm test")).toBe(true);
+    expect(isTestExecutionCommand("cd output/app && npm test 2>&1")).toBe(true);
+    expect(isTestExecutionCommand("npx vitest run src/App.test.tsx")).toBe(true);
+    expect(isTestExecutionCommand("npm run build")).toBe(false);
+  });
+
+  it("strips external pipes before wrapping", () => {
+    expect(stripTestCommandPipes("cd app && npm test 2>&1 | tail -100")).toBe("cd app && npm test");
+    expect(stripTestCommandPipes("npm test")).toBe("npm test");
+  });
+
+  it("wraps without external tail pipes", () => {
+    const wrapped = wrapTestCommand("cd app && npm test 2>&1 | tail -100", wrapper);
+    expect(wrapped).toContain(wrapper);
+    expect(wrapped).not.toContain("tail -100");
+    expect(wrapped).toContain("cd app && npm test");
   });
 });
 
@@ -42,6 +72,14 @@ describe("verification detection", () => {
   it("detects a passing full test suite run", () => {
     expect(detectTestsPassed("npm test", passingTests)).toBe(true);
     expect(detectTestsPassed("cd app && npm test 2>&1 | tail -50", passingTests)).toBe(true);
+  });
+
+  it("rejects timed-out test output even if vitest summary lines appear in the tail", () => {
+    const timedOut = `TEST RUN TIMED OUT. The test process did not settle within 60 seconds.
+ Test Files  1 passed (1)
+      Tests  9 passed (9)`;
+    expect(detectTestsPassed("npm test", timedOut)).toBe(false);
+    expect(detectTestTimedOut(timedOut)).toBe(true);
   });
 
   it("rejects targeted or partial test commands", () => {
@@ -76,6 +114,13 @@ describe("verification detection", () => {
   it("rejects build output with TypeScript errors", () => {
     const output = "src/App.tsx(1,1): error TS2345: Argument of type";
     expect(detectBuildPassed("npm run build", output)).toBe(false);
+  });
+});
+
+describe("stale green invalidation", () => {
+  it("invalidates on app edits but not report.partial.json", () => {
+    expect(shouldInvalidateVerificationOnPath("src/App.tsx")).toBe(true);
+    expect(shouldInvalidateVerificationOnPath("report.partial.json")).toBe(false);
   });
 });
 
