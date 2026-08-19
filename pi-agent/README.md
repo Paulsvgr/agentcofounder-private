@@ -14,8 +14,8 @@ Run this block from an **Ubuntu** terminal after cloning the repo. Change the cl
 
 ```bash
 # --- clone (skip if you already have the repo) ---
-git clone https://github.com/Paulsvgr/agentcofounder.git
-cd agentcofounder
+git clone https://github.com/Paulsvgr/agentcofounder-private.git
+cd agentcofounder-private
 
 # --- repo dependencies (Node 22.19.x required) ---
 node -v

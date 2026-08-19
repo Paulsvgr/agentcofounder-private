@@ -33,6 +33,8 @@ npm run check
 
 **Team Berget / Pi setup:** see [`pi-agent/README.md`](pi-agent/README.md). Run `./pi-agent/setup.sh` once, add your own API key to `~/.pi/agent/berget-api-key`, then `source ~/.pi/agent/challenge-env.sh` before each challenge.
 
+**Private team repo / WSL vs Windows:** see [`docs/local-development.md`](docs/local-development.md).
+
 Provider-specific credentials are read by Pi. The optional challenge variables select the organizer's runtime configuration:
 
 ```bash
