@@ -234,6 +234,11 @@ function timeoutFromEnvironment(): number {
   return value;
 }
 
+export function applySystemPromptTemplate(systemPrompt: string, timeoutMs: number): string {
+  const minutes = Math.max(1, Math.round(timeoutMs / 60_000));
+  return systemPrompt.replaceAll("{{TIMEOUT_MINUTES}}", String(minutes));
+}
+
 async function main(): Promise<void> {
   const args = parseArguments(process.argv.slice(2));
   const idea = await readFile(args.ideaFile, "utf8");
@@ -250,11 +255,12 @@ async function main(): Promise<void> {
   }
   if (args.prepareOnly) return;
 
-  const [systemPrompt, publicJourneys, appContext] = await Promise.all([
+  const [rawSystemPrompt, publicJourneys, appContext] = await Promise.all([
     readFile(path.join(REPOSITORY_ROOT, "solution", "system-prompt.md"), "utf8"),
     readFile(path.join(REPOSITORY_ROOT, "contract-public", "journeys.md"), "utf8"),
     readFile(path.join(outputDirectory, "AGENTS.md"), "utf8"),
   ]);
+  const systemPrompt = applySystemPromptTemplate(rawSystemPrompt, timeoutFromEnvironment());
 
   const runId = new Date().toISOString().replaceAll(":", "-").replaceAll(".", "-");
   const artifactDirectory = path.join(REPOSITORY_ROOT, "artifacts", "runs", runId);

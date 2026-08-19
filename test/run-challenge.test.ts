@@ -7,7 +7,7 @@ import {
   PI_DOCUMENTATION_HEADING,
   stripPiDocumentationBlock,
 } from "../solution/extensions/protected-paths.js";
-import { buildPiArguments, parseArguments, runPi, runRequiresFailureExit } from "../src/run-challenge.js";
+import { buildPiArguments, parseArguments, runPi, runRequiresFailureExit, applySystemPromptTemplate } from "../src/run-challenge.js";
 
 const temporaryDirectories: string[] = [];
 
@@ -26,6 +26,15 @@ describe("Pi launch", () => {
   it("fails an otherwise successful run when a required result destination is missing", () => {
     expect(runRequiresFailureExit(0, "success", ["/challenge/result.json"])).toBe(true);
     expect(runRequiresFailureExit(0, "success", [])).toBe(false);
+  });
+
+  it("substitutes the configured timeout into the system prompt", () => {
+    expect(applySystemPromptTemplate("Limit: {{TIMEOUT_MINUTES}} minutes.", 900_000)).toBe(
+      "Limit: 15 minutes.",
+    );
+    expect(applySystemPromptTemplate("Limit: {{TIMEOUT_MINUTES}} minutes.", 600_000)).toBe(
+      "Limit: 10 minutes.",
+    );
   });
 
   it("uses deterministic non-interactive flags and defaults thinking off", () => {
