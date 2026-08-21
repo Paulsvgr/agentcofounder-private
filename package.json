@@ -12,6 +12,7 @@
     "validate:result": "node --import tsx src/validate-result.ts",
     "analyze": "node --import tsx src/analyze-run.ts",
     "export:run": "node --import tsx src/export-run.ts",
+    "export:all": "node --import tsx scripts/export-all-runs.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "app:test": "npm --prefix app-template test -- --passWithNoTests",
