@@ -1,0 +1,3 @@
+# Replace this file's contents with your Z.ai API key (single line, no quotes).
+# After setup.sh copies it to ~/.pi/agent/zai-api-key, edit that file instead.
+# Get a key at https://z.ai / Coding Plan dashboard.

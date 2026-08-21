@@ -15,6 +15,10 @@ app-template/node_modules/
 app-template/dist/
 coverage/
 
-# Never track real Berget keys (setup copies berget-api-key.example to ~/.pi/agent/).
+# Never track real API keys (setup copies *.example to ~/.pi/agent/).
 **/berget-api-key
 !**/berget-api-key.example
+**/zai-api-key
+!**/zai-api-key.example
+**/openai-api-key
+!**/openai-api-key.example

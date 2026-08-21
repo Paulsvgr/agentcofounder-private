@@ -108,6 +108,25 @@
         "showReuseMessage": false
       },
       "problemMatcher": []
+    },
+    {
+      "label": "Challenge: run (Z.ai GLM-5.2)",
+      "type": "shell",
+      "command": ". \"$HOME/.pi/agent/challenge-env-zai.sh\" && echo \"provider=$CHALLENGE_PROVIDER model=$CHALLENGE_MODEL\" && npm run challenge",
+      "windows": {
+        "command": "wsl.exe -d Ubuntu-22.04 --cd \"${workspaceFolder}\" -e bash -lc '. \"$HOME/.pi/agent/challenge-env-zai.sh\" && echo \"provider=$CHALLENGE_PROVIDER model=$CHALLENGE_MODEL\" && npm run challenge'"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated",
+        "showReuseMessage": false
+      },
+      "problemMatcher": []
     }
   ]
 }

@@ -1,0 +1,180 @@
+:root {
+  color-scheme: light dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: #f7f5f0;
+  color: #1f2937;
+  line-height: 1.5;
+}
+
+.app {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 1.25rem;
+}
+
+.app-header h1 {
+  margin: 0 0 0.25rem;
+}
+
+.summary {
+  margin: 0 0 1rem;
+  color: #4b5563;
+  font-size: 0.95rem;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.filter-group {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.filter-group label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.95rem;
+}
+
+.modal {
+  border: 1px solid #d1cfc6;
+  background: #fff;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.modal h2 {
+  margin: 0 0 0.75rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0.75rem;
+  max-width: 360px;
+}
+
+.field label {
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+}
+
+.field input,
+.field select {
+  padding: 0.4rem 0.5rem;
+  font-size: 1rem;
+  border: 1px solid #b8b5ab;
+  border-radius: 4px;
+  background: #fff;
+  color: inherit;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+button {
+  font-size: 0.95rem;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid #6b7280;
+  background: #fff;
+  color: inherit;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  background: #eef0f2;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.error {
+  color: #b91c1c;
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+.book-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.book-item {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #e2e0d8;
+}
+
+.book-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.book-title {
+  font-weight: 600;
+}
+
+.book-author {
+  color: #4b5563;
+  font-size: 0.92rem;
+}
+
+.book-category {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b7280;
+}
+
+.book-borrowed {
+  color: #b45309;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.book-home {
+  color: #047857;
+  font-size: 0.9rem;
+}
+
+.book-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.empty-state {
+  padding: 1.5rem 0;
+  color: #6b7280;
+  font-style: italic;
+}
