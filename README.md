@@ -92,7 +92,9 @@ npm run export:run -- <run-id> --approach base
 
 That writes `artifacts/exports/<run-id>.json` (`schema: agentcofounder.run_export.v1`). Open that file and paste it into the UI. Optional: `RUN_APPROACH=harness/paul` instead of `--approach`.
 
-More detail: [`docs/retest-protocol.md`](docs/retest-protocol.md).
+Frontend builder prompt (JSON contract + UX): [`docs/run-export-frontend-prompt.md`](docs/run-export-frontend-prompt.md).
+
+More detail on retests: [`docs/retest-protocol.md`](docs/retest-protocol.md).
 
 ## Result and telemetry ownership
 
