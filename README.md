@@ -78,6 +78,22 @@ The app must be available at `http://localhost:3000`. In another terminal, valid
 npm run validate:result -- output/app/result.json
 ```
 
+### Export a run for the analysis UI (manual)
+
+This branch (`setup/measure`) does **not** auto-export after `npm run challenge`. When you want a pasteable JSON for the runs frontend (meta + harness + efficiency; **no** ratings/comments — those stay in the UI):
+
+```bash
+# Newest run id
+ls -1dt artifacts/runs/*/ | head -1
+
+npm run analyze -- <run-id>
+npm run export:run -- <run-id> --approach base
+```
+
+That writes `artifacts/exports/<run-id>.json` (`schema: agentcofounder.run_export.v1`). Open that file and paste it into the UI. Optional: `RUN_APPROACH=harness/paul` instead of `--approach`.
+
+More detail: [`docs/retest-protocol.md`](docs/retest-protocol.md).
+
 ## Result and telemetry ownership
 
 The model writes `report.partial.json`, containing the product summary, assumptions, features, and tests. The runner writes `result.json` after parsing Pi's completed `message_end` events. This prevents the model from inventing headline token totals.
