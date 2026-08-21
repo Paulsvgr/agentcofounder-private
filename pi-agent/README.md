@@ -181,6 +181,8 @@ npm run challenge
 
 Official judging still uses GLM 5.2 via `challenge-env.sh`.
 
+Recorded cheap runs (model override, tokens, pass/fail): [`docs/practice-runs.md`](../docs/practice-runs.md).
+
 ---
 
 ## Troubleshooting
