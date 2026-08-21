@@ -15,7 +15,8 @@ Same idea, model, thinking, timeout for every run within a condition cohort.
 
 | Label | Checkout | Tag / note |
 |-------|----------|------------|
-| A | `d0f0b49` | Locked harness tip (`main`) |
+| A | `main` / `base` (`d0f0b49`) | Ship tip: stock + `pi-agent/` only |
+| measure | `setup/measure` | Analyzer, export, retest scripts — **no** harness/prompt change |
 | B | `89ffe97` | Track A guards (historical) |
 | C | `2d84660` | Reliability wrappers (historical) |
 | A-prompt | `d0f0b49` + prompt "do not start servers" | Cheap prevention experiment |
@@ -38,13 +39,16 @@ After each run:
 ls -1dt artifacts/runs/*/ | head -1
 
 npm run analyze -- <run-id>
+npm run export:run -- <run-id> [--approach base]
 ./scripts/judge-run.sh <run-id> --harness success|failed|timeout --product great|ok|broken [--note "..."]
 
 # Snapshot the generated app (also runs automatically at the end of retest-condition.sh)
 ./scripts/save-app.sh <label> <run-id>
 ```
 
-`scripts/retest-condition.sh` now calls `save-app.sh` after every challenge so `output/app` is copied to `saved-apps/<label>-<run-id>/` (without `node_modules`) before the next run wipes it.
+`npm run export:run` writes `artifacts/exports/<run-id>.json` (`agentcofounder.run_export.v1`: meta + harness + efficiency). Paste that into the runs UI; ratings/comments are UI-only (not in the export).
+
+`scripts/retest-condition.sh` now calls `save-app.sh` after every challenge so `output/app` is copied to `saved-apps/<label>-<run-id>/` (without `node_modules`) before the next run wipes it. It also runs analyze + export.
 
 Open a saved build:
 

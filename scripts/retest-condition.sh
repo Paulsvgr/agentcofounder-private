@@ -82,6 +82,7 @@ if [[ -n "${RUN_ID:-}" && -d "$ROOT/output/app" ]]; then
   "$ROOT/scripts/save-app.sh" "$LABEL" "$RUN_ID" | tee -a "$LOG"
   if command -v npm >/dev/null 2>&1; then
     npm run analyze -- "$RUN_ID" 2>&1 | tee -a "$LOG" || true
+    npm run export:run -- "$RUN_ID" --approach "$LABEL" 2>&1 | tee -a "$LOG" || true
   fi
 else
   echo "WARN: skipped save-app (run_id='${RUN_ID:-}' output/app missing?)" | tee -a "$LOG"
