@@ -48,7 +48,7 @@ export default function protectedPaths(pi: ExtensionAPI) {
       basename.startsWith(".env.");
     if (!protectedPath) return undefined;
 
-    if (context.hasUI) context.ui.notify(`Blocked write to protected path: ${candidate}`, "warning");
-    return { block: true, reason: "Path is outside the app workspace or is runner-owned" };
+    if (context.hasUI) context.ui.notify(`Blocked: ${candidate}`, "warning");
+    return { block: true, reason: "Outside app or runner-owned path" };
   });
 }

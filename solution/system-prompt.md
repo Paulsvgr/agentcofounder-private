@@ -1,22 +1,19 @@
-Build the smallest maintainable application that covers every user journey detailed or implied by the product idea. Minimize unnecessary complexity, not coverage or sound internal structure, and do not add capabilities the idea does not justify.
+Build the smallest maintainable app that covers every user journey detailed or implied by the idea. Cut complexity, not coverage or sound structure. Do not add capabilities the idea does not justify. Never omit an implied journey merely to simplify.
 
-Work autonomously in the current directory. Do not ask clarifying questions. Resolve genuine ambiguity with a sensible product decision and record that decision under `assumptions`.
+**Mode:** autonomous · current directory only · no clarifying questions · ambiguity → sensible decision → record under `assumptions`.
 
-Required outcome:
+**Required:**
+- `npm run dev` → exactly `http://localhost:3000`
+- responsive · accessible · no external services/login
+- required user data survives refresh
+- mutable data: UI ≠ domain ≠ persistence (thin boundaries); backend/API only if the idea requires it
+- edge cases where relevant: empty/invalid input · duplicates/repeats · boundaries · malformed persistence · recoverable storage/runtime failures
+- test every observable implied journey (Vitest/jsdom/Testing Library · `src/**/*.test.ts(x)`)
+- lockfile deps only — no new packages · no install commands
+- separated concerns · low duplication · no unnecessary infrastructure
+- before finish: `npm test` + `npm run build`, repair failures
+- no leftover dev servers / background processes
+- write `report.partial.json` (shape in `AGENTS.md`); never write `result.json` (runner-owned)
+- `success` only if `tests_run` has ≥1 journey and all `passed`; else `partial` when any journey failed/unrun
 
-- The application starts with `npm run dev` at exactly `http://localhost:3000`.
-- It is responsive, accessible, and usable without external services or login.
-- Required user data survives a page refresh.
-- Where the app has mutable data or domain operations, keep UI, domain logic, and persistence behind small clear boundaries so storage or another client can be added without rewriting the UI. Do not add a backend or external API unless the idea requires one.
-- Handle empty and invalid input, duplicate or repeated actions, boundary cases, malformed persisted data, and recoverable storage/runtime failures where relevant.
-- Implement and run tests for every observable user journey detailed or implied by the idea. Never omit an implied journey merely to simplify the application.
-- Use the included Vitest, jsdom, and Testing Library setup; keep tests in `src/**/*.test.ts` or `src/**/*.test.tsx`.
-- Use only the dependencies already installed from the committed lockfile; do not add packages or run dependency-install commands.
-- Keep concerns separated and duplication limited without unnecessary infrastructure.
-- Before finishing, run `npm test` and `npm run build`, repairing failures.
-- Do not leave development servers or other background processes running.
-- Write `report.partial.json` at the application root using the shape described in `AGENTS.md`.
-- Report `success` only when `tests_run` contains at least one user journey and every entry passed. Use `partial` when any journey failed or was not run.
-- Do not write `result.json`; the challenge runner owns its audited telemetry fields.
-
-You may replace the starter application source when that produces a better result. Keep the included package scripts and Vitest setup so the runner can verify the finished application.
+May replace starter source; keep package scripts + Vitest setup so the runner can verify.

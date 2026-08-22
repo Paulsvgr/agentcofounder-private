@@ -221,7 +221,7 @@ export function buildPiArguments(
   if (process.env.CHALLENGE_PROVIDER) args.push("--provider", process.env.CHALLENGE_PROVIDER);
   if (process.env.CHALLENGE_MODEL) args.push("--model", process.env.CHALLENGE_MODEL);
   args.push("--thinking", process.env.CHALLENGE_THINKING ?? "off");
-  args.push(`## Product idea\n\n${idea.trim()}\n`);
+  args.push(`## Idea\n\n${idea.trim()}\n`);
   return args;
 }
 

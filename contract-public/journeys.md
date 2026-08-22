@@ -1,6 +1,6 @@
 # Public journey guidance
 
-The input idea is authoritative. Use these common record-keeping patterns to check its coverage; they are not fixed feature requirements.
+Idea is authoritative. Patterns below = coverage checklist, not fixed requirements.
 
 ## Behaviors to implement and test when implied
 
@@ -17,4 +17,4 @@ Implement every behavior the idea details or implies; never drop an implied beha
 - Start at `http://localhost:3000` without errors.
 - Record the decision made for the idea's ambiguity in `assumptions`.
 
-The runner verifies startup, and the result report carries assumptions. These are not user behaviors that need Vitest/jsdom coverage.
+Runner verifies startup; assumptions live in the report — not Vitest/jsdom UI journeys.
