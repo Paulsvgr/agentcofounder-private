@@ -161,6 +161,29 @@ Run artifacts: `artifacts/experiments/stop-treatment/`.
 
 **Next:** Experiment 3 (compact robust journey-test policy in `SKILL.md`).
 
+## Experiment 3 — Compact robust journey-test policy
+
+**Hypothesis:** Bloated or brittle generated tests (broad `getByText`, duplicate coverage, speculative cases) trigger self-inflicted repair spirals.
+
+**Treatment:** compact test guidance in `solution/skills/mvp-builder/SKILL.md` + `solution/system-prompt.md` — smallest sufficient suite, role/label queries, no speculative journeys.
+
+**Control (proxy):** Experiment 2 `stop-treatment` cohort (n=5) — same stack minus test policy.
+
+**Primary counter:** `repair_loop.call_count`, `test_reinspection_calls`, `query_ambiguity_failures` (secondary: test count, weighted in repair phase)
+
+**Revert rule:**
+
+```text
+KEEP IF   repair/test-infra counters improve, journeys still covered, quality OK
+REVERT IF counter unchanged, coverage regresses, or quality fails
+```
+
+```bash
+npm run experiment:run -- --arm test-policy-treatment --reps 5 --provider zai
+npm run experiment:report -- test-policy-treatment
+npm run publish:runs -- test-policy-treatment
+```
+
 ## Revert-rule template
 
 ```text

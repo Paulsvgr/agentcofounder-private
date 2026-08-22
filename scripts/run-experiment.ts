@@ -29,6 +29,25 @@ interface ExperimentManifest {
   reps: ManifestRep[];
 }
 
+function resolveRunExperiment(arm: string): string {
+  if (arm.startsWith("rtl-")) {
+    return arm.startsWith("rtl-cleanup") ? "exp1-rtl-cleanup" : "exp1-rtl-control";
+  }
+  if (arm.startsWith("stop-")) {
+    return arm.startsWith("stop-treatment") ? "exp2-stop-treatment" : "exp2-stop-control";
+  }
+  if (arm.startsWith("test-policy-")) {
+    return arm.startsWith("test-policy-treatment") ? "exp3-test-treatment" : "exp3-test-control";
+  }
+  return arm;
+}
+
+function isPhaseFArm(arm: string): boolean {
+  return (
+    arm.startsWith("rtl-") || arm.startsWith("stop-") || arm.startsWith("test-policy-")
+  );
+}
+
 function parseArgs(argv: string[]): { arm: string; reps: number; provider: string; publish: boolean } {
   let arm = "";
   let reps = 5;
@@ -194,16 +213,8 @@ async function main(): Promise<void> {
       ...process.env,
       CHALLENGE_THINKING: process.env.CHALLENGE_THINKING ?? "off",
       RUN_APPROACH: label,
-      RUN_EXPERIMENT: arm.startsWith("rtl-")
-        ? arm.startsWith("rtl-cleanup")
-          ? "exp1-rtl-cleanup"
-          : "exp1-rtl-control"
-        : arm.startsWith("stop-")
-          ? arm.startsWith("stop-treatment")
-            ? "exp2-stop-treatment"
-            : "exp2-stop-control"
-          : arm,
-      RUN_LINE: arm.startsWith("rtl-") || arm.startsWith("stop-") ? "F" : process.env.RUN_LINE,
+      RUN_EXPERIMENT: resolveRunExperiment(arm),
+      RUN_LINE: isPhaseFArm(arm) ? "F" : process.env.RUN_LINE,
       RUN_INDEX: String(rep),
     };
 

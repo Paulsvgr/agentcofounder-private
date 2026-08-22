@@ -104,6 +104,21 @@ describe("deriveRunClassification", () => {
     });
   });
 
+  it("maps Experiment 3 test-policy arms", () => {
+    expect(
+      deriveRunClassification({
+        approach: "test-policy-treatment-2",
+        git_branch: "setup/measure",
+        git_commit: "abc123",
+      }),
+    ).toEqual({
+      line: "F",
+      experiment: "exp3-test-treatment",
+      run_index: 2,
+      display_label: "F · exp3 test treatment · run 2",
+    });
+  });
+
   it("honors explicit line/experiment overrides", () => {
     expect(
       deriveRunClassification({

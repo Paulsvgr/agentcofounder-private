@@ -274,6 +274,11 @@ APPROACH_MAP: dict[str, tuple[str, str, int | None]] = {
     "stop-treatment-3": ("F", "exp2-stop-treatment", 3),
     "stop-treatment-4": ("F", "exp2-stop-treatment", 4),
     "stop-treatment-5": ("F", "exp2-stop-treatment", 5),
+    "test-policy-treatment-1": ("F", "exp3-test-treatment", 1),
+    "test-policy-treatment-2": ("F", "exp3-test-treatment", 2),
+    "test-policy-treatment-3": ("F", "exp3-test-treatment", 3),
+    "test-policy-treatment-4": ("F", "exp3-test-treatment", 4),
+    "test-policy-treatment-5": ("F", "exp3-test-treatment", 5),
 }
 
 LEGACY_SMOKE_IDS = {
@@ -488,6 +493,8 @@ def main() -> None:
                 "exp1-rtl-cleanup",
                 "exp2-stop-control",
                 "exp2-stop-treatment",
+                "exp3-test-control",
+                "exp3-test-treatment",
                 "legacy",
                 "legacy-smoke",
                 "unknown",
@@ -495,7 +502,7 @@ def main() -> None:
         },
         "derivation_rules": [
             "If run_id exists in this manifest, use classification + human fields as canonical.",
-            "Else derive experiment from meta.approach prefix: A-autoverify-owned* → autoverify-owned, A-autoverify-supplement* → autoverify-supplement, A-prompt* → no-dev-server-prompt, A-autotest* → auto-test, A-baseline* / A-raw* → baseline, rtl-control* → exp1-rtl-control, rtl-cleanup* → exp1-rtl-cleanup, stop-control* → exp2-stop-control, stop-treatment* → exp2-stop-treatment.",
+            "Else derive experiment from meta.approach prefix: A-autoverify-owned* → autoverify-owned, A-autoverify-supplement* → autoverify-supplement, A-prompt* → no-dev-server-prompt, A-autotest* → auto-test, A-baseline* / A-raw* → baseline, rtl-control* → exp1-rtl-control, rtl-cleanup* → exp1-rtl-cleanup, stop-control* → exp2-stop-control, stop-treatment* → exp2-stop-treatment, test-policy-treatment* → exp3-test-treatment.",
             "Else if git_branch === exp/auto-verify, experiment = autoverify-unknown.",
             "Else if git_branch === main && git_commit starts with d0f0b49, line = A, experiment = baseline.",
             "Parse run_index from trailing -N on approach string when present.",
