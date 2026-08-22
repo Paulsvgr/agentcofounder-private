@@ -73,6 +73,12 @@ describe("buildRunExport", () => {
       git_branch: "setup/measure",
       git_commit: "abc123",
       approach: "base",
+      classification: {
+        line: "A",
+        experiment: "baseline",
+        run_index: null,
+        display_label: "A · baseline",
+      },
       provider: "zai",
       model: "glm-5.2",
     });
@@ -82,6 +88,20 @@ describe("buildRunExport", () => {
     expect(payload.efficiency.phase_heuristic).toHaveLength(1);
     expect(payload).not.toHaveProperty("human");
     expect(JSON.stringify(payload)).not.toContain("app_rating");
+  });
+
+  it("derives classification from RUN_APPROACH labels", () => {
+    const payload = buildRunExport(result, analysis, {
+      approach: "A-autoverify-owned-2",
+      git_branch: "exp/auto-verify",
+      git_commit: "1641fb4",
+    });
+    expect(payload.meta.classification).toEqual({
+      line: "A",
+      experiment: "autoverify-owned",
+      run_index: 2,
+      display_label: "A · autoverify owned · run 2",
+    });
   });
 
   it("omits call_log from the paste payload", () => {

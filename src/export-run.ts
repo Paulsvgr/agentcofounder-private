@@ -3,6 +3,10 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { analyzeRun, writeAnalysis, type RunAnalysis } from "./analyze-run.js";
+import {
+  classificationFromEnv,
+  type RunClassification,
+} from "./run-classification.js";
 import type { RunResult, TestRun } from "./types.js";
 
 const SOURCE_DIRECTORY = path.dirname(fileURLToPath(import.meta.url));
@@ -17,7 +21,9 @@ export interface RunExportMeta {
   recorded_at: string;
   git_branch: string | null;
   git_commit: string | null;
+  /** Legacy label; prefer meta.classification.display_label in the UI. */
   approach: string | null;
+  classification: RunClassification;
   provider: string | null;
   model: string | null;
 }
@@ -99,6 +105,8 @@ export function buildRunExport(
     process.env.RUN_APPROACH ??
     gitBranch;
 
+  const classification = classificationFromEnv(approach, gitBranch, gitCommit);
+
   return {
     schema: RUN_EXPORT_SCHEMA,
     meta: {
@@ -107,6 +115,7 @@ export function buildRunExport(
       git_branch: gitBranch,
       git_commit: gitCommit,
       approach,
+      classification,
       provider: analysis.provider,
       model: analysis.model,
     },

@@ -43,7 +43,13 @@ type RunExport = {
     recorded_at: string;         // ISO-8601
     git_branch: string | null;
     git_commit: string | null;   // full SHA
-    approach: string | null;     // e.g. "base", "harness/paul"
+    approach: string | null;     // legacy label; e.g. "A-baseline-1", "base"
+    classification: {
+      line: string;              // harness family: A | A-prime | B-prime | C | C-prime | D | unknown
+      experiment: string;          // tweak arm: baseline | no-dev-server-prompt | auto-test | autoverify-* | ...
+      run_index: number | null;    // cohort repeat (1, 2, 3) when set at export
+      display_label: string;     // UI method column, e.g. "A · baseline · run 1"
+    };
     provider: string | null;     // e.g. "zai"
     model: string | null;        // e.g. "glm-5.2"
   };
@@ -79,7 +85,7 @@ type RunExport = {
 
 ### Efficiency note for UI copy
 
-Official weighted cost ≈ `input_tokens + output_tokens * 3 + cache_read_tokens * 0.1`. Lower `efficiency.weighted_total` is better when `harness.status` is comparable. Show **median** across runs on the same `meta.approach` / `meta.git_branch` when comparing.
+Official weighted cost ≈ `input_tokens + output_tokens * 3 + cache_read_tokens * 0.1`. Lower `efficiency.weighted_total` is better when `harness.status` is comparable. Show **median** across runs on the same `meta.classification.experiment` (or `meta.classification.line`) when comparing.
 
 ## Human fields (frontend / DB only — not in paste JSON)
 
@@ -129,7 +135,13 @@ Store these **alongside** the pasted `RunExport` (same `run_id`). Do not write t
     "recorded_at": "2026-08-21T20:07:55.953Z",
     "git_branch": "setup/measure",
     "git_commit": "b7d488328c21f45eb3051f60a9c00fb65f79f3fe",
-    "approach": "base",
+    "approach": "A-baseline-1",
+    "classification": {
+      "line": "A",
+      "experiment": "baseline",
+      "run_index": 1,
+      "display_label": "A · baseline · run 1"
+    },
     "provider": "zai",
     "model": "glm-5.2"
   },
