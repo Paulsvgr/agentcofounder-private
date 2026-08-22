@@ -328,6 +328,37 @@ Recorded via enhanced report (output + implementation output + LOC + adoption):
 | **Partial KEEP** | store + text + memoryStorage help; `useCollection` causes misuse → keep three, drop hook |
 
 
+
+## Experiment 5 results (2026-08-22)
+
+**Treatment commit:** `3ddfc6b`
+
+| Arm | n | P(clean) | P(snowball) | median weighted | median calls | quality |
+|-----|---|----------|-------------|-----------------|--------------|---------|
+| test-policy-treatment (control) | 5 | 0.2 | 0.6 | 90k | 24 | 4/5 success |
+| template-treatment | 5 | 0 | 0.6 | 90k | 26.5 | **4/5 success** |
+
+**Mechanism counters (successful reps):**
+
+| Metric | Control | Treatment | Δ |
+|--------|---------|-----------|---|
+| adoption rate | 0 | **1.0** (all 4 primitives in every successful run) | discovery OK |
+| median persistence plumbing LOC | 90 | **56** | **−38%** |
+| median implementation output tokens | 7523 | 7435 | −1% (flat) |
+| median total output tokens | 12556 | 11686 | **−6.9%** |
+
+**Highlights:** Discovery succeeded — every successful run imported `createCollectionStore`, `useCollection`, `createMemoryStorage`, and text helpers. Plumbing LOC fell as hypothesized. Implementation-phase output barely moved; total output landed in the 5–10% band. Rep 4 failed (exit 1 / partial). Rep 3 still wrote extra repository wrappers (plumbing LOC 136).
+
+**Verdict: WEAK KEEP (needs more data)** — quality held; adoption high; plumbing LOC dropped materially; total output −6.9% (below Strong KEEP ≥10%). Implementation output flat, so do not claim a strong economic win yet. Keep primitives in the stack; watch `useCollection` wrapper inflation; optional follow-up n=+5 if pursuing Strong KEEP.
+
+**Primary mechanism:** adoption + plumbing LOC ✓  
+**Main economic outcome:** total output weak ✓/✗  
+**Safety:** quality 4/5 ✓  
+
+Run artifacts: `artifacts/experiments/template-treatment/`.
+
+**Next:** Experiment 6 (skill inlining) or expand Exp 5 n if prioritizing output cost.
+
 ## Revert-rule template
 
 ```text
