@@ -279,6 +279,11 @@ APPROACH_MAP: dict[str, tuple[str, str, int | None]] = {
     "test-policy-treatment-3": ("F", "exp3-test-treatment", 3),
     "test-policy-treatment-4": ("F", "exp3-test-treatment", 4),
     "test-policy-treatment-5": ("F", "exp3-test-treatment", 5),
+    "digest-treatment-1": ("F", "exp4-digest-treatment", 1),
+    "digest-treatment-2": ("F", "exp4-digest-treatment", 2),
+    "digest-treatment-3": ("F", "exp4-digest-treatment", 3),
+    "digest-treatment-4": ("F", "exp4-digest-treatment", 4),
+    "digest-treatment-5": ("F", "exp4-digest-treatment", 5),
 }
 
 LEGACY_SMOKE_IDS = {

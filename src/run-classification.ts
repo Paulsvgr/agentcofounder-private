@@ -26,6 +26,8 @@ export const RUN_EXPERIMENTS = [
   "exp2-stop-treatment",
   "exp3-test-control",
   "exp3-test-treatment",
+  "exp4-digest-control",
+  "exp4-digest-treatment",
   "legacy",
   "legacy-smoke",
   "unknown",
@@ -112,6 +114,11 @@ const APPROACH_MAP: Record<string, ApproachMapping> = {
   "test-policy-treatment-3": { line: "F", experiment: "exp3-test-treatment", run_index: 3 },
   "test-policy-treatment-4": { line: "F", experiment: "exp3-test-treatment", run_index: 4 },
   "test-policy-treatment-5": { line: "F", experiment: "exp3-test-treatment", run_index: 5 },
+  "digest-treatment-1": { line: "F", experiment: "exp4-digest-treatment", run_index: 1 },
+  "digest-treatment-2": { line: "F", experiment: "exp4-digest-treatment", run_index: 2 },
+  "digest-treatment-3": { line: "F", experiment: "exp4-digest-treatment", run_index: 3 },
+  "digest-treatment-4": { line: "F", experiment: "exp4-digest-treatment", run_index: 4 },
+  "digest-treatment-5": { line: "F", experiment: "exp4-digest-treatment", run_index: 5 },
 };
 
 function parseRunIndex(approach: string): number | null {
@@ -147,7 +154,7 @@ function inferLineFromApproach(approach: string): RunLine {
   if (approach === "run-d" || approach.startsWith("run-d")) {
     return "D";
   }
-  if (approach.startsWith("rtl-") || approach.startsWith("stop-") || approach.startsWith("test-policy-")) {
+  if (approach.startsWith("rtl-") || approach.startsWith("stop-") || approach.startsWith("test-policy-") || approach.startsWith("digest-")) {
     return "F";
   }
   return "unknown";
@@ -192,6 +199,12 @@ function inferExperimentFromApproach(approach: string): RunExperiment | null {
   }
   if (approach.startsWith("test-policy-control")) {
     return "exp3-test-control";
+  }
+  if (approach.startsWith("digest-treatment")) {
+    return "exp4-digest-treatment";
+  }
+  if (approach.startsWith("digest-control")) {
+    return "exp4-digest-control";
   }
   if (approach === "base") {
     return "baseline";

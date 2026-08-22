@@ -203,6 +203,24 @@ Run artifacts: `artifacts/experiments/test-policy-treatment/`.
 
 **Next:** Experiment 4 (deterministic failure digest → `test_reinspection_calls`).
 
+## Experiment 4 — Failure digest policy (prompt-only)
+
+**Change:** In `solution/system-prompt.md` and `solution/skills/mvp-builder/SKILL.md`, instruct the model to read test failures once from tool output and not grep/tail/re-run tests merely to re-inspect the same failures.
+
+**Why prompt-only:** Loading a Pi extension that rewrites `tool_result` would require modifying sacred `src/run-challenge.ts`. Prompt policy is the compliant one-change path.
+
+**Control proxy:** `test-policy-treatment` cohort (n=5, 4/5 success, median test_reinspection 3).
+
+**Primary counter:** `test_reinspection_calls` (assistant turns with `npm test` bash after first failing test, before first green).
+
+**Arm:** `digest-treatment` (5 reps, Z.ai, same idea).
+
+```bash
+npm run experiment:run -- --arm digest-treatment --reps 5 --provider zai
+npm run experiment:report -- digest-treatment
+npm run publish:runs -- --exp4-digest --seed
+```
+
 ## Revert-rule template
 
 ```text

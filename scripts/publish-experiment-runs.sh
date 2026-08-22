@@ -37,6 +37,7 @@ for arg in "$@"; do
     --exp1-rtl) ARMS+=(rtl-control rtl-cleanup) ;;
     --exp2-stop) ARMS+=(stop-control stop-treatment) ;;
     --exp3-test) ARMS+=(test-policy-treatment) ;;
+    --exp4-digest) ARMS+=(digest-treatment) ;;
     --*) echo "Unknown flag: $arg" >&2; exit 2 ;;
     *) ARMS+=("$arg") ;;
   esac

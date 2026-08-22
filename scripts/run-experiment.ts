@@ -39,12 +39,18 @@ function resolveRunExperiment(arm: string): string {
   if (arm.startsWith("test-policy-")) {
     return arm.startsWith("test-policy-treatment") ? "exp3-test-treatment" : "exp3-test-control";
   }
+  if (arm.startsWith("digest-")) {
+    return arm.startsWith("digest-treatment") ? "exp4-digest-treatment" : "exp4-digest-control";
+  }
   return arm;
 }
 
 function isPhaseFArm(arm: string): boolean {
   return (
-    arm.startsWith("rtl-") || arm.startsWith("stop-") || arm.startsWith("test-policy-")
+    arm.startsWith("rtl-") ||
+    arm.startsWith("stop-") ||
+    arm.startsWith("test-policy-") ||
+    arm.startsWith("digest-")
   );
 }
 
