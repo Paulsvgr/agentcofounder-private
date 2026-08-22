@@ -17,6 +17,12 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+if [ -f "$ROOT/.env" ]; then
+  set -a
+  # shellcheck source=/dev/null
+  source "$ROOT/.env"
+  set +a
+fi
 AGENTCOFOUNDER_ROOT="${AGENTCOFOUNDER_ROOT:-$ROOT}"
 RUNS_APP_ROOT="${RUNS_APP_ROOT:-/mnt/c/Users/gronb/Desktop/GreenCastle/react/agentcofounder-hackathon}"
 SEED_SCRIPT="$RUNS_APP_ROOT/scripts/seed_runs_from_artifacts.py"
