@@ -2,6 +2,13 @@ import { readdir, readFile, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  classifyMultipleElementFailure,
+  excerptMultipleElementError,
+  outputContainsMultipleElementsError,
+  summarizeMultipleElementFailures,
+  type MultipleElementFailureInstance,
+} from "./test-failure-classification.js";
+import {
   deriveActionFlow,
   loadActionFlowOverrides,
   type ActionSegment,
@@ -79,9 +86,15 @@ export interface RunAnalysis {
   green_to_exit_s: number | null;
   npm_test_command_count: number;
   manual_test_calls: number;
+  full_suite_test_calls: number;
   manual_build_calls: number;
   test_reinspection_calls: number;
   post_green_verification_calls: number;
+  multiple_element_failures_total: number;
+  rtl_dom_leak_failures: number;
+  query_ambiguity_failures: number;
+  multiple_element_failure_excerpts: MultipleElementFailureInstance[];
+  harness_green_but_no_first_green: boolean;
   auto_test_trigger_hits: number;
   auto_test_candidate_events: number;
   auto_test_actual_runs: number;
@@ -187,6 +200,43 @@ export function isNpmTestCommand(detail: string): boolean {
   return /(?:^|[;&|]\s*|\/)\.?\/?vitest(?:\s|$)/i.test(detail) || /\bnpx\s+vitest\b/i.test(detail);
 }
 
+/** Flags that restrict which tests execute (partial suite). */
+const TEST_SELECTION_FLAG =
+  /^(-t|--testNamePattern|--changed|--related|--project|--projects|--shard|--dir|--include|--exclude|--testPathPattern)(=|$)/i;
+
+function looksLikeTestPathToken(token: string): boolean {
+  return /[/\\]/.test(token) || /\.(test|spec)\./.test(token) || /\.[cm]?[tj]sx?$/.test(token);
+}
+
+/**
+ * Full suite = canonical npm/vitest invocation with no test-selection arguments.
+ * Biased toward false negatives (partial green is worse than missing first_green).
+ */
+export function isFullSuiteTestCommand(detail: string): boolean {
+  if (!isNpmTestCommand(detail)) return false;
+
+  for (const segment of detail.split(/[;&|]{1,2}/)) {
+    if (!isNpmTestCommand(segment)) continue;
+    const match = segment.match(/(?:npm\s+(?:run\s+)?test|npx\s+vitest|vitest)\b(.*)$/i);
+    const tokens = (match?.[1] ?? "").trim().split(/\s+/).filter(Boolean);
+
+    let filtered = false;
+    for (const token of tokens) {
+      if (TEST_SELECTION_FLAG.test(token)) {
+        filtered = true;
+        break;
+      }
+      if (token.startsWith("-") || token === "run" || token === "--") continue;
+      if (looksLikeTestPathToken(token)) {
+        filtered = true;
+        break;
+      }
+    }
+    if (!filtered) return true;
+  }
+  return false;
+}
+
 export function isTestFilePath(detail: string): boolean {
   return /\.test\.[tj]sx?\b/.test(detail) || /[/\\]test[/\\]setup\.[tj]sx?\b/.test(detail);
 }
@@ -288,16 +338,35 @@ export function classifyPhaseHeuristic(tools: ToolTag[]): HeuristicPhase {
   return only ?? "other";
 }
 
-async function findSessionFile(runDirectory: string): Promise<string | undefined> {
+async function listSessionFiles(runDirectory: string): Promise<string[]> {
   const sessionsDirectory = path.join(runDirectory, "sessions");
   try {
     const entries = await readdir(sessionsDirectory);
-    const jsonl = entries.filter((name) => name.endsWith(".jsonl")).sort();
-    const first = jsonl[0];
-    return first ? path.join(sessionsDirectory, first) : undefined;
+    return entries
+      .filter((name) => name.endsWith(".jsonl"))
+      .sort()
+      .map((name) => path.join(sessionsDirectory, name));
   } catch {
-    return undefined;
+    return [];
   }
+}
+
+async function loadMergedSessionRows(runDirectory: string): Promise<SessionRow[]> {
+  const files = await listSessionFiles(runDirectory);
+  if (files.length === 0) return [];
+
+  const rows: SessionRow[] = [];
+  for (const filePath of files) {
+    rows.push(...(await loadJsonl(filePath)));
+  }
+
+  rows.sort((left, right) => {
+    const leftTs = left.timestamp ?? "";
+    const rightTs = right.timestamp ?? "";
+    return leftTs.localeCompare(rightTs);
+  });
+
+  return rows;
 }
 
 async function loadJsonl(filePath: string): Promise<SessionRow[]> {
@@ -389,12 +458,10 @@ function applyToolErrors(tools: ToolTag[], toolResults: Map<string, boolean>): v
 
 export async function analyzeRun(runId: string): Promise<RunAnalysis> {
   const runDirectory = path.join(RUNS_DIRECTORY, runId);
-  const sessionPath = await findSessionFile(runDirectory);
-  if (!sessionPath) {
+  const rows = await loadMergedSessionRows(runDirectory);
+  if (rows.length === 0) {
     throw new Error(`No session JSONL found under artifacts/runs/${runId}/sessions/`);
   }
-
-  const rows = await loadJsonl(sessionPath);
   let provider: string | null = null;
   let model: string | null = null;
   for (const row of rows) {
@@ -433,6 +500,7 @@ export async function analyzeRun(runId: string): Promise<RunAnalysis> {
   let firstGreenAt: number | null = null;
   let lastGreenAt: number | null = null;
   let npmTestCommandCount = 0;
+  let fullSuiteTestCalls = 0;
   let manualBuildCalls = 0;
   let autoTestTriggerHits = 0;
   let autoTestActualRuns = 0;
@@ -441,6 +509,7 @@ export async function analyzeRun(runId: string): Promise<RunAnalysis> {
 
   // Flat tool sequence across the run for trigger analysis.
   const flatTools: Array<{ callIndex: number; name: string; detail: string }> = [];
+  const toolCallIdToCallIndex = new Map<string, number>();
 
   for (const row of messages) {
     const message = row.message;
@@ -470,6 +539,7 @@ export async function analyzeRun(runId: string): Promise<RunAnalysis> {
     cumulative += weighted;
 
     const tools = extractToolTags(message.content);
+    const index = calls.length + 1;
     let turnTestFailed = false;
     let turnTestPassed = false;
     // Attach errors by pairing toolCall blocks with tags in order.
@@ -490,14 +560,18 @@ export async function analyzeRun(runId: string): Promise<RunAnalysis> {
           const passed = npmTestToolPassed(exitError, output);
           if (passed) {
             tag.test_passed = true;
-            turnTestPassed = true;
+            if (isFullSuiteTestCommand(tag.detail)) {
+              turnTestPassed = true;
+            }
           }
+        }
+        if (id) {
+          toolCallIdToCallIndex.set(id, index);
         }
       }
     }
     applyToolErrors(tools, errorByCallId);
 
-    const index = calls.length + 1;
     for (const tool of tools) {
       flatTools.push({ callIndex: index, name: tool.name, detail: tool.detail });
     }
@@ -507,6 +581,9 @@ export async function analyzeRun(runId: string): Promise<RunAnalysis> {
 
     if (hasTest) {
       npmTestCommandCount += 1;
+      if (tools.some((tool) => tool.name === "bash" && isFullSuiteTestCommand(tool.detail))) {
+        fullSuiteTestCalls += 1;
+      }
       const seconds = (at.getTime() - start.getTime()) / 1000;
       if (turnTestFailed && timeToFirstFailingTest === null) timeToFirstFailingTest = seconds;
       if (turnTestPassed) {
@@ -570,6 +647,17 @@ export async function analyzeRun(runId: string): Promise<RunAnalysis> {
       autoTestTriggerHits += 1;
     }
   }
+
+  const multipleElementInstances: MultipleElementFailureInstance[] = [];
+  for (const [toolCallId, output] of outputByCallId.entries()) {
+    if (!outputContainsMultipleElementsError(output)) continue;
+    multipleElementInstances.push({
+      call_index: toolCallIdToCallIndex.get(toolCallId) ?? null,
+      classification: classifyMultipleElementFailure(output),
+      excerpt: excerptMultipleElementError(output),
+    });
+  }
+  const failureSummary = summarizeMultipleElementFailures(multipleElementInstances);
 
   const totals = calls.reduce(
     (sum, call) => ({
@@ -638,6 +726,9 @@ export async function analyzeRun(runId: string): Promise<RunAnalysis> {
   const greenToExit =
     firstGreenAt !== null ? Math.max(0, wallSeconds - firstGreenAt) : null;
 
+  const harnessGreenButNoFirstGreen =
+    firstGreenAt === null && result.status === "success" && result.path !== null;
+
   return {
     run_id: runId,
     provider,
@@ -661,9 +752,15 @@ export async function analyzeRun(runId: string): Promise<RunAnalysis> {
     green_to_exit_s: greenToExit,
     npm_test_command_count: npmTestCommandCount,
     manual_test_calls: npmTestCommandCount,
+    full_suite_test_calls: fullSuiteTestCalls,
     manual_build_calls: manualBuildCalls,
     test_reinspection_calls: testReinspectionCalls,
     post_green_verification_calls: postGreenVerificationCalls,
+    multiple_element_failures_total: failureSummary.multiple_element_failures_total,
+    rtl_dom_leak_failures: failureSummary.rtl_dom_leak_failures,
+    query_ambiguity_failures: failureSummary.query_ambiguity_failures,
+    multiple_element_failure_excerpts: failureSummary.multiple_element_failure_excerpts,
+    harness_green_but_no_first_green: harnessGreenButNoFirstGreen,
     auto_test_trigger_hits: autoTestTriggerHits,
     auto_test_candidate_events: autoTestTriggerHits,
     auto_test_actual_runs: autoTestActualRuns,

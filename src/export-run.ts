@@ -58,9 +58,14 @@ export interface RunExportEfficiencyV2 {
   last_green_s: number | null;
   green_to_exit_s: number | null;
   manual_test_calls: number;
+  full_suite_test_calls: number;
   manual_build_calls: number;
   test_reinspection_calls: number;
   post_green_verification_calls: number;
+  multiple_element_failures_total: number;
+  rtl_dom_leak_failures: number;
+  query_ambiguity_failures: number;
+  harness_green_but_no_first_green: boolean;
   auto_test_candidate_events: number;
   auto_test_actual_runs: number;
   action_flow: ActionSegment[];
@@ -231,9 +236,14 @@ export function buildRunExport(
       last_green_s: analysis.last_green_s,
       green_to_exit_s: analysis.green_to_exit_s,
       manual_test_calls: analysis.manual_test_calls,
+      full_suite_test_calls: analysis.full_suite_test_calls,
       manual_build_calls: analysis.manual_build_calls,
       test_reinspection_calls: analysis.test_reinspection_calls,
       post_green_verification_calls: analysis.post_green_verification_calls,
+      multiple_element_failures_total: analysis.multiple_element_failures_total,
+      rtl_dom_leak_failures: analysis.rtl_dom_leak_failures,
+      query_ambiguity_failures: analysis.query_ambiguity_failures,
+      harness_green_but_no_first_green: analysis.harness_green_but_no_first_green,
       auto_test_candidate_events: analysis.auto_test_candidate_events,
       auto_test_actual_runs: analysis.auto_test_actual_runs,
       action_flow: analysis.action_flow,

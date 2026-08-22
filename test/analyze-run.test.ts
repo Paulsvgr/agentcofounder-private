@@ -3,6 +3,7 @@ import {
   bashTestOutputIndicatesFailure,
   bashTestOutputIndicatesSuccess,
   classifyPhaseHeuristic,
+  isFullSuiteTestCommand,
   weightedCost,
   WEIGHTS,
 } from "../src/analyze-run.js";
@@ -78,5 +79,21 @@ describe("bash test output parsing", () => {
   it("strips ANSI before matching", () => {
     const output = "\u001b[31m Test Files  1 failed (1)\u001b[0m";
     expect(bashTestOutputIndicatesFailure(output)).toBe(true);
+  });
+});
+
+describe("isFullSuiteTestCommand", () => {
+  it("accepts canonical npm test", () => {
+    expect(isFullSuiteTestCommand("npm test")).toBe(true);
+    expect(isFullSuiteTestCommand("cd /app && npm test 2>&1 | tail -40")).toBe(true);
+    expect(isFullSuiteTestCommand("npx vitest run")).toBe(true);
+  });
+
+  it("rejects partial suite invocations", () => {
+    expect(isFullSuiteTestCommand("npx vitest run src/db")).toBe(false);
+    expect(isFullSuiteTestCommand('vitest -t "lends a book"')).toBe(false);
+    expect(isFullSuiteTestCommand("vitest --changed")).toBe(false);
+    expect(isFullSuiteTestCommand("vitest --project unit")).toBe(false);
+    expect(isFullSuiteTestCommand("npm test -- App.test.tsx")).toBe(false);
   });
 });

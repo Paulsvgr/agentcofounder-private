@@ -5,6 +5,7 @@ import type { CallLedgerEntry } from "./analyze-run.js";
 import {
   isBuildCommand,
   isDevServerCommand,
+  isFullSuiteTestCommand,
   isNpmTestCommand,
   isReportWrite,
   isTestFilePath,
@@ -97,7 +98,10 @@ export function extractCallActionSignals(call: CallLedgerEntry): CallActionSigna
     (tool) => tool.name === "bash" && isNpmTestCommand(tool.detail) && tool.is_error,
   );
   const testPassed = call.tools.some(
-    (tool) => tool.name === "bash" && isNpmTestCommand(tool.detail) && tool.test_passed === true,
+    (tool) =>
+      tool.name === "bash" &&
+      isFullSuiteTestCommand(tool.detail) &&
+      tool.test_passed === true,
   );
 
   const isInspectOnly =

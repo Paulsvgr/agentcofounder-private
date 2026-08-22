@@ -230,8 +230,11 @@ export function classificationFromEnv(
   gitCommit: string | null,
 ): RunClassification {
   const runIndexEnv = process.env.RUN_INDEX?.trim();
-  const parsedRunIndex =
-    runIndexEnv && runIndexEnv.length > 0 ? Number.parseInt(runIndexEnv, 10) : undefined;
+  let run_index: number | null = null;
+  if (runIndexEnv && runIndexEnv.length > 0) {
+    const parsed = Number.parseInt(runIndexEnv, 10);
+    if (Number.isFinite(parsed)) run_index = parsed;
+  }
 
   return deriveRunClassification({
     approach,
@@ -239,6 +242,6 @@ export function classificationFromEnv(
     git_commit: gitCommit,
     line: process.env.RUN_LINE ?? null,
     experiment: process.env.RUN_EXPERIMENT ?? null,
-    run_index: Number.isFinite(parsedRunIndex) ? parsedRunIndex : undefined,
+    run_index,
   });
 }
