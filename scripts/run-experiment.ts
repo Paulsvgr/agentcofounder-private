@@ -42,6 +42,9 @@ function resolveRunExperiment(arm: string): string {
   if (arm.startsWith("digest-")) {
     return arm.startsWith("digest-treatment") ? "exp4-digest-treatment" : "exp4-digest-control";
   }
+  if (arm.startsWith("template-")) {
+    return arm.startsWith("template-treatment") ? "exp5-template-treatment" : "exp5-template-control";
+  }
   return arm;
 }
 
@@ -50,7 +53,8 @@ function isPhaseFArm(arm: string): boolean {
     arm.startsWith("rtl-") ||
     arm.startsWith("stop-") ||
     arm.startsWith("test-policy-") ||
-    arm.startsWith("digest-")
+    arm.startsWith("digest-") ||
+    arm.startsWith("template-")
   );
 }
 

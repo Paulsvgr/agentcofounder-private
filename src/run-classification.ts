@@ -28,6 +28,8 @@ export const RUN_EXPERIMENTS = [
   "exp3-test-treatment",
   "exp4-digest-control",
   "exp4-digest-treatment",
+  "exp5-template-control",
+  "exp5-template-treatment",
   "legacy",
   "legacy-smoke",
   "unknown",
@@ -119,6 +121,11 @@ const APPROACH_MAP: Record<string, ApproachMapping> = {
   "digest-treatment-3": { line: "F", experiment: "exp4-digest-treatment", run_index: 3 },
   "digest-treatment-4": { line: "F", experiment: "exp4-digest-treatment", run_index: 4 },
   "digest-treatment-5": { line: "F", experiment: "exp4-digest-treatment", run_index: 5 },
+  "template-treatment-1": { line: "F", experiment: "exp5-template-treatment", run_index: 1 },
+  "template-treatment-2": { line: "F", experiment: "exp5-template-treatment", run_index: 2 },
+  "template-treatment-3": { line: "F", experiment: "exp5-template-treatment", run_index: 3 },
+  "template-treatment-4": { line: "F", experiment: "exp5-template-treatment", run_index: 4 },
+  "template-treatment-5": { line: "F", experiment: "exp5-template-treatment", run_index: 5 },
 };
 
 function parseRunIndex(approach: string): number | null {
@@ -154,7 +161,7 @@ function inferLineFromApproach(approach: string): RunLine {
   if (approach === "run-d" || approach.startsWith("run-d")) {
     return "D";
   }
-  if (approach.startsWith("rtl-") || approach.startsWith("stop-") || approach.startsWith("test-policy-") || approach.startsWith("digest-")) {
+  if (approach.startsWith("rtl-") || approach.startsWith("stop-") || approach.startsWith("test-policy-") || approach.startsWith("digest-") || approach.startsWith("template-")) {
     return "F";
   }
   return "unknown";
@@ -203,6 +210,13 @@ function inferExperimentFromApproach(approach: string): RunExperiment | null {
   if (approach.startsWith("digest-treatment")) {
     return "exp4-digest-treatment";
   }
+  if (approach.startsWith("template-treatment")) {
+    return "exp5-template-treatment";
+  }
+  if (approach.startsWith("template-control")) {
+    return "exp5-template-control";
+  }
+
   if (approach.startsWith("digest-control")) {
     return "exp4-digest-control";
   }

@@ -38,6 +38,7 @@ for arg in "$@"; do
     --exp2-stop) ARMS+=(stop-control stop-treatment) ;;
     --exp3-test) ARMS+=(test-policy-treatment) ;;
     --exp4-digest) ARMS+=(digest-treatment) ;;
+    --exp5-template) ARMS+=(template-treatment) ;;
     --*) echo "Unknown flag: $arg" >&2; exit 2 ;;
     *) ARMS+=("$arg") ;;
   esac

@@ -240,7 +240,93 @@ Best run: [digest-treatment-4](https://agentcofounder-hackathon.vercel.app/runs/
 
 Run artifacts: `artifacts/experiments/digest-treatment/`.
 
-**Next:** Experiment 5 per locked sequence (see table above).
+**Next:** Experiment 5 (domain-neutral template primitives → output / implementation-output tokens).
+
+
+## Experiment 5 — Domain-neutral template primitives
+
+**Mechanism:** move repeatedly generated, domain-neutral plumbing into `app-template/` so Pi emits fewer output tokens on clean runs (output weighted ×3).
+
+**Not a snowball fix.** No improvement in P(clean) is expected. If P(clean) rises, inspect why rather than treating it as automatic success or failure — less boilerplate can indirectly reduce mistakes.
+
+### Causal hierarchy (analysis)
+
+```text
+quality → primitive adoption → persistence-plumbing LOC → implementation output tokens → total output tokens → weighted total
+```
+
+| Role | Metric |
+|------|--------|
+| Primary mechanism | adoption + persistence plumbing LOC + **implementation-phase output** (output before first real `npm test` / vitest) |
+| Main economic outcome | successful-run median **total output tokens** |
+| Safety | quality (≥4/5) and failure classes |
+| Secondary | weighted total, P(clean) |
+
+Ideal treatment signature: high adoption, plumbing LOC ↓ (e.g. ~80→15), implementation output ↓, total output usually lower but noisier, P(clean)/repair ~same, quality unchanged.
+
+### Control validity
+
+Control cohort: `test-policy-treatment` at `be86ac3` (Exp 1–3 stack). HEAD after Exp 4 revert matches control on:
+
+| Path | Blob (control = HEAD pre-treatment) |
+|------|------------------------|
+| `solution/system-prompt.md` | `b8678c1b10c83b287a62ea6623b91577e91f7ff8` |
+| `solution/skills/mvp-builder/SKILL.md` | `6ecabf97d485fb38da3f3c412edfdbe6a13ad54f` |
+| `app-template/AGENTS.md` | `fba833e3e030c20c7bca0895e4c29bb404b67eff` (treatment will differ) |
+| `app-template/package.json` | `25a4f1f972486584629cbb0b2fc40ce5dedc7f2e` |
+| `app-template/vitest.config.ts` | `92c0a9fbc0a534b425a6e79ea3fd4e292f528cef` |
+| `contract-public/development-idea.txt` | `c6dca89a0bba95de2f43925e1a33b7eaba813ab3` |
+| idea sha256 | `b5fb3037684f28c1cb30e2963b872a4313cf605b83856457ebb9ef944f9f126d` |
+| provider | `zai` |
+| BASE_SHA | `5cf2b6033904eec75a5d560e310a3064d657dfd0` |
+| control commit | `be86ac39d1a68f12f07c8f8c3cb830b132877d44` |
+
+Treatment = control config **plus only** seed primitives + AGENTS signatures + analysis/report plumbing.
+
+### Change
+
+Four files under `app-template/` (no template tests):
+
+- `src/lib/collectionStore.ts` — `createCollectionStore`
+- `src/lib/useCollection.ts` — `useCollection` (opinionated; partial KEEP allowed)
+- `src/lib/text.ts` — `normalizeText`, `createId`
+- `src/test/memoryStorage.ts` — `createMemoryStorage`
+
+Signatures inlined in `app-template/AGENTS.md`.
+
+**Arm:** `template-treatment` (5 reps, Z.ai, same idea).
+
+```bash
+npm run experiment:run -- --arm template-treatment --reps 5 --provider zai
+npm run experiment:report -- template-treatment
+npm run publish:runs -- --exp5-template --seed
+```
+
+### Control baseline (`test-policy-treatment`, successful reps)
+
+Recorded via enhanced report (output + implementation output + LOC + adoption):
+
+| Metric | Control (successful n=4) |
+|--------|--------------------------|
+| median total output tokens | 12556 |
+| median implementation output tokens | 7523 |
+| median persistence plumbing LOC | 90 |
+| adoption rate | 0 |
+| P(clean) | 0.2 |
+| quality | 4/5 |
+
+### Verdict table
+
+**Meaningful adoption:** ≥3/5 successful runs import ≥1 template primitive.
+
+| Outcome | Rule |
+|---------|------|
+| **Strong KEEP** | quality ≥4/5; adoption high; successful median total output ↓ **≥10%** (or clear implementation-output + plumbing LOC drop if total is noisy); no new recurring failure class |
+| **Weak / more data** | quality holds; adoption high; total output ↓ **5–10%** |
+| **Diagnosis needed** | adoption **low** and outputs flat → discovery failed |
+| **REVERT / simplify** | quality falls; new architecture/test failures; **or** high adoption but output effectively unchanged |
+| **Partial KEEP** | store + text + memoryStorage help; `useCollection` causes misuse → keep three, drop hook |
+
 
 ## Revert-rule template
 

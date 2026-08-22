@@ -284,6 +284,11 @@ APPROACH_MAP: dict[str, tuple[str, str, int | None]] = {
     "digest-treatment-3": ("F", "exp4-digest-treatment", 3),
     "digest-treatment-4": ("F", "exp4-digest-treatment", 4),
     "digest-treatment-5": ("F", "exp4-digest-treatment", 5),
+    "template-treatment-1": ("F", "exp5-template-treatment", 1),
+    "template-treatment-2": ("F", "exp5-template-treatment", 2),
+    "template-treatment-3": ("F", "exp5-template-treatment", 3),
+    "template-treatment-4": ("F", "exp5-template-treatment", 4),
+    "template-treatment-5": ("F", "exp5-template-treatment", 5),
 }
 
 LEGACY_SMOKE_IDS = {
@@ -502,6 +507,8 @@ def main() -> None:
                 "exp3-test-treatment",
                 "exp4-digest-control",
                 "exp4-digest-treatment",
+                "exp5-template-control",
+                "exp5-template-treatment",
                 "legacy",
                 "legacy-smoke",
                 "unknown",
@@ -509,7 +516,7 @@ def main() -> None:
         },
         "derivation_rules": [
             "If run_id exists in this manifest, use classification + human fields as canonical.",
-            "Else derive experiment from meta.approach prefix: A-autoverify-owned* → autoverify-owned, A-autoverify-supplement* → autoverify-supplement, A-prompt* → no-dev-server-prompt, A-autotest* → auto-test, A-baseline* / A-raw* → baseline, rtl-control* → exp1-rtl-control, rtl-cleanup* → exp1-rtl-cleanup, stop-control* → exp2-stop-control, stop-treatment* → exp2-stop-treatment, test-policy-treatment* → exp3-test-treatment.",
+            "Else derive experiment from meta.approach prefix: A-autoverify-owned* → autoverify-owned, A-autoverify-supplement* → autoverify-supplement, A-prompt* → no-dev-server-prompt, A-autotest* → auto-test, A-baseline* / A-raw* → baseline, rtl-control* → exp1-rtl-control, rtl-cleanup* → exp1-rtl-cleanup, stop-control* → exp2-stop-control, stop-treatment* → exp2-stop-treatment, test-policy-treatment* → exp3-test-treatment, digest-treatment* → exp4-digest-treatment, template-treatment* → exp5-template-treatment.",
             "Else if git_branch === exp/auto-verify, experiment = autoverify-unknown.",
             "Else if git_branch === main && git_commit starts with d0f0b49, line = A, experiment = baseline.",
             "Parse run_index from trailing -N on approach string when present.",

@@ -10,3 +10,35 @@
 - A `success` report must contain at least one `tests_run` entry and every entry must be `passed`. If a journey failed or was not run, record it as `failed`, explain why in `journey`, and use `partial` (or `failed` when the app cannot run).
 - The runner owns the final `app_url`, location-aware `start_command`, independent `harness_checks`, and telemetry fields. Your product-journey test records remain in the specification-defined `tests_run` field.
 - Do not create or edit `result.json`; the outer challenge runner derives its telemetry from Pi.
+
+## Seed primitives (prefer these)
+
+Prefer these domain-neutral helpers over reimplementing storage, ids, text normalization, or test Storage mocks. Write your entity type and `parse` (validates **one** array item, not the whole payload). If state is not a flat keyed collection, design what fits instead — do not force `useCollection`.
+
+```ts
+// src/lib/collectionStore.ts
+export function createCollectionStore<T>(options: {
+  key: string;
+  parse: (raw: unknown) => T | null; // validates ONE array item
+  storage?: Storage | null;
+}): { load(): T[]; save(items: T[]): void };
+
+// src/lib/useCollection.ts
+export function useCollection<T extends { id: string }>(
+  store: { load(): T[]; save(items: T[]): void },
+  options?: { idFactory?: () => string },
+): {
+  items: T[];
+  add(fields: Omit<T, "id">): T;
+  update(id: string, patch: Partial<Omit<T, "id">>): void;
+  remove(id: string): void;
+  replaceAll(items: T[]): void;
+};
+
+// src/lib/text.ts
+export function normalizeText(raw: string): string;
+export function createId(): string;
+
+// src/test/memoryStorage.ts
+export function createMemoryStorage(): Storage;
+```
