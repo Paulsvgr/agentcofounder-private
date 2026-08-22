@@ -221,6 +221,27 @@ npm run experiment:report -- digest-treatment
 npm run publish:runs -- --exp4-digest --seed
 ```
 
+## Experiment 4 results (2026-08-22)
+
+**Treatment commit:** `0687f51` (prompt reverted after REVERT verdict)
+
+| Arm | n | P(clean) | P(snowball) | median weighted | median calls | quality |
+|-----|---|----------|-------------|-----------------|--------------|---------|
+| test-policy-treatment (control) | 5 | 0.2 | 0.6 | 86k | 23 | 4/5 success |
+| digest-treatment | 5 | 0.2 | **0.8** | **79k** | 22 | **5/5 success** |
+
+**Primary counter (test_reinspection):** median **6** vs control **3** — regression. Reps 1–3 still snowballed with 6–7 reinspection calls.
+
+**Highlights:** Rep 4 = second CLEAN trajectory (58k weighted, 14 calls, 0 repair/reinspection). Rep 5 had test_reinspection=1. Quality improved to 5/5 harness-green but snowball rate worsened.
+
+**Verdict: REVERT digest prompt** — prompt-only policy did not move the primary counter; keep Exp 1–3 stack. True deterministic digest likely needs a Pi extension (blocked on sacred `run-challenge.ts` for Phase F compliance).
+
+Best run: [digest-treatment-4](https://agentcofounder-hackathon.vercel.app/runs/866b7531-7a3c-41de-bd80-9529d29123e2)
+
+Run artifacts: `artifacts/experiments/digest-treatment/`.
+
+**Next:** Experiment 5 per locked sequence (see table above).
+
 ## Revert-rule template
 
 ```text

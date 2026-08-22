@@ -15,7 +15,6 @@ Required outcome:
 - Use only the dependencies already installed from the committed lockfile; do not add packages or run dependency-install commands.
 - Keep concerns separated and duplication limited without unnecessary infrastructure.
 - Before finishing, run the full test suite with `npm test` and `npm run build`, repairing failures until both pass.
-- Failure digest: when tests fail, read the tool output once and extract file, test name, and assertion for each failure. Do not grep, tail, cat, or re-run tests merely to re-read the same failures. After code edits, run the full suite once — not partial `vitest run` or piped commands like `npm test 2>&1 | tail`.
 - Generation-scoped stop: once the full suite and build both pass on the current code, do not run tests or build again — write `report.partial.json` and finish. Do not re-run verification to double-check.
 - If you edit application or test code after that green result, you may run tests/build again until green once more, then stop again.
 - Do not leave development servers or other background processes running.

@@ -13,8 +13,7 @@ description: Turn a non-technical product idea into a small, tested browser appl
 6. Use only the dependencies already installed from the committed lockfile. Do not add packages or run dependency-install commands.
 7. Write the smallest sufficient journey suite that covers every applicable observable user behavior. One focused test per requested or clearly implied journey—no duplicate coverage and no speculative edge cases the idea does not require. Prefer `getByRole`, `getByLabelText`, and scoped queries over broad `getByText` or regex that can match multiple elements. Do not assert on exact text-node structure when a role or label suffices. Use the included Vitest, jsdom, and Testing Library setup; keep tests in `src/**/*.test.ts` or `src/**/*.test.tsx`. Startup and assumptions reporting are runner obligations, not UI test journeys. Every committed test must run and pass; do not leave skipped or todo tests.
 8. Run the full test suite and production build before reporting success. After both pass on the current code, do not run them again unless you changed code — then verify once and stop.
-9. When tests fail, digest failures from the tool output once (file, test name, assertion per failure). Do not grep, tail, or re-run tests just to re-inspect the same output. Fix the code, then run the full suite once — never partial suites or piped test commands.
-10. Write `report.partial.json` with this exact shape:
+9. Write `report.partial.json` with this exact shape:
 
 ```json
 {
