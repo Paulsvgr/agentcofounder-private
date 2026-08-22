@@ -13,6 +13,7 @@
 #   HACKATHON_ACCESS_CODE        required for --seed
 #   HACKATHON_AUTHOR             default paul
 #   HACKATHON_API_BASE           default https://admin.coretechs.se/hackathon
+#   FRONTEND_BASE                default https://agentcofounder-hackathon.vercel.app
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -98,5 +99,8 @@ if [ -f "$BACKFILL_SCRIPT" ]; then
   echo "==> Backfilling classification labels"
   python3 "$BACKFILL_SCRIPT"
 fi
+
+echo "==> Resolving frontend links"
+python3 "$ROOT/scripts/print-run-frontend-links.py" "${RUN_IDS[@]}"
 
 echo "Publish complete."

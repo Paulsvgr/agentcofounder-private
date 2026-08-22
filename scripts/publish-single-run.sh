@@ -5,7 +5,7 @@
 #   ./scripts/publish-single-run.sh <run-id> [--approach rtl-control-1]
 #   npm run publish:run -- 2026-08-22T11-17-34-089Z --approach rtl-control-1
 #
-# Env: HACKATHON_ACCESS_CODE, HACKATHON_AUTHOR, RUNS_APP_ROOT (see publish-experiment-runs.sh)
+# Env: HACKATHON_ACCESS_CODE, HACKATHON_AUTHOR, RUNS_APP_ROOT, FRONTEND_BASE (see publish-experiment-runs.sh)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -85,5 +85,8 @@ if [ -f "$BACKFILL_SCRIPT" ]; then
   echo "==> Backfilling classification"
   python3 "$BACKFILL_SCRIPT"
 fi
+
+echo "==> Resolving frontend link"
+python3 "$ROOT/scripts/print-run-frontend-links.py" "$RUN_ID"
 
 echo "Published $RUN_ID → artifacts/exports/${RUN_ID}.json + DB"
