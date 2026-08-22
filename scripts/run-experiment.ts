@@ -65,12 +65,12 @@ function gitValue(args: string[]): string | null {
 }
 
 function assertCleanTree(): void {
-  const status = execFileSync("git", ["status", "--porcelain"], {
+  const status = execFileSync("git", ["status", "--porcelain", "--untracked-files=no"], {
     cwd: REPOSITORY_ROOT,
     encoding: "utf8",
   }).trim();
   if (status.length > 0) {
-    throw new Error("Working tree is dirty; commit or stash before running an experiment cohort.");
+    throw new Error("Working tree has tracked changes; commit or stash before running an experiment cohort.");
   }
 }
 
