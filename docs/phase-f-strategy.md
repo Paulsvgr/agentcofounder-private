@@ -140,6 +140,27 @@ npm run experiment:report -- stop-treatment
 npm run publish:runs -- --exp2-stop   # after both arms complete
 ```
 
+## Experiment 2 results (2026-08-22)
+
+**BASE_SHA:** `5cf2b6033904eec75a5d560e310a3064d657dfd0` · **Treatment commit:** `d65f4e9`
+
+| Arm | n | P(clean) | P(snowball) | median weighted | median calls | post_green (per run) | median post_green |
+|-----|---|----------|-------------|-----------------|--------------|----------------------|-----------------|
+| rtl-cleanup (control) | 5 | 0 | 1.0 | 179k | 44 | 3, 2, 4, 3, 5 | **3** |
+| stop-treatment | 5 | 0 | 1.0 | 110k | 31 | 1, 7, 1, 2, 1 | **1** |
+
+**Primary counter:** Median `post_green_verification_calls` **3 → 1**. Treatment 4/5 reps at ≤1 (clean threshold); control 0/5.
+
+**Quality gate:** All 10 runs `success`, all harness checks passed.
+
+**Caveats:** Rep 2 treatment snowballed (463k weighted, 61 repair calls, post_green=7) — prompt stop rule does not prevent repair spirals once entered. P(snowball) unchanged at 1.0 both arms.
+
+**Verdict: KEEP stop rule** — mechanism counter moved as hypothesized; domain-neutral; no quality regression. Does not fix snowball entry, only trims post-green tail on typical runs.
+
+Run artifacts: `artifacts/experiments/stop-treatment/`.
+
+**Next:** Experiment 3 (compact robust journey-test policy in `SKILL.md`).
+
 ## Revert-rule template
 
 ```text
