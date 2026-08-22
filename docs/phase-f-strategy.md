@@ -117,6 +117,29 @@ REVERT IF counter unchanged, new failure classes, or quality regresses
 
 Run artifacts: `artifacts/experiments/rtl-control/`, `artifacts/experiments/rtl-cleanup/`.
 
+## Experiment 2 — Generation-scoped stop rule
+
+**Hypothesis:** After full-suite green + build, the model re-runs `npm test` / `npm run build` "just to be sure", inflating `post_green_verification_calls`.
+
+**Treatment:** prompt-stack wording in `solution/system-prompt.md`, `solution/skills/mvp-builder/SKILL.md`, and `app-template/AGENTS.md` — once full suite + build pass on current code, stop verifying; if code changes, verify once more then stop.
+
+**Control (proxy):** Experiment 1 `rtl-cleanup` cohort (n=5) — same stack minus stop rule, RTL cleanup kept.
+
+**Primary counter:** `post_green_verification_calls` (secondary: `green_to_exit_s`, weighted tail after first full green)
+
+**Revert rule:**
+
+```text
+KEEP IF   post_green_verification_calls materially decreases, quality OK
+REVERT IF counter unchanged, quality regresses, or repair loops worsen
+```
+
+```bash
+npm run experiment:run -- --arm stop-treatment --reps 5 --provider zai --publish
+npm run experiment:report -- stop-treatment
+npm run publish:runs -- --exp2-stop   # after both arms complete
+```
+
 ## Revert-rule template
 
 ```text

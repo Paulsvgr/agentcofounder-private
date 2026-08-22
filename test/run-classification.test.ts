@@ -89,6 +89,21 @@ describe("deriveRunClassification", () => {
     });
   });
 
+  it("maps Experiment 2 stop-rule arms", () => {
+    expect(
+      deriveRunClassification({
+        approach: "stop-treatment-1",
+        git_branch: "setup/measure",
+        git_commit: "abc123",
+      }),
+    ).toEqual({
+      line: "F",
+      experiment: "exp2-stop-treatment",
+      run_index: 1,
+      display_label: "F · exp2 stop treatment · run 1",
+    });
+  });
+
   it("honors explicit line/experiment overrides", () => {
     expect(
       deriveRunClassification({

@@ -28,6 +28,7 @@ for arg in "$@"; do
   case "$arg" in
     --seed) SEED=1 ;;
     --exp1-rtl) ARMS+=(rtl-control rtl-cleanup) ;;
+    --exp2-stop) ARMS+=(stop-control stop-treatment) ;;
     --*) echo "Unknown flag: $arg" >&2; exit 2 ;;
     *) ARMS+=("$arg") ;;
   esac

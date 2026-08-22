@@ -194,8 +194,16 @@ async function main(): Promise<void> {
       ...process.env,
       CHALLENGE_THINKING: process.env.CHALLENGE_THINKING ?? "off",
       RUN_APPROACH: label,
-      RUN_EXPERIMENT: arm.startsWith("rtl-") ? (arm.startsWith("rtl-cleanup") ? "exp1-rtl-cleanup" : "exp1-rtl-control") : arm,
-      RUN_LINE: arm.startsWith("rtl-") ? "F" : process.env.RUN_LINE,
+      RUN_EXPERIMENT: arm.startsWith("rtl-")
+        ? arm.startsWith("rtl-cleanup")
+          ? "exp1-rtl-cleanup"
+          : "exp1-rtl-control"
+        : arm.startsWith("stop-")
+          ? arm.startsWith("stop-treatment")
+            ? "exp2-stop-treatment"
+            : "exp2-stop-control"
+          : arm,
+      RUN_LINE: arm.startsWith("rtl-") || arm.startsWith("stop-") ? "F" : process.env.RUN_LINE,
       RUN_INDEX: String(rep),
     };
 

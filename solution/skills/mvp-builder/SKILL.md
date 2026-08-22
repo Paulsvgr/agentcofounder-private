@@ -12,7 +12,7 @@ description: Turn a non-technical product idea into a small, tested browser appl
 5. Keep components focused, separate concerns, and avoid duplication so another developer or agent can extend the app without a rewrite.
 6. Use only the dependencies already installed from the committed lockfile. Do not add packages or run dependency-install commands.
 7. Test every applicable observable user behavior with the included Vitest, jsdom, and Testing Library setup. Startup and assumptions reporting are runner obligations, not UI test journeys. Every committed test must run and pass; do not leave skipped or todo tests.
-8. Run the tests and production build before reporting success.
+8. Run the full test suite and production build before reporting success. After both pass on the current code, do not run them again unless you changed code — then verify once and stop.
 9. Write `report.partial.json` with this exact shape:
 
 ```json

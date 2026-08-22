@@ -22,6 +22,8 @@ export const RUN_EXPERIMENTS = [
   "prime-comparison",
   "exp1-rtl-control",
   "exp1-rtl-cleanup",
+  "exp2-stop-control",
+  "exp2-stop-treatment",
   "legacy",
   "legacy-smoke",
   "unknown",
@@ -93,6 +95,16 @@ const APPROACH_MAP: Record<string, ApproachMapping> = {
   "rtl-cleanup-3": { line: "F", experiment: "exp1-rtl-cleanup", run_index: 3 },
   "rtl-cleanup-4": { line: "F", experiment: "exp1-rtl-cleanup", run_index: 4 },
   "rtl-cleanup-5": { line: "F", experiment: "exp1-rtl-cleanup", run_index: 5 },
+  "stop-control-1": { line: "F", experiment: "exp2-stop-control", run_index: 1 },
+  "stop-control-2": { line: "F", experiment: "exp2-stop-control", run_index: 2 },
+  "stop-control-3": { line: "F", experiment: "exp2-stop-control", run_index: 3 },
+  "stop-control-4": { line: "F", experiment: "exp2-stop-control", run_index: 4 },
+  "stop-control-5": { line: "F", experiment: "exp2-stop-control", run_index: 5 },
+  "stop-treatment-1": { line: "F", experiment: "exp2-stop-treatment", run_index: 1 },
+  "stop-treatment-2": { line: "F", experiment: "exp2-stop-treatment", run_index: 2 },
+  "stop-treatment-3": { line: "F", experiment: "exp2-stop-treatment", run_index: 3 },
+  "stop-treatment-4": { line: "F", experiment: "exp2-stop-treatment", run_index: 4 },
+  "stop-treatment-5": { line: "F", experiment: "exp2-stop-treatment", run_index: 5 },
 };
 
 function parseRunIndex(approach: string): number | null {
@@ -128,7 +140,7 @@ function inferLineFromApproach(approach: string): RunLine {
   if (approach === "run-d" || approach.startsWith("run-d")) {
     return "D";
   }
-  if (approach.startsWith("rtl-")) {
+  if (approach.startsWith("rtl-") || approach.startsWith("stop-")) {
     return "F";
   }
   return "unknown";
@@ -161,6 +173,12 @@ function inferExperimentFromApproach(approach: string): RunExperiment | null {
   }
   if (approach.startsWith("rtl-cleanup")) {
     return "exp1-rtl-cleanup";
+  }
+  if (approach.startsWith("stop-control")) {
+    return "exp2-stop-control";
+  }
+  if (approach.startsWith("stop-treatment")) {
+    return "exp2-stop-treatment";
   }
   if (approach === "base") {
     return "baseline";
