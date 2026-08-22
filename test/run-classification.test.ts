@@ -62,6 +62,33 @@ describe("deriveRunClassification", () => {
     });
   });
 
+  it("maps Experiment 1 rtl arms", () => {
+    expect(
+      deriveRunClassification({
+        approach: "rtl-control-3",
+        git_branch: "setup/measure",
+        git_commit: "5cf2b60",
+      }),
+    ).toEqual({
+      line: "F",
+      experiment: "exp1-rtl-control",
+      run_index: 3,
+      display_label: "F · exp1 rtl control · run 3",
+    });
+    expect(
+      deriveRunClassification({
+        approach: "rtl-cleanup-2",
+        git_branch: "exp/rtl-cleanup",
+        git_commit: "71c2586",
+      }),
+    ).toEqual({
+      line: "F",
+      experiment: "exp1-rtl-cleanup",
+      run_index: 2,
+      display_label: "F · exp1 rtl cleanup · run 2",
+    });
+  });
+
   it("honors explicit line/experiment overrides", () => {
     expect(
       deriveRunClassification({

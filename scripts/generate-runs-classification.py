@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 import json
+import os
 import re
+import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -168,6 +170,57 @@ ENRICH: dict[str, dict] = {
         "rating": 2,
         "comment": "Pi API abort, 0 tokens — not a real attempt",
     },
+    # Experiment 1 — RTL cleanup (Phase F)
+    "2026-08-22T11-17-34-089Z": {
+        "approach": "rtl-control-1",
+        "rating": 9,
+        "comment": "Experiment 1 · rtl-control · rep 1 · snowball · ~69k",
+    },
+    "2026-08-22T11-20-53-365Z": {
+        "approach": "rtl-control-2",
+        "rating": 9,
+        "comment": "Experiment 1 · rtl-control · rep 2 · snowball · ~76k",
+    },
+    "2026-08-22T11-24-02-704Z": {
+        "approach": "rtl-control-3",
+        "rating": 9,
+        "comment": "Experiment 1 · rtl-control · rep 3 · snowball · ~96k",
+    },
+    "2026-08-22T11-28-00-137Z": {
+        "approach": "rtl-control-4",
+        "rating": 9,
+        "comment": "Experiment 1 · rtl-control · rep 4 · snowball · ~157k",
+    },
+    "2026-08-22T11-33-28-491Z": {
+        "approach": "rtl-control-5",
+        "rating": 9,
+        "comment": "Experiment 1 · rtl-control · rep 5 · snowball · ~144k",
+    },
+    "2026-08-22T11-39-27-224Z": {
+        "approach": "rtl-cleanup-1",
+        "rating": 9,
+        "comment": "Experiment 1 · rtl-cleanup · rep 1 · snowball · ~101k",
+    },
+    "2026-08-22T11-43-19-823Z": {
+        "approach": "rtl-cleanup-2",
+        "rating": 9,
+        "comment": "Experiment 1 · rtl-cleanup · rep 2 · snowball · ~181k",
+    },
+    "2026-08-22T11-49-46-658Z": {
+        "approach": "rtl-cleanup-3",
+        "rating": 9,
+        "comment": "Experiment 1 · rtl-cleanup · rep 3 · snowball · ~179k",
+    },
+    "2026-08-22T11-56-19-753Z": {
+        "approach": "rtl-cleanup-4",
+        "rating": 9,
+        "comment": "Experiment 1 · rtl-cleanup · rep 4 · snowball · ~96k",
+    },
+    "2026-08-22T12-00-02-941Z": {
+        "approach": "rtl-cleanup-5",
+        "rating": 9,
+        "comment": "Experiment 1 · rtl-cleanup · rep 5 · snowball · ~183k",
+    },
 }
 
 APPROACH_MAP: dict[str, tuple[str, str, int | None]] = {
@@ -201,6 +254,16 @@ APPROACH_MAP: dict[str, tuple[str, str, int | None]] = {
     "C-prime abort": ("C-prime", "legacy-smoke", None),
     "run-d / D": ("D", "legacy", 1),
     "run-d": ("D", "legacy", 1),
+    "rtl-control-1": ("F", "exp1-rtl-control", 1),
+    "rtl-control-2": ("F", "exp1-rtl-control", 2),
+    "rtl-control-3": ("F", "exp1-rtl-control", 3),
+    "rtl-control-4": ("F", "exp1-rtl-control", 4),
+    "rtl-control-5": ("F", "exp1-rtl-control", 5),
+    "rtl-cleanup-1": ("F", "exp1-rtl-cleanup", 1),
+    "rtl-cleanup-2": ("F", "exp1-rtl-cleanup", 2),
+    "rtl-cleanup-3": ("F", "exp1-rtl-cleanup", 3),
+    "rtl-cleanup-4": ("F", "exp1-rtl-cleanup", 4),
+    "rtl-cleanup-5": ("F", "exp1-rtl-cleanup", 5),
 }
 
 LEGACY_SMOKE_IDS = {
@@ -320,6 +383,8 @@ def classify(run_id: str, export: dict) -> dict:
     if line is None:
         if approach.startswith("A-"):
             line = "A"
+        elif approach.startswith("rtl-"):
+            line = "F"
         elif "prime" in approach.lower():
             line = approach.split("-")[0] if "-" in approach else "unknown"
         elif approach == "run-d":
@@ -373,6 +438,25 @@ def classify(run_id: str, export: dict) -> dict:
     }
 
 
+def sync_manifest_copies(source: Path) -> None:
+    """Copy harness manifest to GreenCastle when paths exist (one-way sync)."""
+    targets = [
+        os.environ.get("RUNS_APP_FRONTEND_MANIFEST"),
+        os.environ.get("RUNS_APP_BACKEND_MANIFEST"),
+        "/mnt/c/Users/gronb/Desktop/GreenCastle/react/agentcofounder-hackathon/public/runs-classification.json",
+        "/mnt/c/Users/gronb/Desktop/GreenCastle/FullStack/CoreTechs Fullstack/webeditor/hackathon/data/runs-classification.json",
+    ]
+    seen: set[str] = set()
+    for raw in targets:
+        if not raw or raw in seen:
+            continue
+        seen.add(raw)
+        dest = Path(raw)
+        if dest.parent.is_dir():
+            shutil.copy2(source, dest)
+            print(f"Synced manifest → {dest}")
+
+
 def main() -> None:
     exports = load_exports()
     manifest = {
@@ -380,7 +464,7 @@ def main() -> None:
         "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "description": "Canonical method labels for hackathon runs UI backfill. Overlay by run_id on ingest; wins over derived meta.approach.",
         "taxonomy": {
-            "line": ["A", "A-prime", "B-prime", "C", "C-prime", "D", "unknown"],
+            "line": ["A", "A-prime", "B-prime", "C", "C-prime", "D", "F", "unknown"],
             "experiment": [
                 "baseline",
                 "no-dev-server-prompt",
@@ -390,6 +474,8 @@ def main() -> None:
                 "autoverify-owned",
                 "autoverify-gated",
                 "prime-comparison",
+                "exp1-rtl-control",
+                "exp1-rtl-cleanup",
                 "legacy",
                 "legacy-smoke",
                 "unknown",
@@ -397,7 +483,7 @@ def main() -> None:
         },
         "derivation_rules": [
             "If run_id exists in this manifest, use classification + human fields as canonical.",
-            "Else derive experiment from meta.approach prefix: A-autoverify-owned* → autoverify-owned, A-autoverify-supplement* → autoverify-supplement, A-prompt* → no-dev-server-prompt, A-autotest* → auto-test, A-baseline* / A-raw* → baseline.",
+            "Else derive experiment from meta.approach prefix: A-autoverify-owned* → autoverify-owned, A-autoverify-supplement* → autoverify-supplement, A-prompt* → no-dev-server-prompt, A-autotest* → auto-test, A-baseline* / A-raw* → baseline, rtl-control* → exp1-rtl-control, rtl-cleanup* → exp1-rtl-cleanup.",
             "Else if git_branch === exp/auto-verify, experiment = autoverify-unknown.",
             "Else if git_branch === main && git_commit starts with d0f0b49, line = A, experiment = baseline.",
             "Parse run_index from trailing -N on approach string when present.",
@@ -405,8 +491,10 @@ def main() -> None:
         ],
         "runs": {run_id: classify(run_id, export) for run_id, export in sorted(exports.items())},
     }
+    OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(manifest, indent=2) + "\n")
     print(f"Wrote {OUT} ({len(manifest['runs'])} runs)")
+    sync_manifest_copies(OUT)
 
 
 if __name__ == "__main__":

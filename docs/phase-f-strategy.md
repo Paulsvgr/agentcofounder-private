@@ -56,6 +56,12 @@ Hold constant: provider, model, idea file, timeout, settings.
 # Control or treatment cohort
 npm run experiment:run -- --arm rtl-control --reps 5 --provider zai
 npm run experiment:report -- rtl-control
+
+# After cohort: re-export, sync manifest, seed prod DB
+./scripts/publish-experiment-runs.sh --exp1-rtl --seed
+npm run publish:runs -- --exp1-rtl
+npm run publish:run -- 2026-08-22T11-17-34-089Z --approach rtl-control-1
+npm run experiment:run -- --arm rtl-control --reps 5 --publish
 ```
 
 Manifest: `artifacts/experiments/<arm>/manifest.json`

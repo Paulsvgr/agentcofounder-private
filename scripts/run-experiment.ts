@@ -29,10 +29,11 @@ interface ExperimentManifest {
   reps: ManifestRep[];
 }
 
-function parseArgs(argv: string[]): { arm: string; reps: number; provider: string } {
+function parseArgs(argv: string[]): { arm: string; reps: number; provider: string; publish: boolean } {
   let arm = "";
   let reps = 5;
   let provider = "zai";
+  let publish = process.env.HACKATHON_PUBLISH === "1";
   for (let index = 2; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === "--arm") {
@@ -44,11 +45,13 @@ function parseArgs(argv: string[]): { arm: string; reps: number; provider: strin
     } else if (arg === "--provider") {
       provider = argv[index + 1] ?? "zai";
       index += 1;
+    } else if (arg === "--publish") {
+      publish = true;
     }
   }
-  if (!arm) throw new Error("Usage: npm run experiment:run -- --arm <name> [--reps N] [--provider zai]");
+  if (!arm) throw new Error("Usage: npm run experiment:run -- --arm <name> [--reps N] [--provider zai] [--publish]");
   if (!Number.isFinite(reps) || reps < 1) throw new Error("--reps must be a positive integer");
-  return { arm, reps, provider };
+  return { arm, reps, provider, publish };
 }
 
 function gitValue(args: string[]): string | null {
@@ -138,7 +141,7 @@ async function loadManifest(armDir: string): Promise<ExperimentManifest | null> 
 }
 
 async function main(): Promise<void> {
-  const { arm, reps, provider } = parseArgs(process.argv);
+  const { arm, reps, provider, publish } = parseArgs(process.argv);
   assertCleanTree();
 
   const armDir = path.join(EXPERIMENTS_DIR, arm);
@@ -191,7 +194,8 @@ async function main(): Promise<void> {
       ...process.env,
       CHALLENGE_THINKING: process.env.CHALLENGE_THINKING ?? "off",
       RUN_APPROACH: label,
-      RUN_EXPERIMENT: arm,
+      RUN_EXPERIMENT: arm.startsWith("rtl-") ? (arm.startsWith("rtl-cleanup") ? "exp1-rtl-cleanup" : "exp1-rtl-control") : arm,
+      RUN_LINE: arm.startsWith("rtl-") ? "F" : process.env.RUN_LINE,
       RUN_INDEX: String(rep),
     };
 
@@ -239,6 +243,17 @@ async function main(): Promise<void> {
   }
 
   console.log(`\nExperiment arm '${arm}' complete. Manifest: ${path.join(armDir, "manifest.json")}`);
+
+  if (publish) {
+    console.log("\n==> Publishing exports to runs DB (HACKATHON_PUBLISH / --publish)");
+    execFileSync("bash", [`${REPOSITORY_ROOT}/scripts/publish-experiment-runs.sh`, arm, "--seed"], {
+      cwd: REPOSITORY_ROOT,
+      stdio: "inherit",
+      env: process.env,
+    });
+  } else {
+    console.log("\nTip: run ./scripts/publish-experiment-runs.sh", arm, "--seed  (or pass --publish on experiment:run)");
+  }
 }
 
 await main();

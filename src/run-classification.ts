@@ -5,6 +5,7 @@ export const RUN_LINES = [
   "C",
   "C-prime",
   "D",
+  "F",
   "unknown",
 ] as const;
 
@@ -19,6 +20,8 @@ export const RUN_EXPERIMENTS = [
   "autoverify-owned",
   "autoverify-gated",
   "prime-comparison",
+  "exp1-rtl-control",
+  "exp1-rtl-cleanup",
   "legacy",
   "legacy-smoke",
   "unknown",
@@ -80,6 +83,16 @@ const APPROACH_MAP: Record<string, ApproachMapping> = {
   "run-d / D": { line: "D", experiment: "legacy", run_index: 1 },
   "run-d": { line: "D", experiment: "legacy", run_index: 1 },
   base: { line: "A", experiment: "baseline", run_index: null },
+  "rtl-control-1": { line: "F", experiment: "exp1-rtl-control", run_index: 1 },
+  "rtl-control-2": { line: "F", experiment: "exp1-rtl-control", run_index: 2 },
+  "rtl-control-3": { line: "F", experiment: "exp1-rtl-control", run_index: 3 },
+  "rtl-control-4": { line: "F", experiment: "exp1-rtl-control", run_index: 4 },
+  "rtl-control-5": { line: "F", experiment: "exp1-rtl-control", run_index: 5 },
+  "rtl-cleanup-1": { line: "F", experiment: "exp1-rtl-cleanup", run_index: 1 },
+  "rtl-cleanup-2": { line: "F", experiment: "exp1-rtl-cleanup", run_index: 2 },
+  "rtl-cleanup-3": { line: "F", experiment: "exp1-rtl-cleanup", run_index: 3 },
+  "rtl-cleanup-4": { line: "F", experiment: "exp1-rtl-cleanup", run_index: 4 },
+  "rtl-cleanup-5": { line: "F", experiment: "exp1-rtl-cleanup", run_index: 5 },
 };
 
 function parseRunIndex(approach: string): number | null {
@@ -115,6 +128,9 @@ function inferLineFromApproach(approach: string): RunLine {
   if (approach === "run-d" || approach.startsWith("run-d")) {
     return "D";
   }
+  if (approach.startsWith("rtl-")) {
+    return "F";
+  }
   return "unknown";
 }
 
@@ -139,6 +155,12 @@ function inferExperimentFromApproach(approach: string): RunExperiment | null {
   }
   if (approach.startsWith("A-baseline") || approach.startsWith("A-raw")) {
     return "baseline";
+  }
+  if (approach.startsWith("rtl-control")) {
+    return "exp1-rtl-control";
+  }
+  if (approach.startsWith("rtl-cleanup")) {
+    return "exp1-rtl-cleanup";
   }
   if (approach === "base") {
     return "baseline";
