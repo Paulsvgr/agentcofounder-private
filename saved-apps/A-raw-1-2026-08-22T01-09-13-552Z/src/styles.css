@@ -1,0 +1,265 @@
+:root {
+  color: #172033;
+  background: #f4f6fb;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.app {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: clamp(1rem, 4vw, 2.5rem);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.app-header h1 {
+  margin: 0 0 0.25rem;
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  letter-spacing: -0.03em;
+}
+
+.summary {
+  margin: 0;
+  color: #566178;
+  font-size: 1rem;
+}
+
+.error-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: #fde8e8;
+  border: 1px solid #f5b8b8;
+  border-radius: 0.5rem;
+  color: #7a1a1a;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+}
+
+button {
+  cursor: pointer;
+  padding: 0.5rem 0.9rem;
+  border-radius: 0.4rem;
+  border: 1px solid #c3ccdf;
+  background: #fff;
+  color: inherit;
+}
+
+button.primary {
+  background: #3659c9;
+  color: #fff;
+  border-color: #3659c9;
+  font-weight: 600;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.filter-group {
+  display: flex;
+  gap: 1rem;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.filter-group label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.95rem;
+}
+
+.book-form {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem 1.25rem;
+  background: #fff;
+  border: 1px solid #dce2ee;
+  border-radius: 0.75rem;
+  box-shadow: 0 12px 30px rgb(25 38 68 / 6%);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.field label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.field input,
+.field select {
+  padding: 0.5rem 0.6rem;
+  border: 1px solid #c3ccdf;
+  border-radius: 0.4rem;
+}
+
+.field-error {
+  color: #7a1a1a;
+  font-size: 0.8rem;
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.book-list-section {
+  flex: 1;
+}
+
+.book-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.book-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: #fff;
+  border: 1px solid #dce2ee;
+  border-radius: 0.75rem;
+  box-shadow: 0 8px 20px rgb(25 38 68 / 5%);
+}
+
+.book-row.is-lent {
+  border-color: #f0c987;
+  background: #fffaf0;
+}
+
+.book-main h3 {
+  margin: 0 0 0.15rem;
+  font-size: 1.1rem;
+}
+
+.book-author {
+  margin: 0 0 0.4rem;
+  color: #566178;
+  font-size: 0.9rem;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  background: #e8eefc;
+  color: #3659c9;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.book-status {
+  margin: 0.5rem 0 0;
+  font-size: 0.9rem;
+}
+
+.book-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+.lend-form {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.lend-form input {
+  padding: 0.4rem 0.55rem;
+  border: 1px solid #c3ccdf;
+  border-radius: 0.4rem;
+}
+
+.row-actions {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.confirm-hint {
+  font-size: 0.85rem;
+  color: #7a1a1a;
+}
+
+.empty {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: #566178;
+  background: #fff;
+  border: 1px dashed #c3ccdf;
+  border-radius: 0.75rem;
+}
+
+.app-footer {
+  color: #8a93a4;
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+@media (max-width: 540px) {
+  .book-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .book-actions {
+    align-items: stretch;
+  }
+  .lend-form {
+    flex-direction: row;
+  }
+}

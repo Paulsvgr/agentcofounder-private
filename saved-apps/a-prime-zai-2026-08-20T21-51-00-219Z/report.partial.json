@@ -1,0 +1,77 @@
+{
+  "status": "success",
+  "app_url": "http://localhost:3000",
+  "start_command": "npm run dev",
+  "summary": "A single-user book shelf tracker. Add books (title, author, kind), lend them out by noting a borrower's name, mark them returned, edit or delete entries, see a count of books currently lent out, and filter to just the books that are out. Data persists in localStorage.",
+  "implemented_features": [
+    "Add a book with title, author, and category/kind",
+    "View all books in one list",
+    "Lend a book out by recording the borrower's name",
+    "Mark a lent book as returned",
+    "See how many books are currently lent out",
+    "Filter the list to only books currently out with someone",
+    "Edit an existing book's title, author, and category",
+    "Delete a book added by mistake",
+    "Persist the full book list across a browser refresh via localStorage",
+    "Empty-state messaging, input validation, and malformed-data recovery"
+  ],
+  "assumptions": [
+    "The idea says 'roughly what kind of book it is, like a novel or a cookbook or a reference thing.' Since the user wants rough kinds and examples were given, I implemented a fixed set of common categories presented as a dropdown (Novel, Cookbook, Reference, Non-fiction, Biography, Poetry, Children's, Other) rather than free text, to keep entries consistent for filtering; 'Other' covers anything not listed.",
+    "The idea implies filtering to 'the ones that are currently out with someone' and seeing 'how many are lent out right now,' so those are the only filters and derived value implemented. No search-by-title or sort was added since it is not implied.",
+    "It is 'just me using it on my own computer,' so data is stored locally in the browser (localStorage) with no backend or login, and a repository boundary isolates persistence so another store could replace it without touching the UI.",
+    "Borrower name is free text (no contact book of people) since the idea only asks to 'note down their name.'",
+    "Editing a book preserves its current lent/returned state, since fixing a mistaken title or author should not silently change who currently holds it."
+  ],
+  "tests_run": [
+    {
+      "command": "npm test",
+      "journey": "Add a book (title, author, kind) and see it appear in the list with the tracked-count updated",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Adding a book without a required title or author is rejected with a validation message",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Lend a book out by entering a borrower's name, see the 'Out with' badge and lent-out count rise, then mark it returned to clear the state and drop the count",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Filter the collection to show only books currently out with someone",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Edit an existing book's title/author/kind and see the updated details",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Delete a book added by mistake and confirm it is removed with an empty state",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Books persist across a simulated refresh (re-render reading from the same repository)",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Empty-state messaging and category selection are present on first open",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Domain logic: creating, lending, returning, counting, filtering, input validation, and sanitizing malformed persisted data",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Repository round-trips books through storage and recovers from empty or corrupt persisted data",
+      "result": "passed"
+    }
+  ]
+}

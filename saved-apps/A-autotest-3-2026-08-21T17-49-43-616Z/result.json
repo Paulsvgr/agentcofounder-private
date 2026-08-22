@@ -1,0 +1,408 @@
+{
+  "status": "success",
+  "app_url": "http://localhost:3000",
+  "start_command": "npm --prefix 'output/app' run dev",
+  "summary": "A simple single-user home bookshelf app: add books (title, author, category), see everything in one sorted list, lend a book by noting who borrowed it, mark it returned, filter to just the books currently out, see how many are lent out, and edit or remove books added by mistake. All data persists in the browser via localStorage and survives a refresh.",
+  "implemented_features": [
+    "Add a book with title, author, and category (Novel, Cookbook, Reference, Biography, Poetry, Other)",
+    "List all books sorted alphabetically by title",
+    "Lend a book out by recording the borrower's name",
+    "Mark a lent book as returned (clears the borrower)",
+    "Filter the list to show only books currently lent out, or all books",
+    "See a count of how many books are lent out right now",
+    "Edit an existing book's title, author, or category",
+    "Delete a book (with confirmation, cancellable)",
+    "Validation for empty title/author/borrower with accessible error messages",
+    "Empty state when the list (or filtered list) has no books",
+    "Persistence across page refresh via localStorage, with malformed stored data ignored"
+  ],
+  "assumptions": [
+    "The idea says 'roughly what kind of book' without enumerating categories; I picked a fixed, small set (Novel, Cookbook, Reference, Biography, Poetry, Other) covering the examples given plus an 'Other' fallback so any book fits.",
+    "It is a single user on one computer, so no login or multi-user support is needed; data is stored locally in the browser via localStorage.",
+    "The idea implies tracking who borrowed a book and clearing it on return; lending is done from the book row, and returning clears the borrower in one step. Re-lending updates the borrower name.",
+    "Editing a book covers the same fields used when adding (title, author, category); lending state (borrower) is managed separately via lend/return to keep the two concerns distinct.",
+    "Deleting is destructive, so a confirmation step was added even though the idea only says 'take it off the list', to prevent accidental loss via repeated/mistaken actions.",
+    "Books are sorted alphabetically by title so 'everything in one list' is consistently ordered; the idea does not specify an order.",
+    "No backend or external API is required; the repository boundary (LocalBookRepository / MemoryBookRepository behind a Bookshelf service) keeps persistence swappable without rewriting the UI."
+  ],
+  "tests_run": [
+    {
+      "command": "npm test",
+      "journey": "Add a book and see it appear in the list with lent-out count at zero",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Adding a book is blocked when title or author is empty, showing validation errors",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Lend a book to a named borrower, filter to lent-out, return it, and see it back on the shelf",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Lending is blocked when the borrower name is empty, and the action can be cancelled",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Edit an existing book's title and see the updated value in the list",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Delete a book after confirming the removal",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Cancel deleting a book so it stays on the shelf",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Books persist across a page refresh (re-mount)",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Books are listed sorted alphabetically by title",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Domain logic adds, edits, lends, returns, deletes and counts books; ignores invalid ids and duplicate removals",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Repository skips malformed persisted entries on load and persists/reloads books across instances",
+      "result": "passed"
+    }
+  ],
+  "harness_checks": [
+    {
+      "command": "output/app/node_modules/.bin/vitest run --reporter=json --outputFile=artifacts/runs/2026-08-21T17-49-43-616Z/app-test-results.json --passWithNoTests=false",
+      "journey": "The generated app's Vitest report contained at least one completed test and no failed, skipped, or todo tests",
+      "result": "passed"
+    },
+    {
+      "command": "npm run build",
+      "journey": "The generated app completed a production build",
+      "result": "passed"
+    },
+    {
+      "command": "npm run dev",
+      "journey": "The generated app started its own HTTP server on port 3000 and shut down cleanly",
+      "result": "passed"
+    }
+  ],
+  "model_calls": 26,
+  "input_tokens": 26369,
+  "output_tokens": 15882,
+  "cache_read_tokens": 389248,
+  "cache_write_tokens": 0,
+  "total_tokens": 431499,
+  "reasoning_tokens": 0,
+  "cost_total": 0,
+  "call_log": [
+    {
+      "index": 1,
+      "model": "zai/glm-5.2",
+      "input_tokens": 81,
+      "output_tokens": 64,
+      "cache_read_tokens": 2304,
+      "cache_write_tokens": 0,
+      "total_tokens": 2449,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 2,
+      "model": "zai/glm-5.2",
+      "input_tokens": 1417,
+      "output_tokens": 78,
+      "cache_read_tokens": 2304,
+      "cache_write_tokens": 0,
+      "total_tokens": 3799,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 3,
+      "model": "zai/glm-5.2",
+      "input_tokens": 1014,
+      "output_tokens": 42,
+      "cache_read_tokens": 3584,
+      "cache_write_tokens": 0,
+      "total_tokens": 4640,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 4,
+      "model": "zai/glm-5.2",
+      "input_tokens": 769,
+      "output_tokens": 1198,
+      "cache_read_tokens": 4480,
+      "cache_write_tokens": 0,
+      "total_tokens": 6447,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 5,
+      "model": "zai/glm-5.2",
+      "input_tokens": 1240,
+      "output_tokens": 1376,
+      "cache_read_tokens": 5248,
+      "cache_write_tokens": 0,
+      "total_tokens": 7864,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 6,
+      "model": "zai/glm-5.2",
+      "input_tokens": 1499,
+      "output_tokens": 1727,
+      "cache_read_tokens": 6400,
+      "cache_write_tokens": 0,
+      "total_tokens": 9626,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 7,
+      "model": "zai/glm-5.2",
+      "input_tokens": 1851,
+      "output_tokens": 1419,
+      "cache_read_tokens": 7808,
+      "cache_write_tokens": 0,
+      "total_tokens": 11078,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 8,
+      "model": "zai/glm-5.2",
+      "input_tokens": 1623,
+      "output_tokens": 2252,
+      "cache_read_tokens": 9472,
+      "cache_write_tokens": 0,
+      "total_tokens": 13347,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 9,
+      "model": "zai/glm-5.2",
+      "input_tokens": 2542,
+      "output_tokens": 119,
+      "cache_read_tokens": 11008,
+      "cache_write_tokens": 0,
+      "total_tokens": 13669,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 10,
+      "model": "zai/glm-5.2",
+      "input_tokens": 248,
+      "output_tokens": 57,
+      "cache_read_tokens": 13440,
+      "cache_write_tokens": 0,
+      "total_tokens": 13745,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 11,
+      "model": "zai/glm-5.2",
+      "input_tokens": 196,
+      "output_tokens": 2119,
+      "cache_read_tokens": 13568,
+      "cache_write_tokens": 0,
+      "total_tokens": 15883,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 12,
+      "model": "zai/glm-5.2",
+      "input_tokens": 2620,
+      "output_tokens": 397,
+      "cache_read_tokens": 13568,
+      "cache_write_tokens": 0,
+      "total_tokens": 16585,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 13,
+      "model": "zai/glm-5.2",
+      "input_tokens": 2027,
+      "output_tokens": 396,
+      "cache_read_tokens": 16128,
+      "cache_write_tokens": 0,
+      "total_tokens": 18551,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 14,
+      "model": "zai/glm-5.2",
+      "input_tokens": 541,
+      "output_tokens": 164,
+      "cache_read_tokens": 18048,
+      "cache_write_tokens": 0,
+      "total_tokens": 18753,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 15,
+      "model": "zai/glm-5.2",
+      "input_tokens": 360,
+      "output_tokens": 46,
+      "cache_read_tokens": 18432,
+      "cache_write_tokens": 0,
+      "total_tokens": 18838,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 16,
+      "model": "zai/glm-5.2",
+      "input_tokens": 1019,
+      "output_tokens": 115,
+      "cache_read_tokens": 18688,
+      "cache_write_tokens": 0,
+      "total_tokens": 19822,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 17,
+      "model": "zai/glm-5.2",
+      "input_tokens": 285,
+      "output_tokens": 39,
+      "cache_read_tokens": 19584,
+      "cache_write_tokens": 0,
+      "total_tokens": 19908,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 18,
+      "model": "zai/glm-5.2",
+      "input_tokens": 474,
+      "output_tokens": 63,
+      "cache_read_tokens": 19712,
+      "cache_write_tokens": 0,
+      "total_tokens": 20249,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 19,
+      "model": "zai/glm-5.2",
+      "input_tokens": 1277,
+      "output_tokens": 575,
+      "cache_read_tokens": 20096,
+      "cache_write_tokens": 0,
+      "total_tokens": 21948,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 20,
+      "model": "zai/glm-5.2",
+      "input_tokens": 942,
+      "output_tokens": 875,
+      "cache_read_tokens": 21248,
+      "cache_write_tokens": 0,
+      "total_tokens": 23065,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 21,
+      "model": "zai/glm-5.2",
+      "input_tokens": 1274,
+      "output_tokens": 1050,
+      "cache_read_tokens": 22016,
+      "cache_write_tokens": 0,
+      "total_tokens": 24340,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 22,
+      "model": "zai/glm-5.2",
+      "input_tokens": 1319,
+      "output_tokens": 124,
+      "cache_read_tokens": 23040,
+      "cache_write_tokens": 0,
+      "total_tokens": 24483,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 23,
+      "model": "zai/glm-5.2",
+      "input_tokens": 187,
+      "output_tokens": 30,
+      "cache_read_tokens": 24320,
+      "cache_write_tokens": 0,
+      "total_tokens": 24537,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 24,
+      "model": "zai/glm-5.2",
+      "input_tokens": 235,
+      "output_tokens": 1044,
+      "cache_read_tokens": 24448,
+      "cache_write_tokens": 0,
+      "total_tokens": 25727,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 25,
+      "model": "zai/glm-5.2",
+      "input_tokens": 1168,
+      "output_tokens": 59,
+      "cache_read_tokens": 24576,
+      "cache_write_tokens": 0,
+      "total_tokens": 25803,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 26,
+      "model": "zai/glm-5.2",
+      "input_tokens": 161,
+      "output_tokens": 454,
+      "cache_read_tokens": 25728,
+      "cache_write_tokens": 0,
+      "total_tokens": 26343,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    }
+  ],
+  "pi_exit_code": 0,
+  "telemetry_source": "pi-json-event-stream",
+  "port_reclamation": {
+    "preexisting_listener": false,
+    "listener_after_pi": false,
+    "attempted": false,
+    "reclaimed": false,
+    "process_ids": [],
+    "diagnostic": "Port 3000 remained free after Pi"
+  }
+}

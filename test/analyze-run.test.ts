@@ -68,6 +68,13 @@ describe("bash test output parsing", () => {
     expect(bashTestOutputIndicatesSuccess(output)).toBe(true);
   });
 
+  it("does not treat partial pass counts as all-green", () => {
+    const output = `
+      Tests  27 passed (33)
+`;
+    expect(bashTestOutputIndicatesSuccess(output)).toBe(false);
+  });
+
   it("strips ANSI before matching", () => {
     const output = "\u001b[31m Test Files  1 failed (1)\u001b[0m";
     expect(bashTestOutputIndicatesFailure(output)).toBe(true);

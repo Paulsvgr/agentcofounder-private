@@ -1,0 +1,85 @@
+{
+  "status": "success",
+  "app_url": "http://localhost:3000",
+  "start_command": "npm run dev",
+  "summary": "A simple single-user home bookshelf app: add books (title, author, category), see everything in one sorted list, lend a book by noting who borrowed it, mark it returned, filter to just the books currently out, see how many are lent out, and edit or remove books added by mistake. All data persists in the browser via localStorage and survives a refresh.",
+  "implemented_features": [
+    "Add a book with title, author, and category (Novel, Cookbook, Reference, Biography, Poetry, Other)",
+    "List all books sorted alphabetically by title",
+    "Lend a book out by recording the borrower's name",
+    "Mark a lent book as returned (clears the borrower)",
+    "Filter the list to show only books currently lent out, or all books",
+    "See a count of how many books are lent out right now",
+    "Edit an existing book's title, author, or category",
+    "Delete a book (with confirmation, cancellable)",
+    "Validation for empty title/author/borrower with accessible error messages",
+    "Empty state when the list (or filtered list) has no books",
+    "Persistence across page refresh via localStorage, with malformed stored data ignored"
+  ],
+  "assumptions": [
+    "The idea says 'roughly what kind of book' without enumerating categories; I picked a fixed, small set (Novel, Cookbook, Reference, Biography, Poetry, Other) covering the examples given plus an 'Other' fallback so any book fits.",
+    "It is a single user on one computer, so no login or multi-user support is needed; data is stored locally in the browser via localStorage.",
+    "The idea implies tracking who borrowed a book and clearing it on return; lending is done from the book row, and returning clears the borrower in one step. Re-lending updates the borrower name.",
+    "Editing a book covers the same fields used when adding (title, author, category); lending state (borrower) is managed separately via lend/return to keep the two concerns distinct.",
+    "Deleting is destructive, so a confirmation step was added even though the idea only says 'take it off the list', to prevent accidental loss via repeated/mistaken actions.",
+    "Books are sorted alphabetically by title so 'everything in one list' is consistently ordered; the idea does not specify an order.",
+    "No backend or external API is required; the repository boundary (LocalBookRepository / MemoryBookRepository behind a Bookshelf service) keeps persistence swappable without rewriting the UI."
+  ],
+  "tests_run": [
+    {
+      "command": "npm test",
+      "journey": "Add a book and see it appear in the list with lent-out count at zero",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Adding a book is blocked when title or author is empty, showing validation errors",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Lend a book to a named borrower, filter to lent-out, return it, and see it back on the shelf",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Lending is blocked when the borrower name is empty, and the action can be cancelled",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Edit an existing book's title and see the updated value in the list",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Delete a book after confirming the removal",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Cancel deleting a book so it stays on the shelf",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Books persist across a page refresh (re-mount)",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Books are listed sorted alphabetically by title",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Domain logic adds, edits, lends, returns, deletes and counts books; ignores invalid ids and duplicate removals",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Repository skips malformed persisted entries on load and persists/reloads books across instances",
+      "result": "passed"
+    }
+  ]
+}

@@ -1,6 +1,11 @@
 import { readdir, readFile, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  deriveActionFlow,
+  loadActionFlowOverrides,
+  type ActionSegment,
+} from "./action-flow.js";
 
 const SOURCE_DIRECTORY = path.dirname(fileURLToPath(import.meta.url));
 const REPOSITORY_ROOT = path.resolve(SOURCE_DIRECTORY, "..");
@@ -21,6 +26,8 @@ export interface ToolTag {
   name: string;
   detail: string;
   is_error: boolean;
+  /** Set for bash npm-test commands when stdout shows an all-green Vitest summary. */
+  test_passed?: boolean;
 }
 
 export interface CallLedgerEntry {
@@ -66,8 +73,20 @@ export interface RunAnalysis {
   weighted_total: number;
   time_to_first_failing_test_s: number | null;
   time_to_final_green_s: number | null;
+  first_test_failure_s: number | null;
+  first_green_s: number | null;
+  last_green_s: number | null;
+  green_to_exit_s: number | null;
   npm_test_command_count: number;
+  manual_test_calls: number;
+  manual_build_calls: number;
+  test_reinspection_calls: number;
+  post_green_verification_calls: number;
   auto_test_trigger_hits: number;
+  auto_test_candidate_events: number;
+  auto_test_actual_runs: number;
+  action_flow: ActionSegment[];
+  action_flow_source: "derived" | "derived+override";
   reconciliation: {
     matched: boolean;
     warnings: string[];
@@ -140,7 +159,12 @@ function truncateDetail(value: string, max = 72): string {
 }
 
 function toolDetail(name: string, args: Record<string, unknown>): string {
-  if (typeof args.command === "string") return truncateDetail(args.command);
+  if (typeof args.command === "string") {
+    const compact = args.command.replace(/\s+/g, " ").trim();
+    // Keep full bash commands so chained `cd … && npm run build` survives classification.
+    if (name === "bash") return compact;
+    return truncateDetail(compact);
+  }
   if (typeof args.path === "string") return truncateDetail(args.path);
   return truncateDetail(JSON.stringify(args));
 }
@@ -157,26 +181,30 @@ function extractToolTags(content: unknown): ToolTag[] {
   return tags;
 }
 
-function isNpmTestCommand(detail: string): boolean {
+export function isNpmTestCommand(detail: string): boolean {
   if (/\bnpm\s+(?:run\s+)?test\b/i.test(detail)) return true;
   // Match `vitest` as a command, not filenames like vitest.config.ts.
   return /(?:^|[;&|]\s*|\/)\.?\/?vitest(?:\s|$)/i.test(detail) || /\bnpx\s+vitest\b/i.test(detail);
 }
 
-function isTestFilePath(detail: string): boolean {
+export function isTestFilePath(detail: string): boolean {
   return /\.test\.[tj]sx?\b/.test(detail) || /[/\\]test[/\\]setup\.[tj]sx?\b/.test(detail);
 }
 
-function isDevServerCommand(detail: string): boolean {
+export function isDevServerCommand(detail: string): boolean {
   return /\bnpm\s+run\s+dev\b/i.test(detail) || /(?:^|[;&|]\s*)vite(?:\s|$)/i.test(detail);
 }
 
-function isBuildCommand(detail: string): boolean {
+export function isBuildCommand(detail: string): boolean {
   return /\bnpm\s+run\s+build\b/i.test(detail);
 }
 
-function isReportWrite(detail: string): boolean {
+export function isReportWrite(detail: string): boolean {
   return /report\.partial\.json\b/.test(detail);
+}
+
+function bashCommandHasBuild(detail: string): boolean {
+  return isBuildCommand(detail);
 }
 
 export function stripAnsi(text: string): string {
@@ -199,8 +227,10 @@ export function bashTestOutputIndicatesSuccess(output: string): boolean {
   const text = stripAnsi(output);
   if (bashTestOutputIndicatesFailure(text)) return false;
   for (const line of text.split("\n")) {
-    if (/Test Files\s+\d+\s+passed\s*\(\d+\)/i.test(line)) return true;
-    if (/^\s*Tests\s+\d+\s+passed\s*\(\d+\)/i.test(line)) return true;
+    const filesMatch = line.match(/Test Files\s+(\d+)\s+passed\s*\((\d+)\)/i);
+    if (filesMatch && filesMatch[1] === filesMatch[2]) return true;
+    const testsMatch = line.match(/^\s*Tests\s+(\d+)\s+passed\s*\((\d+)\)/i);
+    if (testsMatch && testsMatch[1] === testsMatch[2]) return true;
   }
   return false;
 }
@@ -400,13 +430,25 @@ export async function analyzeRun(runId: string): Promise<RunAnalysis> {
   let cumulative = 0;
   let previousTime = start;
   let timeToFirstFailingTest: number | null = null;
-  let timeToFinalGreen: number | null = null;
+  let firstGreenAt: number | null = null;
   let lastGreenAt: number | null = null;
   let npmTestCommandCount = 0;
+  let manualBuildCalls = 0;
   let autoTestTriggerHits = 0;
+  let autoTestActualRuns = 0;
+  let testReinspectionCalls = 0;
+  let postGreenVerificationCalls = 0;
 
   // Flat tool sequence across the run for trigger analysis.
   const flatTools: Array<{ callIndex: number; name: string; detail: string }> = [];
+
+  for (const row of messages) {
+    const message = row.message;
+    if (!message || message.role !== "toolResult") continue;
+    if (message.toolName !== "write" && message.toolName !== "edit") continue;
+    const text = extractToolResultText(message);
+    if (text.includes("[auto-test]")) autoTestActualRuns += 1;
+  }
 
   for (const row of assistantMessages) {
     const message = row.message!;
@@ -445,7 +487,11 @@ export async function analyzeRun(runId: string): Promise<RunAnalysis> {
         tag.is_error = failed;
         if (tag.name === "bash" && isNpmTestCommand(tag.detail)) {
           if (failed) turnTestFailed = true;
-          if (npmTestToolPassed(exitError, output)) turnTestPassed = true;
+          const passed = npmTestToolPassed(exitError, output);
+          if (passed) {
+            tag.test_passed = true;
+            turnTestPassed = true;
+          }
         }
       }
     }
@@ -457,12 +503,19 @@ export async function analyzeRun(runId: string): Promise<RunAnalysis> {
     }
 
     const hasTest = tools.some((tool) => tool.name === "bash" && isNpmTestCommand(tool.detail));
+    const hasBuild = tools.some((tool) => tool.name === "bash" && bashCommandHasBuild(tool.detail));
+
     if (hasTest) {
       npmTestCommandCount += 1;
       const seconds = (at.getTime() - start.getTime()) / 1000;
       if (turnTestFailed && timeToFirstFailingTest === null) timeToFirstFailingTest = seconds;
-      if (turnTestPassed) lastGreenAt = seconds;
+      if (turnTestPassed) {
+        if (firstGreenAt === null) firstGreenAt = seconds;
+        lastGreenAt = seconds;
+      }
     }
+
+    if (hasBuild) manualBuildCalls += 1;
 
     if (provider === null && typeof message.provider === "string") provider = message.provider;
     if (model === null && typeof message.model === "string") model = message.model;
@@ -487,7 +540,23 @@ export async function analyzeRun(runId: string): Promise<RunAnalysis> {
     previousTime = at;
   }
 
-  timeToFinalGreen = lastGreenAt;
+  for (const call of calls) {
+    const hasTest = call.tools.some((tool) => tool.name === "bash" && isNpmTestCommand(tool.detail));
+    const hasBuild = call.tools.some((tool) => tool.name === "bash" && bashCommandHasBuild(tool.detail));
+
+    if (
+      hasTest &&
+      timeToFirstFailingTest !== null &&
+      call.seconds_since_start > timeToFirstFailingTest &&
+      (firstGreenAt === null || call.seconds_since_start < firstGreenAt)
+    ) {
+      testReinspectionCalls += 1;
+    }
+
+    if (firstGreenAt !== null && call.seconds_since_start > firstGreenAt) {
+      if (hasTest || hasBuild) postGreenVerificationCalls += 1;
+    }
+  }
 
   for (let i = 0; i < flatTools.length; i += 1) {
     const current = flatTools[i]!;
@@ -563,6 +632,12 @@ export async function analyzeRun(runId: string): Promise<RunAnalysis> {
     }))
     .sort((a, b) => b.weighted_cost - a.weighted_cost);
 
+  const overrides = await loadActionFlowOverrides(runId);
+  const { segments: actionFlow, source: actionFlowSource } = deriveActionFlow(calls, overrides);
+
+  const greenToExit =
+    firstGreenAt !== null ? Math.max(0, wallSeconds - firstGreenAt) : null;
+
   return {
     run_id: runId,
     provider,
@@ -579,9 +654,21 @@ export async function analyzeRun(runId: string): Promise<RunAnalysis> {
     reasoning_tokens: totals.reasoning,
     weighted_total: cumulative,
     time_to_first_failing_test_s: timeToFirstFailingTest,
-    time_to_final_green_s: timeToFinalGreen,
+    time_to_final_green_s: lastGreenAt,
+    first_test_failure_s: timeToFirstFailingTest,
+    first_green_s: firstGreenAt,
+    last_green_s: lastGreenAt,
+    green_to_exit_s: greenToExit,
     npm_test_command_count: npmTestCommandCount,
+    manual_test_calls: npmTestCommandCount,
+    manual_build_calls: manualBuildCalls,
+    test_reinspection_calls: testReinspectionCalls,
+    post_green_verification_calls: postGreenVerificationCalls,
     auto_test_trigger_hits: autoTestTriggerHits,
+    auto_test_candidate_events: autoTestTriggerHits,
+    auto_test_actual_runs: autoTestActualRuns,
+    action_flow: actionFlow,
+    action_flow_source: actionFlowSource,
     reconciliation: {
       matched: warnings.length === 0 && result.path !== null,
       warnings,
@@ -601,8 +688,14 @@ export function formatAnalysisTable(analysis: RunAnalysis): string {
     `calls=${analysis.model_calls} wall=${analysis.wall_seconds.toFixed(0)}s s/call=${analysis.seconds_per_call?.toFixed(1) ?? "n/a"} weighted=${analysis.weighted_total.toFixed(0)}`,
   );
   lines.push(
-    `npm_test_cmds=${analysis.npm_test_command_count} auto_test_trigger_hits=${analysis.auto_test_trigger_hits} first_fail=${analysis.time_to_first_failing_test_s?.toFixed(0) ?? "n/a"}s final_green=${analysis.time_to_final_green_s?.toFixed(0) ?? "n/a"}s`,
+    `npm_test_cmds=${analysis.manual_test_calls} auto_test_candidates=${analysis.auto_test_candidate_events} auto_test_runs=${analysis.auto_test_actual_runs} first_fail=${analysis.first_test_failure_s?.toFixed(0) ?? "n/a"}s first_green=${analysis.first_green_s?.toFixed(0) ?? "n/a"}s green_to_exit=${analysis.green_to_exit_s?.toFixed(0) ?? "n/a"}s`,
   );
+  lines.push(`action_flow_source=${analysis.action_flow_source}`);
+  for (const segment of analysis.action_flow) {
+    lines.push(
+      `  ${segment.stage.padEnd(14)} calls=${String(segment.call_count).padStart(2)} wall=${segment.wall_seconds.toFixed(0).padStart(4)}s raw=${segment.raw_tokens.toFixed(0).padStart(7)} wt=${segment.weighted_tokens.toFixed(0).padStart(7)}${segment.note ? `  (${segment.note})` : ""}`,
+    );
+  }
   if (analysis.reconciliation.warnings.length > 0) {
     lines.push("reconciliation warnings:");
     for (const warning of analysis.reconciliation.warnings) lines.push(`  - ${warning}`);

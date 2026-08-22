@@ -1,0 +1,313 @@
+{
+  "status": "partial",
+  "app_url": "http://localhost:3000",
+  "start_command": "npm run dev",
+  "summary": "A simple personal library loan tracker to record books, lend them to someone, mark them returned, and filter to only lent-out items. Data persists locally in the browser.",
+  "implemented_features": [
+    "Add books with title, author, and kind (Novel/Cookbook/Reference/Other)",
+    "List all books with current loan status (Available vs Lent to <name>)",
+    "Lend out an available book by entering borrower name",
+    "Mark a lent book as returned (clears borrower)",
+    "Filter list to show only books currently lent out",
+    "Derived summary counts: total books and number lent out",
+    "Edit a book's title/author/kind",
+    "Delete a book with confirmation",
+    "LocalStorage persistence across page refresh with malformed-data recovery"
+  ],
+  "assumptions": [
+    "Book kinds are a small fixed set (Novel, Cookbook, Reference, Other) to match the examples and keep entry consistent.",
+    "No due dates/history are tracked; returning a book simply clears the borrower name.",
+    "Single-user, local-only usage: persistence uses browser localStorage and the app remains usable even if storage fails (in-memory only)."
+  ],
+  "tests_run": [],
+  "harness_checks": [
+    {
+      "command": "output/app/node_modules/.bin/vitest run --reporter=json --outputFile=artifacts/runs/2026-08-20T20-09-54-516Z/app-test-results.json --passWithNoTests=false",
+      "journey": "The generated app's Vitest report contained at least one completed test and no failed, skipped, or todo tests",
+      "result": "passed"
+    },
+    {
+      "command": "npm run build",
+      "journey": "The generated app completed a production build",
+      "result": "passed"
+    },
+    {
+      "command": "npm run dev",
+      "journey": "The generated app started its own HTTP server on port 3000 and shut down cleanly",
+      "result": "passed"
+    }
+  ],
+  "model_calls": 23,
+  "input_tokens": 64184,
+  "output_tokens": 9823,
+  "cache_read_tokens": 696192,
+  "cache_write_tokens": 0,
+  "total_tokens": 770199,
+  "reasoning_tokens": 0,
+  "cost_total": 0.37167759999999994,
+  "call_log": [
+    {
+      "index": 1,
+      "model": "openai/gpt-5.2",
+      "input_tokens": 2559,
+      "output_tokens": 63,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "total_tokens": 2622,
+      "reasoning_tokens": 0,
+      "cost_total": 0.0053602499999999996
+    },
+    {
+      "index": 2,
+      "model": "openai/gpt-5.2",
+      "input_tokens": 1161,
+      "output_tokens": 20,
+      "cache_read_tokens": 2432,
+      "cache_write_tokens": 0,
+      "total_tokens": 3613,
+      "reasoning_tokens": 0,
+      "cost_total": 0.00273735
+    },
+    {
+      "index": 3,
+      "model": "openai/gpt-5.2",
+      "input_tokens": 242,
+      "output_tokens": 20,
+      "cache_read_tokens": 3456,
+      "cache_write_tokens": 0,
+      "total_tokens": 3718,
+      "reasoning_tokens": 0,
+      "cost_total": 0.0013082999999999999
+    },
+    {
+      "index": 4,
+      "model": "openai/gpt-5.2",
+      "input_tokens": 240,
+      "output_tokens": 873,
+      "cache_read_tokens": 3584,
+      "cache_write_tokens": 0,
+      "total_tokens": 4697,
+      "reasoning_tokens": 0,
+      "cost_total": 0.0132692
+    },
+    {
+      "index": 5,
+      "model": "openai/gpt-5.2",
+      "input_tokens": 1003,
+      "output_tokens": 503,
+      "cache_read_tokens": 3712,
+      "cache_write_tokens": 0,
+      "total_tokens": 5218,
+      "reasoning_tokens": 0,
+      "cost_total": 0.00944685
+    },
+    {
+      "index": 6,
+      "model": "openai/gpt-5.2",
+      "input_tokens": 630,
+      "output_tokens": 3639,
+      "cache_read_tokens": 4608,
+      "cache_write_tokens": 0,
+      "total_tokens": 8877,
+      "reasoning_tokens": 0,
+      "cost_total": 0.052854899999999996
+    },
+    {
+      "index": 7,
+      "model": "openai/gpt-5.2",
+      "input_tokens": 3776,
+      "output_tokens": 1561,
+      "cache_read_tokens": 5120,
+      "cache_write_tokens": 0,
+      "total_tokens": 10457,
+      "reasoning_tokens": 0,
+      "cost_total": 0.029358
+    },
+    {
+      "index": 8,
+      "model": "openai/gpt-5.2",
+      "input_tokens": 1770,
+      "output_tokens": 990,
+      "cache_read_tokens": 8704,
+      "cache_write_tokens": 0,
+      "total_tokens": 11464,
+      "reasoning_tokens": 0,
+      "cost_total": 0.0184807
+    },
+    {
+      "index": 9,
+      "model": "openai/gpt-5.2",
+      "input_tokens": 1115,
+      "output_tokens": 24,
+      "cache_read_tokens": 10368,
+      "cache_write_tokens": 0,
+      "total_tokens": 11507,
+      "reasoning_tokens": 0,
+      "cost_total": 0.00410165
+    },
+    {
+      "index": 10,
+      "model": "openai/gpt-5.2",
+      "input_tokens": 13469,
+      "output_tokens": 124,
+      "cache_read_tokens": 11392,
+      "cache_write_tokens": 0,
+      "total_tokens": 24985,
+      "reasoning_tokens": 0,
+      "cost_total": 0.02730035
+    },
+    {
+      "index": 11,
+      "model": "openai/gpt-5.2",
+      "input_tokens": 302,
+      "output_tokens": 24,
+      "cache_read_tokens": 24704,
+      "cache_write_tokens": 0,
+      "total_tokens": 25030,
+      "reasoning_tokens": 0,
+      "cost_total": 0.0051877
+    },
+    {
+      "index": 12,
+      "model": "openai/gpt-5.2",
+      "input_tokens": 16268,
+      "output_tokens": 478,
+      "cache_read_tokens": 24832,
+      "cache_write_tokens": 0,
+      "total_tokens": 41578,
+      "reasoning_tokens": 0,
+      "cost_total": 0.039506599999999996
+    },
+    {
+      "index": 13,
+      "model": "openai/gpt-5.2",
+      "input_tokens": 639,
+      "output_tokens": 24,
+      "cache_read_tokens": 40960,
+      "cache_write_tokens": 0,
+      "total_tokens": 41623,
+      "reasoning_tokens": 0,
+      "cost_total": 0.00862225
+    },
+    {
+      "index": 14,
+      "model": "openai/gpt-5.2",
+      "input_tokens": 10142,
+      "output_tokens": 142,
+      "cache_read_tokens": 41472,
+      "cache_write_tokens": 0,
+      "total_tokens": 51756,
+      "reasoning_tokens": 0,
+      "cost_total": 0.0269941
+    },
+    {
+      "index": 15,
+      "model": "openai/gpt-5.2",
+      "input_tokens": 339,
+      "output_tokens": 21,
+      "cache_read_tokens": 51456,
+      "cache_write_tokens": 0,
+      "total_tokens": 51816,
+      "reasoning_tokens": 0,
+      "cost_total": 0.00989205
+    },
+    {
+      "index": 16,
+      "model": "openai/gpt-5.2",
+      "input_tokens": 1024,
+      "output_tokens": 240,
+      "cache_read_tokens": 51712,
+      "cache_write_tokens": 0,
+      "total_tokens": 52976,
+      "reasoning_tokens": 0,
+      "cost_total": 0.0142016
+    },
+    {
+      "index": 17,
+      "model": "openai/gpt-5.2",
+      "input_tokens": 389,
+      "output_tokens": 24,
+      "cache_read_tokens": 52608,
+      "cache_write_tokens": 0,
+      "total_tokens": 53021,
+      "reasoning_tokens": 0,
+      "cost_total": 0.01022315
+    },
+    {
+      "index": 18,
+      "model": "openai/gpt-5.2",
+      "input_tokens": 7357,
+      "output_tokens": 82,
+      "cache_read_tokens": 52864,
+      "cache_write_tokens": 0,
+      "total_tokens": 60303,
+      "reasoning_tokens": 0,
+      "cost_total": 0.023273949999999998
+    },
+    {
+      "index": 19,
+      "model": "openai/gpt-5.2",
+      "input_tokens": 179,
+      "output_tokens": 240,
+      "cache_read_tokens": 60160,
+      "cache_write_tokens": 0,
+      "total_tokens": 60579,
+      "reasoning_tokens": 0,
+      "cost_total": 0.014201249999999999
+    },
+    {
+      "index": 20,
+      "model": "openai/gpt-5.2",
+      "input_tokens": 440,
+      "output_tokens": 24,
+      "cache_read_tokens": 60160,
+      "cache_write_tokens": 0,
+      "total_tokens": 60624,
+      "reasoning_tokens": 0,
+      "cost_total": 0.011633999999999999
+    },
+    {
+      "index": 21,
+      "model": "openai/gpt-5.2",
+      "input_tokens": 326,
+      "output_tokens": 25,
+      "cache_read_tokens": 60416,
+      "cache_write_tokens": 0,
+      "total_tokens": 60767,
+      "reasoning_tokens": 0,
+      "cost_total": 0.0114933
+    },
+    {
+      "index": 22,
+      "model": "openai/gpt-5.2",
+      "input_tokens": 245,
+      "output_tokens": 435,
+      "cache_read_tokens": 60672,
+      "cache_write_tokens": 0,
+      "total_tokens": 61352,
+      "reasoning_tokens": 0,
+      "cost_total": 0.01713635
+    },
+    {
+      "index": 23,
+      "model": "openai/gpt-5.2",
+      "input_tokens": 569,
+      "output_tokens": 247,
+      "cache_read_tokens": 60800,
+      "cache_write_tokens": 0,
+      "total_tokens": 61616,
+      "reasoning_tokens": 0,
+      "cost_total": 0.01509375
+    }
+  ],
+  "pi_exit_code": 0,
+  "telemetry_source": "pi-json-event-stream",
+  "port_reclamation": {
+    "preexisting_listener": false,
+    "listener_after_pi": false,
+    "attempted": false,
+    "reclaimed": false,
+    "process_ids": [],
+    "diagnostic": "Port 3000 remained free after Pi"
+  }
+}

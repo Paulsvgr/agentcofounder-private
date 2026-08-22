@@ -1,0 +1,78 @@
+{
+  "status": "success",
+  "app_url": "http://localhost:3000",
+  "start_command": "npm run dev",
+  "summary": "A single-user home book shelf app: add books (title, author, kind), lend them out to named borrowers, mark them returned, edit or delete entries, see all books in one list, filter to only the ones currently out, and see how many are lent out. Data persists in the browser via localStorage.",
+  "implemented_features": [
+    "Add a book with title, author, and kind (novel/cookbook/reference/other)",
+    "List every book in one sorted list with empty state",
+    "Edit an existing book's details",
+    "Delete a book added by mistake",
+    "Lend a book out by noting a borrower name (repeated lending updates the name)",
+    "Mark a lent book as returned (clears the borrower)",
+    "Filter the list to only the books currently out with someone",
+    "See a live count of how many books are lent out right now",
+    "Persist all books across a page refresh via localStorage",
+    "Validate empty/blank input for titles, authors, and borrower names",
+    "Gracefully drop malformed persisted data instead of crashing"
+  ],
+  "assumptions": [
+    "The idea lists 'novel, cookbook, reference thing' as example kinds; I modeled categories as a fixed enum of novel/cookbook/reference/other so the data stays consistent and the filter remains meaningful, with 'other' as an escape hatch for anything else.",
+    "Single-user, own-computer use means no login, no sharing, and no backend are needed; data is stored locally in the browser via localStorage.",
+    "'Roughly what kind of book' implies a single category per book rather than free-form tags, so each book has one category selected from a short list.",
+    "Lending is the only mutable status; a book is either on the shelf or out with one named borrower, so return simply clears that name rather than tracking a history of loans.",
+    "The count of books lent out is the single derived value the idea asks for; no other derived metrics were implied."
+  ],
+  "tests_run": [
+    {
+      "command": "npm test",
+      "journey": "Add a book with title, author, and kind, see it listed, and confirm the lent-out count shows zero",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Prevent adding a book without a title and show a validation error",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Lend a book to a named borrower, see it marked as out, and see the lent-out count update",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Mark a lent book as returned and confirm the borrower is cleared",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Filter the shelf to show only the books currently out with someone",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Edit an existing book's title and see the updated details",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Delete a book added by mistake and confirm it leaves the list",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Books persist across a component reload that re-reads localStorage",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Domain logic trims inputs, lends and returns books, counts lent-out, and rejects blank fields",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Persistence round-trips books and drops malformed stored entries without crashing",
+      "result": "passed"
+    }
+  ]
+}

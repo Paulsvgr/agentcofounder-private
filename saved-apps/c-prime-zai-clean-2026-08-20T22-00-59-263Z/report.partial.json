@@ -1,0 +1,75 @@
+{
+  "status": "success",
+  "app_url": "http://localhost:3000",
+  "start_command": "npm run dev",
+  "summary": "A single-user home library app: add books (title, author, category), list all books, lend a book to a named borrower, mark it returned, edit or delete a book, filter to just the lent-out books, and see the current lent-out count. Data persists in localStorage.",
+  "implemented_features": [
+    "Add a book with title, author, and category (novel/cookbook/reference/other)",
+    "List all books sorted by title",
+    "Lend a book out (record borrower name + date)",
+    "Mark a lent book as returned",
+    "Edit an existing book",
+    "Delete a book",
+    "Filter the collection to just the books currently lent out",
+    "Display the count of books currently lent out",
+    "Persist all data across refresh via localStorage with malformed-data recovery"
+  ],
+  "assumptions": [
+    "Single-user, local-computer use: persistence uses browser localStorage rather than any backend, matching the idea's scope.",
+    "'Roughly what kind of book' is represented by a fixed set of categories (Novel, Cookbook, Reference, Other) selectable from a list, keeping input simple and consistent.",
+    "Lending records only a borrower name and the date the book went out; no due dates or history since the idea only asks to clear it when returned.",
+    "The lent-out count is a derived value shown in the header and on the 'Out' filter button, as the idea requests 'how many are lent out right now'."
+  ],
+  "tests_run": [
+    {
+      "command": "npm test",
+      "journey": "Add a book and see it in the list with the lent-out count at 0",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Reject adding a book with empty fields and show validation errors",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Lend a book out to a named borrower, filter to lent-out books, then mark it returned",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Edit an existing book's title and category",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Delete a book that was added by mistake",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Preserve books across a component re-mount (localStorage persistence)",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Show an empty 'Out' state when filtering with nothing lent out",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Prevent lending out with an empty borrower name and show an error",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Domain logic: create, validate, lend, return, update, normalize, and count books correctly",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Repository: round-trip books through localStorage and drop malformed stored data",
+      "result": "passed"
+    }
+  ]
+}

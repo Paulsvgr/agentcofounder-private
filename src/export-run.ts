@@ -1,7 +1,8 @@
 import { execFileSync } from "node:child_process";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import type { ActionSegment } from "./action-flow.js";
 import { analyzeRun, writeAnalysis, type RunAnalysis } from "./analyze-run.js";
 import {
   classificationFromEnv,
@@ -13,8 +14,10 @@ const SOURCE_DIRECTORY = path.dirname(fileURLToPath(import.meta.url));
 const REPOSITORY_ROOT = path.resolve(SOURCE_DIRECTORY, "..");
 const RUNS_DIRECTORY = path.join(REPOSITORY_ROOT, "artifacts", "runs");
 const EXPORTS_DIRECTORY = path.join(REPOSITORY_ROOT, "artifacts", "exports");
+const SAVED_APPS_DIRECTORY = path.join(REPOSITORY_ROOT, "saved-apps");
 
-export const RUN_EXPORT_SCHEMA = "agentcofounder.run_export.v1" as const;
+export const RUN_EXPORT_SCHEMA_V1 = "agentcofounder.run_export.v1" as const;
+export const RUN_EXPORT_SCHEMA = "agentcofounder.run_export.v2" as const;
 
 export interface RunExportMeta {
   run_id: string;
@@ -46,15 +49,32 @@ export interface RunExportHarness {
   pi_exit_code: number;
 }
 
-export interface RunExportEfficiency {
+export interface RunExportEfficiencyV2 {
   weighted_total: number;
   wall_seconds: number;
   seconds_per_call: number | null;
-  time_to_final_green_s: number | null;
-  time_to_first_failing_test_s: number | null;
-  npm_test_command_count: number;
-  auto_test_trigger_hits: number;
+  first_test_failure_s: number | null;
+  first_green_s: number | null;
+  last_green_s: number | null;
+  green_to_exit_s: number | null;
+  manual_test_calls: number;
+  manual_build_calls: number;
+  test_reinspection_calls: number;
+  post_green_verification_calls: number;
+  auto_test_candidate_events: number;
+  auto_test_actual_runs: number;
+  action_flow: ActionSegment[];
+  action_flow_source: "derived" | "derived+override";
+  /** Heuristic per-call rollup — not the action-flow movie. */
   phase_heuristic: RunAnalysis["phase_heuristic"];
+  /** @deprecated v1 alias for first_test_failure_s */
+  time_to_first_failing_test_s: number | null;
+  /** @deprecated v1 alias for last_green_s */
+  time_to_final_green_s: number | null;
+  /** @deprecated v1 alias for manual_test_calls */
+  npm_test_command_count: number;
+  /** @deprecated v1 alias for auto_test_candidate_events */
+  auto_test_trigger_hits: number;
 }
 
 /** Paste contract for the runs UI. Human rating/comments are frontend-only — not in this file. */
@@ -62,7 +82,7 @@ export interface RunExport {
   schema: typeof RUN_EXPORT_SCHEMA;
   meta: RunExportMeta;
   harness: RunExportHarness;
-  efficiency: RunExportEfficiency;
+  efficiency: RunExportEfficiencyV2;
 }
 
 export interface ExportRunOptions {
@@ -88,6 +108,72 @@ export function resolveGitMeta(): { git_branch: string | null; git_commit: strin
     git_branch: gitValue(["branch", "--show-current"]),
     git_commit: gitValue(["rev-parse", "HEAD"]),
   };
+}
+
+async function pathExists(filePath: string): Promise<boolean> {
+  try {
+    await access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function synthesizeResultFromAnalysis(analysis: RunAnalysis): RunResult {
+  const status =
+    analysis.status === "success" || analysis.status === "partial" || analysis.status === "failed"
+      ? analysis.status
+      : "partial";
+
+  return {
+    status,
+    app_url: "http://localhost:3000",
+    start_command: "npm run dev",
+    summary: "",
+    implemented_features: [],
+    assumptions: [],
+    tests_run: [],
+    harness_checks: [],
+    model_calls: analysis.model_calls,
+    input_tokens: analysis.input_tokens,
+    output_tokens: analysis.output_tokens,
+    cache_read_tokens: analysis.cache_read_tokens,
+    cache_write_tokens: analysis.cache_write_tokens,
+    total_tokens: analysis.total_tokens,
+    reasoning_tokens: analysis.reasoning_tokens,
+    cost_total: 0,
+    call_log: [],
+    pi_exit_code: 0,
+    telemetry_source: "pi-json-event-stream",
+    port_reclamation: {
+      preexisting_listener: false,
+      listener_after_pi: false,
+      attempted: false,
+      reclaimed: false,
+      process_ids: [],
+      diagnostic: "synthesized-from-analysis",
+    },
+  };
+}
+
+async function loadResultForRun(runId: string, analysis: RunAnalysis): Promise<RunResult> {
+  const inRun = path.join(RUNS_DIRECTORY, runId, "result.json");
+  if (await pathExists(inRun)) {
+    return JSON.parse(await readFile(inRun, "utf8")) as RunResult;
+  }
+
+  if (await pathExists(SAVED_APPS_DIRECTORY)) {
+    const entries = await readdir(SAVED_APPS_DIRECTORY, { withFileTypes: true });
+    for (const entry of entries) {
+      if (!entry.isDirectory() || !entry.name.includes(runId)) continue;
+      const candidate = path.join(SAVED_APPS_DIRECTORY, entry.name, "result.json");
+      if (await pathExists(candidate)) {
+        return JSON.parse(await readFile(candidate, "utf8")) as RunResult;
+      }
+    }
+  }
+
+  return synthesizeResultFromAnalysis(analysis);
 }
 
 export function buildRunExport(
@@ -140,11 +226,23 @@ export function buildRunExport(
       weighted_total: analysis.weighted_total,
       wall_seconds: analysis.wall_seconds,
       seconds_per_call: analysis.seconds_per_call,
-      time_to_final_green_s: analysis.time_to_final_green_s,
-      time_to_first_failing_test_s: analysis.time_to_first_failing_test_s,
-      npm_test_command_count: analysis.npm_test_command_count,
-      auto_test_trigger_hits: analysis.auto_test_trigger_hits,
+      first_test_failure_s: analysis.first_test_failure_s,
+      first_green_s: analysis.first_green_s,
+      last_green_s: analysis.last_green_s,
+      green_to_exit_s: analysis.green_to_exit_s,
+      manual_test_calls: analysis.manual_test_calls,
+      manual_build_calls: analysis.manual_build_calls,
+      test_reinspection_calls: analysis.test_reinspection_calls,
+      post_green_verification_calls: analysis.post_green_verification_calls,
+      auto_test_candidate_events: analysis.auto_test_candidate_events,
+      auto_test_actual_runs: analysis.auto_test_actual_runs,
+      action_flow: analysis.action_flow,
+      action_flow_source: analysis.action_flow_source,
       phase_heuristic: analysis.phase_heuristic,
+      time_to_first_failing_test_s: analysis.first_test_failure_s,
+      time_to_final_green_s: analysis.last_green_s,
+      npm_test_command_count: analysis.manual_test_calls,
+      auto_test_trigger_hits: analysis.auto_test_candidate_events,
     },
   };
 }
@@ -154,9 +252,8 @@ export async function exportRun(runId: string, options: ExportRunOptions = {}): 
   analysisPath: string;
   payload: RunExport;
 }> {
-  const resultPath = path.join(RUNS_DIRECTORY, runId, "result.json");
-  const result = JSON.parse(await readFile(resultPath, "utf8")) as RunResult;
   const analysis = await analyzeRun(runId);
+  const result = await loadResultForRun(runId, analysis);
   const analysisPath = await writeAnalysis(analysis);
   const payload = buildRunExport(result, analysis, options);
 

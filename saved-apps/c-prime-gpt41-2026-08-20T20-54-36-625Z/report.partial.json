@@ -1,0 +1,27 @@
+{
+  "status": "success",
+  "app_url": "http://localhost:3000",
+  "start_command": "npm run dev",
+  "summary": "A bookshelf tracker to record owned books, their type and author, and to manage/see who has borrowed them. Primary view: table of all owned books, with fields for title, author, type, marked as lent (with borrower's name) or not. Books can be edited or deleted, and filtered to show only those lent out. Lent-out count shown. Data persists locally.",
+  "implemented_features": [
+    "Add a book (title, author required; type optional)",
+    "Edit book details",
+    "Delete a book",
+    "Mark a book as lent and record borrower's name",
+    "Mark a book as returned",
+    "See all books in a list; browse details",
+    "Filter list to only lent-out books",
+    "See a live count of lent-out books (derived value)",
+    "Data persists via LocalStorage; survives refresh"
+  ],
+  "assumptions": [
+    "Single-user; no login or cloud required.",
+    "No cover images/ISBN or other metadata.",
+    "Book type is free text, not a controlled list.",
+    "Title+author are required, type is optional.",
+    "Test coverage provided for every main user journey, including edge cases like missing required input and all CRUD operations."
+  ],
+  "tests_run": [
+    { "journey": "Add, edit, lend, return, filter, delete, and count books, handling required validation and persistence.", "status": "passed" }
+  ]
+}

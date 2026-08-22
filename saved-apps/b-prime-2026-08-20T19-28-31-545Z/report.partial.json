@@ -1,0 +1,93 @@
+{
+  "status": "success",
+  "app_url": "http://localhost:3000",
+  "start_command": "npm run dev",
+  "summary": "A single-user personal bookshelf app to catalogue books (title, author, kind of book), lend them out to named borrowers, mark them returned, filter to just the lent-out ones, see how many are currently out, and edit or delete entries. Data persists in browser localStorage and survives a refresh.",
+  "implemented_features": [
+    "Add a book with title, author, and kind/category (Novel, Cookbook, Reference, etc.)",
+    "List every book owned in one list",
+    "Validate input: reject blank title or author before adding",
+    "Lend a book by recording a borrower's name",
+    "Return a book to clear its borrow state",
+    "Filter the list to just the books currently lent out, and back to all",
+    "See a derived count of how many books are lent out right now",
+    "Edit an existing book's details",
+    "Delete a book added by mistake",
+    "Persist all books and borrow state across a page refresh via localStorage",
+    "Gracefully recover from malformed or corrupt persisted data"
+  ],
+  "assumptions": [
+    "The idea says 'roughly what kind of book it is, like a novel or a cookbook or a reference thing'. I provided a fixed, extendable category list (Novel, Cookbook, Reference, Non-fiction, Poetry, Children's, Other) with 'Other' as a catch-all so any book fits, rather than free-text which would defeat the point of categorising.",
+    "It's just one person on their own computer, so data is stored locally in the browser (localStorage) with no login or backend, matching the explicit 'just me using it on my own computer'.",
+    "Lending records only the borrower's name (as requested: 'note down their name'); no due date or loan history is tracked because the idea does not mention them.",
+    "When lending, a blank or cancelled borrower name leaves the book on the shelf, since no borrower can be recorded without a name.",
+    "Persistence uses a small BookRepository boundary so storage could be swapped (e.g. a file or another client) without rewriting the UI or domain logic."
+  ],
+  "tests_run": [
+    {
+      "command": "npm test",
+      "journey": "Add a book and see it in the list, with the derived total count updating",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Show an empty state before any book is added",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Reject blank title and author instead of adding an empty book",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Show all books by default and filter to just the lent-out books",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Lend a book to a named borrower, see it marked out, then mark it returned",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Ignore a blank borrower name when lending",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Do nothing when the lend prompt is cancelled",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Edit an existing book's details",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Delete a book from the list",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Keep books and borrow state when the repository is reloaded (simulated refresh)",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Survive a reload using the built-in localStorage repository",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Drop malformed persisted entries and keep the good ones",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Recover from corrupt stored JSON by returning an empty shelf",
+      "result": "passed"
+    }
+  ]
+}

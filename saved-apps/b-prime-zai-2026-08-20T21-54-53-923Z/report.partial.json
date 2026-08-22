@@ -1,0 +1,73 @@
+{
+  "status": "success",
+  "app_url": "http://localhost:3000",
+  "start_command": "npm run dev",
+  "summary": "A single-user home library for tracking personal books and who has borrowed them. Add books with title, author, and kind (Novel/Cookbook/Reference/Other), view the full collection, lend a book out by noting a borrower's name, mark it returned, edit or delete mistaken entries, filter to just the books currently out, and see a live count of how many are lent out. All data persists in the browser via localStorage so it survives a page refresh.",
+  "implemented_features": [
+    "Add a book (title, author, kind/category) with validation and empty/invalid input handling",
+    "List every book in one collection view",
+    "Lend a book out by recording a borrower's name (clears on return)",
+    "Return a lent book, clearing the borrower",
+    "Edit an existing book to fix mistakes",
+    "Delete a book after confirming",
+    "Filter the collection to only books currently lent out",
+    "Derived count of how many books are lent out right now",
+    "Data persists across a browser refresh via localStorage",
+    "Malformed persisted data is sanitized/dropped so the app keeps working",
+    "Domain logic, persistence, and UI kept behind separate boundaries"
+  ],
+  "assumptions": [
+    "The idea mentions 'roughly what kind of book it is' with examples novel/cookbook/reference; I implemented a fixed category list (Novel, Cookbook, Reference, Other) as a select rather than free text, to keep the list consistent and filterable while still covering the named kinds and an Other fallback.",
+    "Single-user, own computer: no login or backend is needed. Data is stored locally in the browser via localStorage; if storage is unavailable or corrupt the app degrades gracefully to an in-memory session.",
+    "Borrower is captured as a free-text name (no contact info) since the idea only asks to 'note down their name'; lending requires a non-empty name, and returning clears it.",
+    "The idea does not request search/sort, due dates, or a history of past loans, so those were omitted to avoid inventing capabilities the idea does not justify.",
+    "Deletion is guarded by a confirm dialog to prevent accidental data loss, consistent with the 'take it off the list' requirement being recoverable on mistake."
+  ],
+  "tests_run": [
+    {
+      "command": "npm test",
+      "journey": "Add a book with title, author, and category, then see it appear in the collection",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Adding a book with empty fields is rejected and shows validation errors",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Lend a book by entering a borrower name; it shows as out with someone and the lent-out count increments; returning it clears the borrower and decrements the count",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Filter the collection to show only books currently lent out, hiding at-home books",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Edit an existing book to fix a mistaken title and see the corrected entry",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Delete a book after confirming and confirm it is removed from the collection",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Books persist across a page refresh (new app instance loads previously saved data)",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Domain logic: create, lend (with trimming and blank-name rejection), return, edit, count, and filter lent-out books",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Persistence: round-trip through storage, survive refresh, drop malformed persisted rows, and recover from corrupt JSON / unavailable storage",
+      "result": "passed"
+    }
+  ]
+}

@@ -50,15 +50,37 @@ const analysis = {
   weighted_total: 80,
   time_to_first_failing_test_s: null,
   time_to_final_green_s: 10,
+  first_test_failure_s: null,
+  first_green_s: 10,
+  last_green_s: 10,
+  green_to_exit_s: 2,
   npm_test_command_count: 1,
+  manual_test_calls: 1,
+  manual_build_calls: 1,
+  test_reinspection_calls: 0,
+  post_green_verification_calls: 0,
   auto_test_trigger_hits: 0,
+  auto_test_candidate_events: 0,
+  auto_test_actual_runs: 0,
+  action_flow: [
+    {
+      stage: "build_app",
+      call_count: 1,
+      call_indexes: [1],
+      wall_seconds: 5,
+      raw_tokens: 130,
+      weighted_tokens: 80,
+      note: null,
+    },
+  ],
+  action_flow_source: "derived",
   reconciliation: { matched: true, warnings: [], result_json_path: null },
   phase_heuristic: [{ phase: "build", call_count: 2, weighted_cost: 80, share_of_total: 1 }],
   calls: [],
 } satisfies RunAnalysis;
 
 describe("buildRunExport", () => {
-  it("emits v1 schema with meta/harness/efficiency and no human block", () => {
+  it("emits v2 schema with action_flow and corrected timing metrics", () => {
     const payload = buildRunExport(result, analysis, {
       approach: "base",
       recordedAt: "2026-08-21T18:00:00.000Z",
@@ -67,25 +89,14 @@ describe("buildRunExport", () => {
     });
 
     expect(payload.schema).toBe(RUN_EXPORT_SCHEMA);
-    expect(payload.meta).toEqual({
-      run_id: "2026-08-21T17-12-43-573Z",
-      recorded_at: "2026-08-21T18:00:00.000Z",
-      git_branch: "setup/measure",
-      git_commit: "abc123",
-      approach: "base",
-      classification: {
-        line: "A",
-        experiment: "baseline",
-        run_index: null,
-        display_label: "A · baseline",
-      },
-      provider: "zai",
-      model: "glm-5.2",
-    });
-    expect(payload.harness.status).toBe("success");
-    expect(payload.harness.summary).toBe("test app");
-    expect(payload.efficiency.weighted_total).toBe(80);
-    expect(payload.efficiency.phase_heuristic).toHaveLength(1);
+    expect(payload.efficiency.first_green_s).toBe(10);
+    expect(payload.efficiency.green_to_exit_s).toBe(2);
+    expect(payload.efficiency.action_flow).toHaveLength(1);
+    expect(payload.efficiency.action_flow_source).toBe("derived");
+    expect(payload.efficiency.manual_test_calls).toBe(1);
+    expect(payload.efficiency.manual_build_calls).toBe(1);
+    expect(payload.efficiency.auto_test_candidate_events).toBe(0);
+    expect(payload.efficiency.time_to_final_green_s).toBe(10);
     expect(payload).not.toHaveProperty("human");
     expect(JSON.stringify(payload)).not.toContain("app_rating");
   });
