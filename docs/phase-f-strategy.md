@@ -184,6 +184,25 @@ npm run experiment:report -- test-policy-treatment
 npm run publish:runs -- test-policy-treatment
 ```
 
+## Experiment 3 results (2026-08-22)
+
+**Treatment commit:** `be86ac3`
+
+| Arm | n | P(clean) | P(snowball) | median weighted | median calls | quality |
+|-----|---|----------|-------------|-----------------|--------------|---------|
+| stop-treatment (control) | 5 | 0 | 1.0 | 110k | 31 | 5/5 success |
+| test-policy-treatment | 5 | **0.2** | **0.6** | 86k | 23 | **4/5 success** |
+
+**Highlights:** Rep 4 = **first CLEAN trajectory** in Phase F (43k weighted, 11 calls, 0 repair). Rep 5 failed (Pi exit 1, no first green).
+
+**Primary counters (successful reps):** median repair_loop **14 → 7.5**, median test_reinspection **6 → 3** vs stop-treatment control.
+
+**Verdict: KEEP test policy** — first clean run and improved mechanism counters on successful reps; rep 5 failure is a quality warning but n=1. Rep 4 proves Run-2-like trajectories are achievable with current stack.
+
+Run artifacts: `artifacts/experiments/test-policy-treatment/`.
+
+**Next:** Experiment 4 (deterministic failure digest → `test_reinspection_calls`).
+
 ## Revert-rule template
 
 ```text
