@@ -500,6 +500,8 @@ def main() -> None:
                 "exp2-stop-treatment",
                 "exp3-test-control",
                 "exp3-test-treatment",
+                "exp4-digest-control",
+                "exp4-digest-treatment",
                 "legacy",
                 "legacy-smoke",
                 "unknown",
