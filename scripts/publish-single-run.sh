@@ -78,15 +78,23 @@ fi
 export AGENTCOFOUNDER_ROOT
 export HACKATHON_AUTHOR="${HACKATHON_AUTHOR:-paul}"
 
+SEED_OK=1
 echo "==> Seeding $RUN_ID to API"
-python3 "$SEED_SCRIPT" --only "$RUN_ID"
+if ! python3 "$SEED_SCRIPT" --only "$RUN_ID"; then
+  SEED_OK=0
+  echo "WARNING: seed failed — check HACKATHON_ACCESS_CODE (link below may still work if run is already on prod)" >&2
+fi
 
-if [ -f "$BACKFILL_SCRIPT" ]; then
+if [ "$SEED_OK" -eq 1 ] && [ -f "$BACKFILL_SCRIPT" ]; then
   echo "==> Backfilling classification"
   python3 "$BACKFILL_SCRIPT"
 fi
 
 echo "==> Resolving frontend link"
-python3 "$ROOT/scripts/print-run-frontend-links.py" "$RUN_ID"
+python3 "$ROOT/scripts/print-run-frontend-links.py" "$RUN_ID" || true
+
+if [ "$SEED_OK" -eq 0 ]; then
+  exit 1
+fi
 
 echo "Published $RUN_ID → artifacts/exports/${RUN_ID}.json + DB"

@@ -92,15 +92,23 @@ ONLY="$(IFS=,; echo "${RUN_IDS[*]}")"
 export AGENTCOFOUNDER_ROOT
 export HACKATHON_AUTHOR="${HACKATHON_AUTHOR:-paul}"
 
+SEED_OK=1
 echo "==> Seeding ${#RUN_IDS[@]} run(s) to API"
-python3 "$SEED_SCRIPT" --only "$ONLY"
+if ! python3 "$SEED_SCRIPT" --only "$ONLY"; then
+  SEED_OK=0
+  echo "WARNING: seed failed — check HACKATHON_ACCESS_CODE (links below may still work for runs already on prod)" >&2
+fi
 
-if [ -f "$BACKFILL_SCRIPT" ]; then
+if [ "$SEED_OK" -eq 1 ] && [ -f "$BACKFILL_SCRIPT" ]; then
   echo "==> Backfilling classification labels"
   python3 "$BACKFILL_SCRIPT"
 fi
 
 echo "==> Resolving frontend links"
-python3 "$ROOT/scripts/print-run-frontend-links.py" "${RUN_IDS[@]}"
+python3 "$ROOT/scripts/print-run-frontend-links.py" "${RUN_IDS[@]}" || true
+
+if [ "$SEED_OK" -eq 0 ]; then
+  exit 1
+fi
 
 echo "Publish complete."
