@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { classifyPhaseHeuristic, weightedCost, WEIGHTS } from "../src/analyze-run.js";
+import {
+  bashTestOutputIndicatesFailure,
+  bashTestOutputIndicatesSuccess,
+  classifyPhaseHeuristic,
+  weightedCost,
+  WEIGHTS,
+} from "../src/analyze-run.js";
 
 describe("analyze-run weighting", () => {
   it("uses the contest formula with cacheWrite defaulting to 0", () => {
@@ -38,5 +44,32 @@ describe("classifyPhaseHeuristic", () => {
         { name: "bash", detail: "npm test", is_error: false },
       ]),
     ).toBe("mixed");
+  });
+});
+
+describe("bash test output parsing", () => {
+  it("detects Vitest failures when piped through tail (exit code masked)", () => {
+    const output = `
+ Test Files  1 failed (1)
+      Tests  7 failed | 4 passed (11)
+   Duration  1.23s
+`;
+    expect(bashTestOutputIndicatesFailure(output)).toBe(true);
+    expect(bashTestOutputIndicatesSuccess(output)).toBe(false);
+  });
+
+  it("detects all-green Vitest summary", () => {
+    const output = `
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Duration  1.05s
+`;
+    expect(bashTestOutputIndicatesFailure(output)).toBe(false);
+    expect(bashTestOutputIndicatesSuccess(output)).toBe(true);
+  });
+
+  it("strips ANSI before matching", () => {
+    const output = "\u001b[31m Test Files  1 failed (1)\u001b[0m";
+    expect(bashTestOutputIndicatesFailure(output)).toBe(true);
   });
 });

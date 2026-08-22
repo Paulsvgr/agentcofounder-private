@@ -179,6 +179,54 @@ function isReportWrite(detail: string): boolean {
   return /report\.partial\.json\b/.test(detail);
 }
 
+export function stripAnsi(text: string): string {
+  return text.replace(/\u001b\[[0-9?]*[ -/]*[@-~]/g, "");
+}
+
+/** Detect Vitest/npm test failures from captured stdout even when bash exit code is masked by pipes. */
+export function bashTestOutputIndicatesFailure(output: string): boolean {
+  const text = stripAnsi(output);
+  for (const line of text.split("\n")) {
+    if (/Test Files\s+.*\bfailed\b/i.test(line)) return true;
+    if (/^\s*Tests\s+\d+\s+failed\b/i.test(line)) return true;
+    if (/^\s*Tests\s+.*\bfailed\s*\|/i.test(line)) return true;
+  }
+  return false;
+}
+
+/** True when Vitest summary lines show an all-green run. */
+export function bashTestOutputIndicatesSuccess(output: string): boolean {
+  const text = stripAnsi(output);
+  if (bashTestOutputIndicatesFailure(text)) return false;
+  for (const line of text.split("\n")) {
+    if (/Test Files\s+\d+\s+passed\s*\(\d+\)/i.test(line)) return true;
+    if (/^\s*Tests\s+\d+\s+passed\s*\(\d+\)/i.test(line)) return true;
+  }
+  return false;
+}
+
+function extractToolResultText(message: SessionMessage): string {
+  if (!Array.isArray(message.content)) return "";
+  const parts: string[] = [];
+  for (const block of message.content) {
+    if (!isRecord(block) || block.type !== "text") continue;
+    if (typeof block.text === "string") parts.push(block.text);
+  }
+  return parts.join("\n");
+}
+
+function npmTestToolFailed(exitError: boolean, output: string | undefined): boolean {
+  if (exitError) return true;
+  if (output === undefined || output.trim() === "") return false;
+  return bashTestOutputIndicatesFailure(output);
+}
+
+function npmTestToolPassed(exitError: boolean, output: string | undefined): boolean {
+  if (exitError) return false;
+  if (output === undefined || output.trim() === "") return false;
+  return bashTestOutputIndicatesSuccess(output);
+}
+
 /** Heuristic only — turns often mix activities. */
 export function classifyPhaseHeuristic(tools: ToolTag[]): HeuristicPhase {
   if (tools.length === 0) return "finalize";
@@ -336,13 +384,15 @@ export async function analyzeRun(runId: string): Promise<RunAnalysis> {
   const end = parseTimestamp(messages[messages.length - 1]!.timestamp!);
   const wallSeconds = Math.max(0, (end.getTime() - start.getTime()) / 1000);
 
-  // Map toolCallId -> isError from intervening toolResult messages.
+  // Map toolCallId -> isError and captured stdout from toolResult messages.
   const errorByCallId = new Map<string, boolean>();
+  const outputByCallId = new Map<string, string>();
   for (const row of messages) {
     const message = row.message;
     if (!message || message.role !== "toolResult") continue;
     if (typeof message.toolCallId === "string") {
       errorByCallId.set(message.toolCallId, Boolean(message.isError));
+      outputByCallId.set(message.toolCallId, extractToolResultText(message));
     }
   }
 
@@ -378,15 +428,24 @@ export async function analyzeRun(runId: string): Promise<RunAnalysis> {
     cumulative += weighted;
 
     const tools = extractToolTags(message.content);
-    // Attach errors by scanning toolCall ids in content.
+    let turnTestFailed = false;
+    let turnTestPassed = false;
+    // Attach errors by pairing toolCall blocks with tags in order.
     if (Array.isArray(message.content)) {
+      let tagIndex = 0;
       for (const block of message.content) {
         if (!isRecord(block) || block.type !== "toolCall") continue;
+        const tag = tools[tagIndex];
+        tagIndex += 1;
+        if (!tag) continue;
         const id = typeof block.id === "string" ? block.id : undefined;
-        if (!id) continue;
-        const tag = tools.find((tool) => tool.name === block.name && !tool.is_error);
-        if (tag && errorByCallId.has(id)) {
-          tag.is_error = Boolean(errorByCallId.get(id));
+        const exitError = id ? Boolean(errorByCallId.get(id)) : false;
+        const output = id ? outputByCallId.get(id) : undefined;
+        const failed = npmTestToolFailed(exitError, output);
+        tag.is_error = failed;
+        if (tag.name === "bash" && isNpmTestCommand(tag.detail)) {
+          if (failed) turnTestFailed = true;
+          if (npmTestToolPassed(exitError, output)) turnTestPassed = true;
         }
       }
     }
@@ -400,12 +459,9 @@ export async function analyzeRun(runId: string): Promise<RunAnalysis> {
     const hasTest = tools.some((tool) => tool.name === "bash" && isNpmTestCommand(tool.detail));
     if (hasTest) {
       npmTestCommandCount += 1;
-      const failed = tools.some(
-        (tool) => tool.name === "bash" && isNpmTestCommand(tool.detail) && tool.is_error,
-      );
       const seconds = (at.getTime() - start.getTime()) / 1000;
-      if (failed && timeToFirstFailingTest === null) timeToFirstFailingTest = seconds;
-      if (!failed) lastGreenAt = seconds;
+      if (turnTestFailed && timeToFirstFailingTest === null) timeToFirstFailingTest = seconds;
+      if (turnTestPassed) lastGreenAt = seconds;
     }
 
     if (provider === null && typeof message.provider === "string") provider = message.provider;
