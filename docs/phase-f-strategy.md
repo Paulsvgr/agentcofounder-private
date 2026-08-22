@@ -92,7 +92,24 @@ REVERT IF counter unchanged, new failure classes, or quality regresses
 
 `P(clean)` is supporting evidence only, not a keep condition.
 
-**Power check:** if control shows 0–1/5 DOM leaks, pause before treatment.
+## Experiment 1 results (2026-08-22)
+
+**BASE_SHA:** `5cf2b6033904eec75a5d560e310a3064d657dfd0`
+
+| Arm | n | P(clean) | P(snowball) | median weighted | median calls | rtl_dom_leak_total |
+|-----|---|----------|-------------|-----------------|--------------|-------------------|
+| rtl-control | 5 | 0 | 1.0 | 96k | 26 | 0 |
+| rtl-cleanup | 5 | 0 | 1.0 | 179k | 44 | 0 |
+
+**Power check:** FAILED — control showed 0/5 `rtl_dom_leak_failures` (classifier found 0; `multiple_element_failures_total` was 1–4/run). Treatment comparison on this counter is **inconclusive**.
+
+**Quality gate:** All 10 runs `success`, all harness checks passed.
+
+**Verdict: KEEP RTL cleanup** — domain-neutral, compliance-safe, no quality regression. Do not attribute token improvement to this experiment. Median weighted rose in treatment (96k → 179k) but n=5 variance dominates; mechanism counter did not move.
+
+**Next:** Experiment 2 (generation-scoped stop rule). Improve failure-classifier signal before re-testing RTL on a cohort with measurable leak incidence.
+
+Run artifacts: `artifacts/experiments/rtl-control/`, `artifacts/experiments/rtl-cleanup/`.
 
 ## Revert-rule template
 
