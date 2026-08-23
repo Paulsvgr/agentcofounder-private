@@ -422,6 +422,31 @@ npm run experiment:report -- reporter-treatment
 npm run publish:runs -- --exp6-reporter --seed
 ```
 
+## Experiment 6 results (2026-08-23)
+
+**Treatment commit:** `2b41bd3`
+
+| Arm | n | P(clean) | P(snowball) | median weighted | median calls | quality |
+|-----|---|----------|-------------|-----------------|--------------|---------|
+| template-treatment (control) | 5 | 0 | 0.6 | 90k | 26.5 | 4/5 success |
+| reporter-treatment | 5 | **0.2** | 0.6 | 125k | 38 | **5/5 success** |
+
+**Mechanism counters (successful reps):**
+
+| Metric | Control | Treatment | Δ |
+|--------|---------|-----------|---|
+| median same_generation_test_reruns | 1.5 | **1.0** | ↓ marginal |
+| median test_reinspection_calls | (see per-run) | mixed | rep1 snowball (11 reinspect, 5 same_gen) |
+| median post_failure_input_tokens | 2699 | 4610 | ↑ (worse) |
+
+**Highlights:** Rep 3 = no repair/reinspect/same_gen (81k). Rep 5 = **CLEAN** (90k, 21 calls). Rep 1 snowballed despite reporter (173k, same_gen=5).
+
+**Verdict: WEAK KEEP / INCONCLUSIVE mechanism** — quality improved to 5/5; median same_generation reruns moved slightly (1.5→1.0) but rep1 shows reporter does not prevent snowball entry; median weighted cost rose. Keep reporter in stack; do not claim economic win. Failure presentation helps clean paths (reps 3, 5) but is insufficient alone when the model enters repair spiral.
+
+Run artifacts: `artifacts/experiments/reporter-treatment/`.
+
+**Next:** Exp5b storage hardening.
+
 ### Exp5b — storage primitive hardening (after Exp6)
 
 Lazy default storage resolution in `collectionStore`; explicit `options.storage` stays captured. Simpler `useCollection` guidance in `app-template/AGENTS.md`.

@@ -13,7 +13,11 @@
 
 ## Seed primitives (prefer these)
 
-Prefer these domain-neutral helpers over reimplementing storage, ids, text normalization, or test Storage mocks. Write your entity type and `parse` (validates **one** array item, not the whole payload). If state is not a flat keyed collection, design what fits instead — do not force `useCollection`.
+Prefer these domain-neutral helpers over reimplementing storage, ids, text normalization, or test Storage mocks. Write your entity type and `parse` (validates **one** array item, not the whole payload).
+
+For simple flat CRUD, **`useCollection` is the persistence boundary** — pass a module-level `createCollectionStore` instance and use the hook directly in your app. Do not add repository or service wrapper layers unless the domain genuinely needs indirection beyond flat keyed collections.
+
+If state is not a flat keyed collection, design what fits instead — do not force `useCollection`.
 
 ```ts
 // src/lib/collectionStore.ts
