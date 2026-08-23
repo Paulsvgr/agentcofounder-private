@@ -4,6 +4,8 @@ import {
   bashTestOutputIndicatesSuccess,
   classifyPhaseHeuristic,
   isFullSuiteTestCommand,
+  isSourceMutationCommand,
+  isSourceMutationTool,
   weightedCost,
   WEIGHTS,
 } from "../src/analyze-run.js";
@@ -95,5 +97,34 @@ describe("isFullSuiteTestCommand", () => {
     expect(isFullSuiteTestCommand("vitest --changed")).toBe(false);
     expect(isFullSuiteTestCommand("vitest --project unit")).toBe(false);
     expect(isFullSuiteTestCommand("npm test -- App.test.tsx")).toBe(false);
+  });
+});
+
+describe("isSourceMutationCommand", () => {
+  it("detects bash mutations on source files", () => {
+    expect(
+      isSourceMutationCommand(
+        "cd /app && sed -i '/console.log/d' src/App.test.tsx",
+      ),
+    ).toBe(true);
+    expect(isSourceMutationCommand("perl -pi -e 's/foo/bar/' src/App.tsx")).toBe(true);
+    expect(isSourceMutationCommand("echo x | tee src/App.tsx")).toBe(true);
+    expect(isSourceMutationCommand("cat > src/App.tsx <<EOF")).toBe(true);
+  });
+
+  it("ignores report artifact writes", () => {
+    expect(isSourceMutationCommand("echo '{}' > report.partial.json")).toBe(false);
+  });
+
+  it("marks write/edit on source paths as mutations", () => {
+    expect(
+      isSourceMutationTool({ name: "write", detail: "src/App.tsx", is_error: false }),
+    ).toBe(true);
+    expect(
+      isSourceMutationTool({ name: "edit", detail: "src/App.test.tsx", is_error: false }),
+    ).toBe(true);
+    expect(
+      isSourceMutationTool({ name: "bash", detail: "npm test", is_error: false }),
+    ).toBe(false);
   });
 });

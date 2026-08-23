@@ -89,6 +89,13 @@ export interface RunAnalysis {
   full_suite_test_calls: number;
   manual_build_calls: number;
   test_reinspection_calls: number;
+  same_generation_test_reruns: number;
+  same_generation_full_suite_reruns: number;
+  same_generation_partial_suite_reruns: number;
+  first_failure_tool_output_chars: number | null;
+  next_call_input_tokens_after_failure: number | null;
+  post_failure_input_tokens: number;
+  post_failure_cache_read_tokens: number;
   post_green_verification_calls: number;
   multiple_element_failures_total: number;
   rtl_dom_leak_failures: number;
@@ -251,6 +258,42 @@ export function isBuildCommand(detail: string): boolean {
 
 export function isReportWrite(detail: string): boolean {
   return /report\.partial\.json\b/.test(detail);
+}
+
+/** App or test source paths (excludes artifact/report writes). */
+export function isSourceFilePath(detail: string): boolean {
+  if (isReportWrite(detail)) return false;
+  return (
+    /\.(tsx?|jsx?|css)\b/.test(detail) ||
+    /[/\\]src[/\\]/.test(detail) ||
+    isTestFilePath(detail) ||
+    /vitest\.config/.test(detail) ||
+    /vite\.config/.test(detail)
+  );
+}
+
+/**
+ * Bash commands that mutate app/test source without using write/edit tools.
+ * Heuristic — same-generation detection depends on this predicate.
+ */
+export function isSourceMutationCommand(detail: string): boolean {
+  if (isReportWrite(detail)) return false;
+  if (/\bsed\s+-i\b/.test(detail)) return true;
+  if (/\bperl\s+-pi/.test(detail)) return true;
+  if (/\btee\b/.test(detail) && isSourceFilePath(detail)) return true;
+  if (/>>?\s*[^\s&|;]+\.(tsx?|jsx?|css)\b/.test(detail) && isSourceFilePath(detail)) return true;
+  if (/cat\s+<<[\s\S]*>>?\s*[^\s&|;]+\.(tsx?|jsx?)/.test(detail)) return true;
+  return false;
+}
+
+export function isSourceMutationTool(tool: ToolTag): boolean {
+  if (tool.name === "write" || tool.name === "edit") {
+    return isSourceFilePath(tool.detail) || isTestFilePath(tool.detail);
+  }
+  if (tool.name === "bash") {
+    return isSourceMutationCommand(tool.detail);
+  }
+  return false;
 }
 
 function bashCommandHasBuild(detail: string): boolean {
@@ -506,6 +549,13 @@ export async function analyzeRun(runId: string): Promise<RunAnalysis> {
   let autoTestActualRuns = 0;
   let testReinspectionCalls = 0;
   let postGreenVerificationCalls = 0;
+  let sameGenerationTestReruns = 0;
+  let sameGenerationFullSuiteReruns = 0;
+  let sameGenerationPartialSuiteReruns = 0;
+  let lastTestFailed = false;
+  let mutatedSinceLastTest = false;
+  let firstFailureCallIndex: number | null = null;
+  let firstFailureToolOutputChars: number | null = null;
 
   // Flat tool sequence across the run for trigger analysis.
   const flatTools: Array<{ callIndex: number; name: string; detail: string }> = [];
@@ -564,6 +614,12 @@ export async function analyzeRun(runId: string): Promise<RunAnalysis> {
               turnTestPassed = true;
             }
           }
+          if (failed && firstFailureCallIndex === null) {
+            firstFailureCallIndex = index;
+            if (output !== undefined) {
+              firstFailureToolOutputChars = stripAnsi(output).length;
+            }
+          }
         }
         if (id) {
           toolCallIdToCallIndex.set(id, index);
@@ -574,6 +630,29 @@ export async function analyzeRun(runId: string): Promise<RunAnalysis> {
 
     for (const tool of tools) {
       flatTools.push({ callIndex: index, name: tool.name, detail: tool.detail });
+    }
+
+    for (const tool of tools) {
+      if (isSourceMutationTool(tool)) {
+        mutatedSinceLastTest = true;
+      }
+      if (tool.name !== "bash" || !isNpmTestCommand(tool.detail)) continue;
+
+      if (lastTestFailed && !mutatedSinceLastTest) {
+        sameGenerationTestReruns += 1;
+        if (isFullSuiteTestCommand(tool.detail)) {
+          sameGenerationFullSuiteReruns += 1;
+        } else {
+          sameGenerationPartialSuiteReruns += 1;
+        }
+      }
+
+      if (tool.test_passed) {
+        lastTestFailed = false;
+      } else if (tool.is_error) {
+        lastTestFailed = true;
+      }
+      mutatedSinceLastTest = false;
     }
 
     const hasTest = tools.some((tool) => tool.name === "bash" && isNpmTestCommand(tool.detail));
@@ -632,6 +711,23 @@ export async function analyzeRun(runId: string): Promise<RunAnalysis> {
 
     if (firstGreenAt !== null && call.seconds_since_start > firstGreenAt) {
       if (hasTest || hasBuild) postGreenVerificationCalls += 1;
+    }
+  }
+
+  let nextCallInputTokensAfterFailure: number | null = null;
+  let postFailureInputTokens = 0;
+  let postFailureCacheReadTokens = 0;
+  if (firstFailureCallIndex !== null) {
+    const failureIdx = firstFailureCallIndex;
+    const nextCall = calls.find((call) => call.index === failureIdx + 1);
+    if (nextCall) {
+      nextCallInputTokensAfterFailure = nextCall.input_tokens;
+    }
+    for (const call of calls) {
+      if (call.index <= failureIdx) continue;
+      if (firstGreenAt !== null && call.seconds_since_start >= firstGreenAt) continue;
+      postFailureInputTokens += call.input_tokens;
+      postFailureCacheReadTokens += call.cache_read_tokens;
     }
   }
 
@@ -755,6 +851,13 @@ export async function analyzeRun(runId: string): Promise<RunAnalysis> {
     full_suite_test_calls: fullSuiteTestCalls,
     manual_build_calls: manualBuildCalls,
     test_reinspection_calls: testReinspectionCalls,
+    same_generation_test_reruns: sameGenerationTestReruns,
+    same_generation_full_suite_reruns: sameGenerationFullSuiteReruns,
+    same_generation_partial_suite_reruns: sameGenerationPartialSuiteReruns,
+    first_failure_tool_output_chars: firstFailureToolOutputChars,
+    next_call_input_tokens_after_failure: nextCallInputTokensAfterFailure,
+    post_failure_input_tokens: postFailureInputTokens,
+    post_failure_cache_read_tokens: postFailureCacheReadTokens,
     post_green_verification_calls: postGreenVerificationCalls,
     multiple_element_failures_total: failureSummary.multiple_element_failures_total,
     rtl_dom_leak_failures: failureSummary.rtl_dom_leak_failures,

@@ -35,10 +35,12 @@ for arg in "$@"; do
   case "$arg" in
     --seed) SEED=1 ;;
     --exp1-rtl) ARMS+=(rtl-control rtl-cleanup) ;;
-    --exp2-stop) ARMS+=(stop-control stop-treatment) ;;
+    --exp2-stop) ARMS+=(stop-treatment) ;;
     --exp3-test) ARMS+=(test-policy-treatment) ;;
     --exp4-digest) ARMS+=(digest-treatment) ;;
     --exp5-template) ARMS+=(template-treatment) ;;
+    --exp6-reporter) ARMS+=(reporter-treatment) ;;
+    --exp5b-storage) ARMS+=(storage-treatment) ;;
     --*) echo "Unknown flag: $arg" >&2; exit 2 ;;
     *) ARMS+=("$arg") ;;
   esac

@@ -45,6 +45,12 @@ function resolveRunExperiment(arm: string): string {
   if (arm.startsWith("template-")) {
     return arm.startsWith("template-treatment") ? "exp5-template-treatment" : "exp5-template-control";
   }
+  if (arm.startsWith("reporter-")) {
+    return arm.startsWith("reporter-treatment") ? "exp6-reporter-treatment" : "exp6-reporter-control";
+  }
+  if (arm.startsWith("storage-")) {
+    return arm.startsWith("storage-treatment") ? "exp5b-storage-treatment" : "exp5b-storage-control";
+  }
   return arm;
 }
 
@@ -54,7 +60,9 @@ function isPhaseFArm(arm: string): boolean {
     arm.startsWith("stop-") ||
     arm.startsWith("test-policy-") ||
     arm.startsWith("digest-") ||
-    arm.startsWith("template-")
+    arm.startsWith("template-") ||
+    arm.startsWith("reporter-") ||
+    arm.startsWith("storage-")
   );
 }
 

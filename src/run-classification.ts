@@ -30,6 +30,10 @@ export const RUN_EXPERIMENTS = [
   "exp4-digest-treatment",
   "exp5-template-control",
   "exp5-template-treatment",
+  "exp6-reporter-control",
+  "exp6-reporter-treatment",
+  "exp5b-storage-control",
+  "exp5b-storage-treatment",
   "legacy",
   "legacy-smoke",
   "unknown",
@@ -126,6 +130,16 @@ const APPROACH_MAP: Record<string, ApproachMapping> = {
   "template-treatment-3": { line: "F", experiment: "exp5-template-treatment", run_index: 3 },
   "template-treatment-4": { line: "F", experiment: "exp5-template-treatment", run_index: 4 },
   "template-treatment-5": { line: "F", experiment: "exp5-template-treatment", run_index: 5 },
+  "reporter-treatment-1": { line: "F", experiment: "exp6-reporter-treatment", run_index: 1 },
+  "reporter-treatment-2": { line: "F", experiment: "exp6-reporter-treatment", run_index: 2 },
+  "reporter-treatment-3": { line: "F", experiment: "exp6-reporter-treatment", run_index: 3 },
+  "reporter-treatment-4": { line: "F", experiment: "exp6-reporter-treatment", run_index: 4 },
+  "reporter-treatment-5": { line: "F", experiment: "exp6-reporter-treatment", run_index: 5 },
+  "storage-treatment-1": { line: "F", experiment: "exp5b-storage-treatment", run_index: 1 },
+  "storage-treatment-2": { line: "F", experiment: "exp5b-storage-treatment", run_index: 2 },
+  "storage-treatment-3": { line: "F", experiment: "exp5b-storage-treatment", run_index: 3 },
+  "storage-treatment-4": { line: "F", experiment: "exp5b-storage-treatment", run_index: 4 },
+  "storage-treatment-5": { line: "F", experiment: "exp5b-storage-treatment", run_index: 5 },
 };
 
 function parseRunIndex(approach: string): number | null {
@@ -161,7 +175,7 @@ function inferLineFromApproach(approach: string): RunLine {
   if (approach === "run-d" || approach.startsWith("run-d")) {
     return "D";
   }
-  if (approach.startsWith("rtl-") || approach.startsWith("stop-") || approach.startsWith("test-policy-") || approach.startsWith("digest-") || approach.startsWith("template-")) {
+  if (approach.startsWith("rtl-") || approach.startsWith("stop-") || approach.startsWith("test-policy-") || approach.startsWith("digest-") || approach.startsWith("template-") || approach.startsWith("reporter-") || approach.startsWith("storage-")) {
     return "F";
   }
   return "unknown";
@@ -215,6 +229,18 @@ function inferExperimentFromApproach(approach: string): RunExperiment | null {
   }
   if (approach.startsWith("template-control")) {
     return "exp5-template-control";
+  }
+  if (approach.startsWith("reporter-treatment")) {
+    return "exp6-reporter-treatment";
+  }
+  if (approach.startsWith("reporter-control")) {
+    return "exp6-reporter-control";
+  }
+  if (approach.startsWith("storage-treatment")) {
+    return "exp5b-storage-treatment";
+  }
+  if (approach.startsWith("storage-control")) {
+    return "exp5b-storage-control";
   }
 
   if (approach.startsWith("digest-control")) {

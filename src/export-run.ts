@@ -61,6 +61,13 @@ export interface RunExportEfficiencyV2 {
   full_suite_test_calls: number;
   manual_build_calls: number;
   test_reinspection_calls: number;
+  same_generation_test_reruns: number;
+  same_generation_full_suite_reruns: number;
+  same_generation_partial_suite_reruns: number;
+  first_failure_tool_output_chars: number | null;
+  next_call_input_tokens_after_failure: number | null;
+  post_failure_input_tokens: number;
+  post_failure_cache_read_tokens: number;
   post_green_verification_calls: number;
   multiple_element_failures_total: number;
   rtl_dom_leak_failures: number;
@@ -239,6 +246,13 @@ export function buildRunExport(
       full_suite_test_calls: analysis.full_suite_test_calls,
       manual_build_calls: analysis.manual_build_calls,
       test_reinspection_calls: analysis.test_reinspection_calls,
+      same_generation_test_reruns: analysis.same_generation_test_reruns,
+      same_generation_full_suite_reruns: analysis.same_generation_full_suite_reruns,
+      same_generation_partial_suite_reruns: analysis.same_generation_partial_suite_reruns,
+      first_failure_tool_output_chars: analysis.first_failure_tool_output_chars,
+      next_call_input_tokens_after_failure: analysis.next_call_input_tokens_after_failure,
+      post_failure_input_tokens: analysis.post_failure_input_tokens,
+      post_failure_cache_read_tokens: analysis.post_failure_cache_read_tokens,
       post_green_verification_calls: analysis.post_green_verification_calls,
       multiple_element_failures_total: analysis.multiple_element_failures_total,
       rtl_dom_leak_failures: analysis.rtl_dom_leak_failures,

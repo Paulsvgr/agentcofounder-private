@@ -69,6 +69,13 @@ export interface RunReportRow {
   first_green_s: number | null;
   repair_loop_calls: number;
   test_reinspection_calls: number;
+  same_generation_test_reruns: number;
+  same_generation_full_suite_reruns: number;
+  same_generation_partial_suite_reruns: number;
+  first_failure_tool_output_chars: number | null;
+  next_call_input_tokens_after_failure: number | null;
+  post_failure_input_tokens: number;
+  post_failure_cache_read_tokens: number;
   post_green_verification_calls: number;
   rtl_dom_leak_failures: number;
   query_ambiguity_failures: number;
@@ -325,6 +332,13 @@ export async function buildRunReportRow(
     first_green_s: efficiency.first_green_s,
     repair_loop_calls: repairLoopCalls(exportPayload),
     test_reinspection_calls: efficiency.test_reinspection_calls,
+    same_generation_test_reruns: efficiency.same_generation_test_reruns ?? 0,
+    same_generation_full_suite_reruns: efficiency.same_generation_full_suite_reruns ?? 0,
+    same_generation_partial_suite_reruns: efficiency.same_generation_partial_suite_reruns ?? 0,
+    first_failure_tool_output_chars: efficiency.first_failure_tool_output_chars ?? null,
+    next_call_input_tokens_after_failure: efficiency.next_call_input_tokens_after_failure ?? null,
+    post_failure_input_tokens: efficiency.post_failure_input_tokens ?? 0,
+    post_failure_cache_read_tokens: efficiency.post_failure_cache_read_tokens ?? 0,
     post_green_verification_calls: efficiency.post_green_verification_calls,
     rtl_dom_leak_failures: efficiency.rtl_dom_leak_failures ?? 0,
     query_ambiguity_failures: efficiency.query_ambiguity_failures ?? 0,
@@ -367,6 +381,8 @@ export function summarizeRows(rows: RunReportRow[]): {
   median_output_tokens: number | null;
   median_implementation_output_tokens: number | null;
   median_persistence_plumbing_loc: number | null;
+  median_same_generation_test_reruns: number | null;
+  median_post_failure_input_tokens: number | null;
   adoption_rate: number | null;
   rtl_dom_leak_total: number;
 } {
@@ -394,6 +410,14 @@ export function summarizeRows(rows: RunReportRow[]): {
       successful
         .map((row) => row.loc?.persistence_plumbing_loc)
         .filter((value): value is number => value !== undefined),
+    ),
+    median_same_generation_test_reruns: median(
+      successful.map((row) => row.same_generation_test_reruns),
+    ),
+    median_post_failure_input_tokens: median(
+      successful
+        .map((row) => row.post_failure_input_tokens)
+        .filter((value) => value > 0),
     ),
     adoption_rate: successful.length > 0 ? adopted.length / successful.length : null,
     rtl_dom_leak_total: rows.reduce((sum, row) => sum + row.rtl_dom_leak_failures, 0),

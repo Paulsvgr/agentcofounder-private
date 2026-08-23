@@ -221,6 +221,110 @@ ENRICH: dict[str, dict] = {
         "rating": 9,
         "comment": "Experiment 1 · rtl-cleanup · rep 5 · snowball · ~183k",
     },
+    # Experiment 2 — stop rule (Phase F) — app_rating from harness status proxy
+    "2026-08-22T13-01-28-141Z": {
+        "approach": "stop-treatment-1",
+        "rating": 9,
+        "comment": "Experiment 2 · stop-treatment · rep 1 · success · ~115k",
+    },
+    "2026-08-22T13-05-39-237Z": {
+        "approach": "stop-treatment-2",
+        "rating": 9,
+        "comment": "Experiment 2 · stop-treatment · rep 2 · success · ~464k snowball",
+    },
+    "2026-08-22T13-17-13-191Z": {
+        "approach": "stop-treatment-3",
+        "rating": 9,
+        "comment": "Experiment 2 · stop-treatment · rep 3 · success · ~98k",
+    },
+    "2026-08-22T13-21-13-940Z": {
+        "approach": "stop-treatment-4",
+        "rating": 9,
+        "comment": "Experiment 2 · stop-treatment · rep 4 · success · ~89k",
+    },
+    "2026-08-22T13-24-33-801Z": {
+        "approach": "stop-treatment-5",
+        "rating": 9,
+        "comment": "Experiment 2 · stop-treatment · rep 5 · success · ~110k",
+    },
+    # Experiment 3 — test policy (Phase F)
+    "2026-08-22T13-36-39-241Z": {
+        "approach": "test-policy-treatment-1",
+        "rating": 9,
+        "comment": "Experiment 3 · test-policy-treatment · rep 1 · success · ~95k",
+    },
+    "2026-08-22T13-40-30-448Z": {
+        "approach": "test-policy-treatment-2",
+        "rating": 9,
+        "comment": "Experiment 3 · test-policy-treatment · rep 2 · success · ~149k",
+    },
+    "2026-08-22T13-45-25-291Z": {
+        "approach": "test-policy-treatment-3",
+        "rating": 9,
+        "comment": "Experiment 3 · test-policy-treatment · rep 3 · success · ~86k",
+    },
+    "2026-08-22T13-48-43-833Z": {
+        "approach": "test-policy-treatment-4",
+        "rating": 9,
+        "comment": "Experiment 3 · test-policy-treatment · rep 4 · success · ~43k CLEAN",
+    },
+    "2026-08-22T13-50-41-642Z": {
+        "approach": "test-policy-treatment-5",
+        "rating": 2,
+        "comment": "Experiment 3 · test-policy-treatment · rep 5 · failed · ~40k",
+    },
+    # Experiment 4 — digest prompt (Phase F)
+    "2026-08-22T15-36-46-247Z": {
+        "approach": "digest-treatment-1",
+        "rating": 9,
+        "comment": "Experiment 4 · digest-treatment · rep 1 · success · ~169k",
+    },
+    "2026-08-22T15-41-09-057Z": {
+        "approach": "digest-treatment-2",
+        "rating": 9,
+        "comment": "Experiment 4 · digest-treatment · rep 2 · success · ~151k",
+    },
+    "2026-08-22T15-46-06-909Z": {
+        "approach": "digest-treatment-3",
+        "rating": 9,
+        "comment": "Experiment 4 · digest-treatment · rep 3 · success · ~79k",
+    },
+    "2026-08-22T15-49-17-778Z": {
+        "approach": "digest-treatment-4",
+        "rating": 9,
+        "comment": "Experiment 4 · digest-treatment · rep 4 · success · ~58k CLEAN",
+    },
+    "2026-08-22T15-51-44-486Z": {
+        "approach": "digest-treatment-5",
+        "rating": 9,
+        "comment": "Experiment 4 · digest-treatment · rep 5 · success · ~74k",
+    },
+    # Experiment 5 — template primitives (Phase F)
+    "2026-08-22T16-56-27-564Z": {
+        "approach": "template-treatment-1",
+        "rating": 9,
+        "comment": "Experiment 5 · template-treatment · rep 1 · success · ~154k",
+    },
+    "2026-08-22T17-01-31-192Z": {
+        "approach": "template-treatment-2",
+        "rating": 9,
+        "comment": "Experiment 5 · template-treatment · rep 2 · success · ~104k",
+    },
+    "2026-08-22T17-05-14-355Z": {
+        "approach": "template-treatment-3",
+        "rating": 9,
+        "comment": "Experiment 5 · template-treatment · rep 3 · success · ~76k",
+    },
+    "2026-08-22T17-08-17-292Z": {
+        "approach": "template-treatment-4",
+        "rating": 6,
+        "comment": "Experiment 5 · template-treatment · rep 4 · partial · ~96k (harness-status proxy; startup attribution open)",
+    },
+    "2026-08-22T17-11-43-850Z": {
+        "approach": "template-treatment-5",
+        "rating": 9,
+        "comment": "Experiment 5 · template-treatment · rep 5 · success · ~58k",
+    },
 }
 
 APPROACH_MAP: dict[str, tuple[str, str, int | None]] = {
@@ -289,6 +393,16 @@ APPROACH_MAP: dict[str, tuple[str, str, int | None]] = {
     "template-treatment-3": ("F", "exp5-template-treatment", 3),
     "template-treatment-4": ("F", "exp5-template-treatment", 4),
     "template-treatment-5": ("F", "exp5-template-treatment", 5),
+    "reporter-treatment-1": ("F", "exp6-reporter-treatment", 1),
+    "reporter-treatment-2": ("F", "exp6-reporter-treatment", 2),
+    "reporter-treatment-3": ("F", "exp6-reporter-treatment", 3),
+    "reporter-treatment-4": ("F", "exp6-reporter-treatment", 4),
+    "reporter-treatment-5": ("F", "exp6-reporter-treatment", 5),
+    "storage-treatment-1": ("F", "exp5b-storage-treatment", 1),
+    "storage-treatment-2": ("F", "exp5b-storage-treatment", 2),
+    "storage-treatment-3": ("F", "exp5b-storage-treatment", 3),
+    "storage-treatment-4": ("F", "exp5b-storage-treatment", 4),
+    "storage-treatment-5": ("F", "exp5b-storage-treatment", 5),
 }
 
 LEGACY_SMOKE_IDS = {
@@ -509,6 +623,10 @@ def main() -> None:
                 "exp4-digest-treatment",
                 "exp5-template-control",
                 "exp5-template-treatment",
+                "exp6-reporter-control",
+                "exp6-reporter-treatment",
+                "exp5b-storage-control",
+                "exp5b-storage-treatment",
                 "legacy",
                 "legacy-smoke",
                 "unknown",

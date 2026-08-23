@@ -357,7 +357,79 @@ Recorded via enhanced report (output + implementation output + LOC + adoption):
 
 Run artifacts: `artifacts/experiments/template-treatment/`.
 
-**Next:** Experiment 6 (skill inlining) or expand Exp 5 n if prioritizing output cost.
+**Next:** Experiment 6 (template-owned deterministic Vitest failure reporter) on frozen Exp5 stack; then Exp5b storage hardening.
+
+## Canonical Exp1–Exp5 narrative (frozen 2026-08-23)
+
+### Thesis
+
+AgentCofounder already has enough coding capability. The main optimization problem is **trajectory control**: whether a run stays on a short path to verified success or enters a long test/debug/cache loop. Reliability and token efficiency are the same problem — prevent repair snowballs.
+
+Use one capable coding agent for decisions requiring intelligence; move reproducible mechanics (test isolation, failure presentation, verification state, stopping, startup auditing) into deterministic infrastructure where compliance allows.
+
+### Stacked sequence
+
+```text
+Exp0 measurement → Exp1 RTL cleanup → Exp2 stop rule → Exp3 test policy
+  → Exp4 digest prompt (REVERT) → Exp5 template primitives (WEAK KEEP)
+  → Exp6 compact Vitest reporter → Exp5b storage hardening → later skill / verification metrics
+```
+
+### Verdict table
+
+| Exp | What it tested | What we learned | Verdict |
+|-----|----------------|-----------------|---------|
+| **1 RTL cleanup** | Seeded `afterEach(cleanup)` | Removes one infrastructure failure class; snowballs still happen from query ambiguity, split text, validation | **KEEP** |
+| **2 Stop rule** | Stop after verified generation | Trims post-green tail (median post_green 3→1); does not rescue pre-verification snowballs | **KEEP + FIX semantics** (generation-aware verification, not first test-green alone) |
+| **3 Test policy** | Compact journey-focused tests | Best trajectory evidence; first CLEAN at 43k; does not guarantee correct suite first try | **KEEP** |
+| **4 Digest prompt** | NL “read failures once” | Hypothesis right, implementation wrong — model still grep/tail/reruns | **REVERT prompt; REDESIGN as deterministic reporter (Exp6)** |
+| **5 Template primitives** | Domain-neutral store/hook/text helpers | Adoption excellent; plumbing LOC ↓; output savings weak (−6.9%); eager storage capture is recurring defect | **WEAK KEEP; harden storage (Exp5b)** |
+
+### Experiment verdict vs architecture implication
+
+- **Exp4:** REVERT the prompt. Keep the hypothesis — deterministic failure presentation belongs in template test tooling (Exp6), not harness `run-challenge.ts`.
+- **Exp5:** Do not revert primitives. Fix `collectionStore` lazy default storage and simplify `useCollection` guidance before claiming economic wins.
+
+### Trajectory classes
+
+Keep **CLEAN**, **SNOWBALL**, and **EARLY FATAL / HUNG** as distinct classes. Do not force every run into binary clean/snowball.
+
+### Metric caveats (directional only until trace adjudication)
+
+- `post_green_verification_calls` — production build after test-green is often required verification, not waste.
+- `multiple_element_failures_total` — distinguish cross-test RTL leakage from same-DOM query ambiguity.
+- `app_rating` in `runs-classification.json` is a **harness-status-derived display proxy** (`success`→9, `partial`→6, `failed`→2), not hand-adjudicated application quality. Do not cite `template-treatment-4` rating=6 as proof of template-induced regression while startup attribution remains open.
+
+### Exp6 — compact deterministic Vitest failure reporter
+
+**Question:** If the first failing test execution gives the model one compact, semantically complete view of every failure, does it stop same-generation diagnostic reruns without hurting quality?
+
+**Baseline stack:** Exp1 + Exp2 + Exp3 + Exp5 primitives. No Exp4 prompt. Exp5 storage semantics frozen.
+
+**Control proxy:** Historical `template-treatment` cohort (same provider/model/idea/stack).
+
+**Primary counter:** `same_generation_test_reruns` (previous test failed, no source mutation since, test runs again — heuristic, includes bash mutations like `sed -i`).
+
+**Token tradeoff fields:** `first_failure_tool_output_chars`, `next_call_input_tokens_after_failure`, `post_failure_input_tokens`, `post_failure_cache_read_tokens`.
+
+**Go/no-go gate:** `./scripts/check-reporter-isolation.sh` must pass before cohort (`npm test` → compact marker once; `--reporter=json` → valid JSON, no compact output).
+
+**Success criteria (priority order):** quality → same_generation reruns ↓ → reinspections/repair ↓ → economics → CLEAN / weighted total.
+
+```bash
+npm run experiment:run -- --arm reporter-treatment --reps 5 --provider zai --publish
+npm run experiment:report -- reporter-treatment
+npm run publish:runs -- --exp6-reporter --seed
+```
+
+### Exp5b — storage primitive hardening (after Exp6)
+
+Lazy default storage resolution in `collectionStore`; explicit `options.storage` stays captured. Simpler `useCollection` guidance in `app-template/AGENTS.md`.
+
+```bash
+npm run experiment:run -- --arm storage-treatment --reps 5 --provider zai --publish
+npm run publish:runs -- --exp5b-storage --seed
+```
 
 ## Revert-rule template
 
