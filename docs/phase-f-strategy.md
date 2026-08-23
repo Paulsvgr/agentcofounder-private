@@ -456,6 +456,28 @@ npm run experiment:run -- --arm storage-treatment --reps 5 --provider zai --publ
 npm run publish:runs -- --exp5b-storage --seed
 ```
 
+## Experiment 5b results (2026-08-23)
+
+**Treatment commit:** `32a5565`
+
+| Arm | n | P(clean) | P(snowball) | median weighted | median calls | quality |
+|-----|---|----------|-------------|-----------------|--------------|---------|
+| reporter-treatment (control) | 5 | 0.2 | 0.6 | 125k | 38 | 5/5 success |
+| storage-treatment | 5 | **0.6** | **0.4** | **67k** | **20** | 5/5 success |
+
+**Mechanism counters:**
+
+| Metric | Control | Treatment | Δ |
+|--------|---------|-----------|---|
+| median same_generation_test_reruns | 1.0 | **0** | ↓ |
+| median post_failure_input_tokens | 4610 | 3580 | ↓ |
+
+**Highlights:** Reps 3–5 = CLEAN (60–67k, 0 repair). Rep 1 still snowballed (115k).
+
+**Verdict: KEEP storage hardening** — P(clean) 0.2→0.6, median weighted ~47% lower vs adjacent reporter-treatment control. Fixes recurring test-storage failure class.
+
+Run artifacts: `artifacts/experiments/storage-treatment/`.
+
 ## Revert-rule template
 
 ```text
