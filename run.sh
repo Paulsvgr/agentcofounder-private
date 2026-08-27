@@ -3,7 +3,10 @@
 # Usage: BERGET_API_KEY=... ./run.sh [--idea-file <path>] [extra challenge args]
 set -euo pipefail
 
-: "${BERGET_API_KEY:?set BERGET_API_KEY first}"
+# .env.local is gitignored (.env.* rule). Put BERGET_API_KEY=... in it.
+if [ -f .env.local ]; then set -a; . ./.env.local; set +a; fi
+
+: "${BERGET_API_KEY:?set BERGET_API_KEY in .env.local or the environment}"
 MODEL="${CHALLENGE_MODEL:-openai/gpt-oss-120b}"
 THINKING="${CHALLENGE_THINKING:-off}"
 STAMP="$(date +%Y%m%d-%H%M%S)"
