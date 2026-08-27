@@ -20,7 +20,13 @@ Do not read, list, or search these files, and do not install packages — only w
 
 Decide the whole file set before writing anything, then write each file exactly once with `write`, complete and final. Do not assemble a file through successive `edit` calls, and do not re-read a file you just wrote — its contents are already known to you. Reserve `edit` for repairing a specific failure that test or build output actually reported.
 
-Run `npm test` and `npm run build` once, after every file is written, then repair only what failed. Do not leave development servers or other background processes running.
+Then, in this order:
+
+1. Write `report.partial.json` at the application root, described under **Reporting** below. Write it as soon as the source files exist, before running anything — a run without this file counts as a total failure no matter how good the application is.
+2. Run `npm test` and `npm run build` once, and repair only what failed.
+3. If repairs changed what the application does, rewrite `report.partial.json` to match.
+
+Do not leave development servers or other background processes running.
 
 ## Required outcome
 
@@ -35,7 +41,7 @@ Run `npm test` and `npm run build` once, after every file is written, then repai
 
 ## Reporting
 
-Write `report.partial.json` at the application root as your last action, containing exactly `status`, `app_url`, `start_command`, `summary`, `implemented_features`, `assumptions`, and `tests_run`.
+`report.partial.json` at the application root is mandatory. Without it the run is scored as a total failure, so write it even when something else has gone wrong. It contains exactly `status`, `app_url`, `start_command`, `summary`, `implemented_features`, `assumptions`, and `tests_run`.
 
 `assumptions` must record the decision you made about the idea's ambiguity, and the reason for any listed journey pattern you deliberately omitted. Never leave it empty.
 
