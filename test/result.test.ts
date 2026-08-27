@@ -61,6 +61,7 @@ const verification: AppVerification = {
     { command: "npm run build", journey: "Production build", result: "passed" },
     { command: "npm run dev", journey: "HTTP startup probe", result: "passed" },
   ],
+  journeys: [],
 };
 
 const portReclamation: PortReclamationAudit = {
@@ -308,5 +309,43 @@ describe("result contract", () => {
         ["/challenge/output/app/result.json", "/challenge/result.json"],
       ),
     ).toEqual(["/challenge/output/app/result.json"]);
+  });
+
+  it("records the journeys Vitest actually ran when the model reported none", async () => {
+    const silent: PartialRunResult = { ...partial, tests_run: [] };
+    const observed: AppVerification = {
+      ...verification,
+      journeys: [
+        { command: "vitest run", journey: "Tracker adds and lists a record", result: "passed" },
+        { command: "vitest run", journey: "Tracker persists across reloads", result: "passed" },
+      ],
+    };
+
+    const result = composeResult(silent, usage, 0, observed, portReclamation, ROOT_START_COMMAND);
+
+    expect(result.tests_run).toEqual(observed.journeys);
+    expect(result.status).toBe("success");
+    expect(await validateResultObject(result)).toEqual([]);
+  });
+
+  it("cannot manufacture a pass from a failing Vitest journey", () => {
+    const observed: AppVerification = {
+      ...verification,
+      journeys: [
+        { command: "vitest run", journey: "Tracker adds and lists a record", result: "passed" },
+        { command: "vitest run", journey: "Tracker filters by state", result: "failed" },
+      ],
+    };
+
+    const result = composeResult(partial, usage, 0, observed, portReclamation, ROOT_START_COMMAND);
+
+    expect(result.status).toBe("partial");
+    expect(result.tests_run).toEqual(observed.journeys);
+  });
+
+  it("keeps the model's own records when no Vitest assertions were readable", () => {
+    const result = composeResult(partial, usage, 0, verification, portReclamation, ROOT_START_COMMAND);
+
+    expect(result.tests_run).toEqual(partial.tests_run);
   });
 });

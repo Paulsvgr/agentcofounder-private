@@ -57,6 +57,13 @@ export interface PartialRunResult {
 export interface AppVerification {
   passed: boolean;
   checks: TestRun[];
+  /**
+   * Product journeys derived from the Vitest report's own assertion results.
+   * Each entry is a test that actually ran, named by its own `fullName`, with
+   * its real outcome. Never synthesised: an empty array means the report had
+   * no readable assertions, not that no journeys were required.
+   */
+  journeys: TestRun[];
 }
 
 export interface PortReclamationAudit {

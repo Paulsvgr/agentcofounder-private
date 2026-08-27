@@ -19,6 +19,7 @@ interface VitestReport {
   numPendingTests?: unknown;
   numTodoTests?: unknown;
   success?: unknown;
+  testResults?: unknown;
 }
 
 export interface VerificationOptions {
@@ -344,6 +345,46 @@ async function hasPassingVitestReport(reportPath: string): Promise<boolean> {
   }
 }
 
+/**
+ * Read the product journeys straight out of the Vitest report.
+ *
+ * The generated app's tests are the only first-hand evidence of which journeys
+ * were exercised, so they are transcribed verbatim: `fullName` becomes the
+ * journey text and the assertion's own status becomes the result. Nothing is
+ * invented and a failing assertion is reported as `failed`, so this can only
+ * ever describe what actually ran.
+ */
+export async function journeysFromVitestReport(
+  reportPath: string,
+  command: string,
+): Promise<TestRun[]> {
+  try {
+    const report = JSON.parse(await readFile(reportPath, "utf8")) as VitestReport;
+    if (!Array.isArray(report.testResults)) return [];
+    const journeys: TestRun[] = [];
+    for (const suite of report.testResults) {
+      if (typeof suite !== "object" || suite === null) continue;
+      const assertions = (suite as Record<string, unknown>).assertionResults;
+      if (!Array.isArray(assertions)) continue;
+      for (const assertion of assertions) {
+        if (typeof assertion !== "object" || assertion === null) continue;
+        const entry = assertion as Record<string, unknown>;
+        const name = typeof entry.fullName === "string" && entry.fullName.trim() !== ""
+          ? entry.fullName.trim()
+          : typeof entry.title === "string" ? entry.title.trim() : "";
+        if (name === "") continue;
+        // Only decided outcomes are journeys. Skipped and todo tests are not
+        // evidence of anything, and the harness already fails the run for them.
+        if (entry.status !== "passed" && entry.status !== "failed") continue;
+        journeys.push(testRun(command, name, entry.status));
+      }
+    }
+    return journeys;
+  } catch {
+    return [];
+  }
+}
+
 export function unavailableAppVerification(reason: string): AppVerification {
   return {
     passed: false,
@@ -352,6 +393,7 @@ export function unavailableAppVerification(reason: string): AppVerification {
       testRun("npm run build", `Production build was not run: ${reason}`, "failed"),
       testRun("npm run dev", `HTTP startup probe was not run: ${reason}`, "failed"),
     ],
+    journeys: [],
   };
 }
 
@@ -413,7 +455,9 @@ export async function verifyGeneratedApp(
       ),
     ];
 
-    return { passed: checks.every((entry) => entry.result === "passed"), checks };
+    const journeys = await journeysFromVitestReport(testReportPath, commands.test.display);
+
+    return { passed: checks.every((entry) => entry.result === "passed"), checks, journeys };
   } catch (error) {
     await safeWriteLog(path.join(artifactDirectory, "app-verification-error.log"), `${String(error)}\n`);
     return {
@@ -423,6 +467,7 @@ export async function verifyGeneratedApp(
         testRun(commands.build, "Production build could not be verified", "failed"),
         testRun(commands.dev, "HTTP startup could not be verified", "failed"),
       ],
+      journeys: [],
     };
   }
 }

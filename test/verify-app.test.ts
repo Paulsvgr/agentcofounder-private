@@ -4,7 +4,7 @@ import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { portHasListener, verifyGeneratedApp } from "../src/verify-app.js";
+import { journeysFromVitestReport, portHasListener, verifyGeneratedApp } from "../src/verify-app.js";
 
 const temporaryDirectories: string[] = [];
 const defaultPortOccupied = await portHasListener(3000);
@@ -274,4 +274,55 @@ describe("app verification", () => {
       warning.mockRestore();
     }
   }, 45_000);
+});
+
+describe("journeys derived from the Vitest report", () => {
+  async function reportFile(contents: unknown): Promise<string> {
+    const directory = await mkdtemp(path.join(os.tmpdir(), "agent-cofounder-journeys-"));
+    temporaryDirectories.push(directory);
+    const target = path.join(directory, "app-test-results.json");
+    await writeFile(target, JSON.stringify(contents), "utf8");
+    return target;
+  }
+
+  it("transcribes each assertion's own name and outcome", async () => {
+    const target = await reportFile({
+      testResults: [
+        {
+          assertionResults: [
+            { fullName: "Tracker adds a record", status: "passed" },
+            { fullName: "Tracker filters by state", status: "failed" },
+          ],
+        },
+      ],
+    });
+
+    expect(await journeysFromVitestReport(target, "vitest run")).toEqual([
+      { command: "vitest run", journey: "Tracker adds a record", result: "passed" },
+      { command: "vitest run", journey: "Tracker filters by state", result: "failed" },
+    ]);
+  });
+
+  it("ignores undecided assertions rather than counting them as journeys", async () => {
+    const target = await reportFile({
+      testResults: [
+        {
+          assertionResults: [
+            { fullName: "Tracker adds a record", status: "passed" },
+            { fullName: "Tracker exports to CSV", status: "skipped" },
+            { fullName: "Tracker syncs remotely", status: "todo" },
+          ],
+        },
+      ],
+    });
+
+    expect(await journeysFromVitestReport(target, "vitest run")).toEqual([
+      { command: "vitest run", journey: "Tracker adds a record", result: "passed" },
+    ]);
+  });
+
+  it("returns nothing for a missing or malformed report", async () => {
+    expect(await journeysFromVitestReport(path.join(os.tmpdir(), "absent.json"), "vitest run")).toEqual([]);
+    expect(await journeysFromVitestReport(await reportFile({ testResults: "broken" }), "vitest run")).toEqual([]);
+  });
 });

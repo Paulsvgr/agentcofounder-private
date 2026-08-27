@@ -89,15 +89,21 @@ export function composeResult(
   startCommand: string,
 ): RunResult {
   const runFailed = piExitCode !== 0 || usage.model_calls === 0 || partial.status === "failed";
+  // The Vitest report is first-hand evidence of which journeys ran and how they
+  // ended; the model's list is a self-report of the same thing. Prefer the
+  // evidence, falling back to the report only when no assertions were readable
+  // (verification unavailable, malformed report). This cannot manufacture a
+  // pass: a failing assertion arrives as `failed` and degrades the run below.
+  const testsRun = verification.journeys.length > 0 ? verification.journeys : partial.tests_run;
   const productJourneysPassed =
-    partial.tests_run.length > 0 && partial.tests_run.every((test) => test.result === "passed");
+    testsRun.length > 0 && testsRun.every((test) => test.result === "passed");
   const status = runFailed ? "failed" : verification.passed && productJourneysPassed ? partial.status : "partial";
   return {
     ...partial,
     status,
     app_url: "http://localhost:3000",
     start_command: startCommand,
-    tests_run: partial.tests_run,
+    tests_run: testsRun,
     harness_checks: verification.checks,
     ...usage,
     pi_exit_code: piExitCode,
