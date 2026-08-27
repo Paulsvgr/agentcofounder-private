@@ -1,0 +1,7 @@
+# Thin layer over the organizers' image: adds the Berget provider config.
+# Contains no credentials -- the key is interpolated from $BERGET_API_KEY at request time.
+FROM agentcofounder:base
+USER root
+RUN mkdir -p /home/node/.pi/agent && chown -R node:node /home/node/.pi
+COPY --chown=node:node solution/berget-models.json /home/node/.pi/agent/models.json
+USER node

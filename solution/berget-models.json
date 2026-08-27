@@ -1,0 +1,43 @@
+{
+  "providers": {
+    "berget": {
+      "baseUrl": "https://api.berget.ai/v1",
+      "api": "openai-completions",
+      "apiKey": "$BERGET_API_KEY",
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false
+      },
+      "models": [
+        {
+          "id": "openai/gpt-oss-120b",
+          "name": "GPT-OSS 120B (Berget)",
+          "contextWindow": 128000,
+          "maxTokens": 32000,
+          "cost": { "input": 0.2, "output": 0.75, "cacheRead": 0, "cacheWrite": 0 }
+        },
+        {
+          "id": "zai-org/GLM-5.2",
+          "name": "GLM 5.2 (Berget)",
+          "contextWindow": 256000,
+          "maxTokens": 32000,
+          "cost": { "input": 1.4, "output": 4.4, "cacheRead": 0, "cacheWrite": 0 }
+        },
+        {
+          "id": "moonshotai/Kimi-K3",
+          "name": "Kimi K3 (Berget)",
+          "contextWindow": 256000,
+          "maxTokens": 32000,
+          "cost": { "input": 3, "output": 15, "cacheRead": 0, "cacheWrite": 0 }
+        },
+        {
+          "id": "mistralai/Mistral-Small-3.2-24B-Instruct-2506",
+          "name": "Mistral Small 3.2 24B (Berget)",
+          "contextWindow": 128000,
+          "maxTokens": 32000,
+          "cost": { "input": 0.3, "output": 0.3, "cacheRead": 0, "cacheWrite": 0 }
+        }
+      ]
+    }
+  }
+}
