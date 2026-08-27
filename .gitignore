@@ -18,3 +18,4 @@ coverage/
 # local run outputs
 runs/
 demo/
+overnight.log
