@@ -5,6 +5,16 @@ description: Turn a non-technical product idea into a small, tested browser appl
 
 # MVP Builder
 
+## Reusable UI
+
+The project contains reusable UI primitives in `src/components/ui`.
+
+Inspect and reuse them before implementing equivalent UI primitives yourself.
+
+Prefer composition of existing primitives over creating duplicate components.
+
+Do not force requirements into an existing primitive when it does not fit.
+
 1. Extract the entity, its attributes, every journey detailed or implied by the idea, and any ambiguity.
 2. Use the public journey guidance as a coverage check. Implement every applicable pattern, but omit patterns the idea does not imply instead of inventing substitute features; record the rationale in `assumptions`.
 3. Prefer browser-local persistence unless the idea genuinely requires a backend. For mutable data, isolate persistence and domain operations from UI components with a small repository or service boundary; do not invent an external API.
