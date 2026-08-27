@@ -197,7 +197,37 @@ describe("result contract", () => {
       assumptions: [],
       tests_run: [{ command: "npm test", journey: "Kept journey", result: "passed" }],
     });
+    // An unreadable status is normalised to `partial`, but the composed verdict
+    // no longer reads it: verification passed and the one recorded journey
+    // passed, so the evidence supports success.
     expect(composeResult(normalized!, usage, 0, verification, portReclamation, ROOT_START_COMMAND).status).toBe(
+      "success",
+    );
+  });
+
+  it("ignores a stale self-reported status when the evidence is complete", () => {
+    const stale: PartialRunResult = { ...partial, status: "partial", summary: "Initial scaffold" };
+    const observed: AppVerification = {
+      ...verification,
+      journeys: [{ command: "vitest run", journey: "Tracker adds a record", result: "passed" }],
+    };
+
+    expect(composeResult(stale, usage, 0, observed, portReclamation, ROOT_START_COMMAND).status).toBe("success");
+  });
+
+  it("still degrades when a harness check failed, whatever the model claimed", () => {
+    const confident: PartialRunResult = { ...partial, status: "success" };
+    const brokenBuild: AppVerification = {
+      passed: false,
+      checks: [
+        { command: "npm test", journey: "Automated tests", result: "passed" },
+        { command: "npm run build", journey: "Production build", result: "failed" },
+        { command: "npm run dev", journey: "HTTP startup probe", result: "passed" },
+      ],
+      journeys: [{ command: "vitest run", journey: "Tracker adds a record", result: "passed" }],
+    };
+
+    expect(composeResult(confident, usage, 0, brokenBuild, portReclamation, ROOT_START_COMMAND).status).toBe(
       "partial",
     );
   });

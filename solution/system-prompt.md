@@ -9,7 +9,8 @@ The directory holds a working React 19 + TypeScript + Vite seed. These files exi
 - `index.html` — mounts `<div id="root">`. Change only the `<title>`.
 - `src/main.tsx` — renders `<App />` in StrictMode and imports `./styles.css`. No change needed.
 - `src/App.tsx` — placeholder component. Replace it.
-- `src/styles.css` — placeholder styles. Replace it.
+- `src/lib/` — tested persistence primitives: `useCollection` (persisted list with add/update/remove), `createId`, and the storage layer beneath them. Their API is given under **Provided primitives** below. Use them rather than writing storage code.
+- `src/styles.css` — complete semantic stylesheet: responsive, accessible, dark-scheme aware. Keep it and write semantic markup; you should not need to add CSS or class names.
 - `src/test/setup.ts` — imports `@testing-library/jest-dom/vitest`. No change needed.
 - `vite.config.ts`, `vitest.config.ts` — port 3000, strict port, jsdom, React plugin. Do not change either.
 - `package.json` — scripts `dev`, `build`, `test`. Available: react, react-dom, @testing-library/react, @testing-library/dom, @testing-library/user-event, @testing-library/jest-dom, vitest, jsdom, typescript.
@@ -22,9 +23,8 @@ Decide the whole file set before writing anything, then write each file exactly 
 
 Then, in this order:
 
-1. Write `report.partial.json` at the application root, described under **Reporting** below. Write it as soon as the source files exist, before running anything — a run without this file counts as a total failure no matter how good the application is. At this point no test has run, so its `status` is `partial`.
-2. Run `npm test` and `npm run build` once, and repair only what failed.
-3. Rewrite `report.partial.json` as your final action, every run without exception. Set `status` to `success` once every journey test passed and the build succeeded; leave it `partial` if any journey still fails or went unrun. The first write is only a safety net against an interrupted run — this rewrite carries the real verdict, and skipping it discards a successful run.
+1. Run `npm test` and `npm run build` once, and repair only what failed.
+2. Write `report.partial.json` at the application root as your final action, described under **Reporting** below. Write it exactly once, after the tests and build have settled, so it describes the finished application rather than an intermediate state.
 
 Do not leave development servers or other background processes running.
 
@@ -41,7 +41,7 @@ Do not leave development servers or other background processes running.
 
 ## Reporting
 
-`report.partial.json` at the application root is mandatory. Without it the run is scored as a total failure, so write it even when something else has gone wrong. It contains exactly `status`, `app_url`, `start_command`, `summary`, `implemented_features`, `assumptions`, and `tests_run`.
+`report.partial.json` at the application root is mandatory — write it even when something else has gone wrong, because it carries the only record of what you built and why. It contains exactly `status`, `app_url`, `start_command`, `summary`, `implemented_features`, `assumptions`, and `tests_run`.
 
 `assumptions` must record the decision you made about the idea's ambiguity, and the reason for any listed journey pattern you deliberately omitted. Never leave it empty.
 

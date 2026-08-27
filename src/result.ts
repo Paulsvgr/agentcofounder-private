@@ -13,7 +13,8 @@ const FALLBACK_PARTIAL: PartialRunResult = {
   status: "failed",
   app_url: "http://localhost:3000",
   start_command: "npm run dev",
-  summary: "The harness did not produce a valid report.partial.json file.",
+  summary:
+    "The model did not write a readable report.partial.json; this result reflects harness verification only.",
   implemented_features: [],
   assumptions: [],
   tests_run: [],
@@ -88,7 +89,7 @@ export function composeResult(
   portReclamation: PortReclamationAudit,
   startCommand: string,
 ): RunResult {
-  const runFailed = piExitCode !== 0 || usage.model_calls === 0 || partial.status === "failed";
+  const runFailed = piExitCode !== 0 || usage.model_calls === 0;
   // The Vitest report is first-hand evidence of which journeys ran and how they
   // ended; the model's list is a self-report of the same thing. Prefer the
   // evidence, falling back to the report only when no assertions were readable
@@ -97,7 +98,14 @@ export function composeResult(
   const testsRun = verification.journeys.length > 0 ? verification.journeys : partial.tests_run;
   const productJourneysPassed =
     testsRun.length > 0 && testsRun.every((test) => test.result === "passed");
-  const status = runFailed ? "failed" : verification.passed && productJourneysPassed ? partial.status : "partial";
+  // Status follows the rule AGENTS.md already states -- success requires at
+  // least one journey with every entry passed -- applied to what the harness
+  // verified rather than to what the model claimed. Observed runs wrote a
+  // stale `partial` from a safety-net report while all of their own tests
+  // passed, so the self-reported status tracks write order, not the outcome.
+  // Evidence can only lower the verdict here: any failing journey, failed
+  // harness check, non-zero exit, or absent telemetry still degrades the run.
+  const status = runFailed ? "failed" : verification.passed && productJourneysPassed ? "success" : "partial";
   return {
     ...partial,
     status,

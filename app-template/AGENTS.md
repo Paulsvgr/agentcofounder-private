@@ -10,3 +10,45 @@
 - A `success` report must contain at least one `tests_run` entry and every entry must be `passed`. If a journey failed or was not run, record it as `failed`, explain why in `journey`, and use `partial` (or `failed` when the app cannot run).
 - The runner owns the final `app_url`, location-aware `start_command`, independent `harness_checks`, and telemetry fields. Your product-journey test records remain in the specification-defined `tests_run` field.
 - Do not create or edit `result.json`; the outer challenge runner derives its telemetry from Pi.
+
+## Provided primitives
+
+`src/lib/` already implements persistence, so do not hand-roll `localStorage`
+access, JSON recovery, or id generation. Import these instead — the files are
+tested and complete, and you never need to open them.
+
+```ts
+import { useCollection, type Identified } from "./lib/useCollection.js";
+import { createId } from "./lib/id.js";
+import type { StorageFailure } from "./lib/storage.js";
+
+interface Thing extends Identified {   // Identified supplies `id: string`
+  name: string;
+}
+
+// Inside a component. `revive` validates one stored entry and returns it,
+// or returns undefined to drop it. Unreadable entries never discard the rest.
+const { items, add, update, remove, replace } = useCollection<Thing>("things", {
+  revive: (value) => {
+    if (typeof value !== "object" || value === null) return undefined;
+    const c = value as { id?: unknown; name?: unknown };
+    if (typeof c.id !== "string" || typeof c.name !== "string") return undefined;
+    return { id: c.id, name: c.name };
+  },
+  onFailure: (failure: StorageFailure, detail: string) => setNotice(detail),
+});
+
+add({ id: createId(), name: "example" });
+update(id, (thing) => ({ ...thing, name: "renamed" }));
+remove(id);
+```
+
+`items` is a readonly array that survives a refresh. Derive filters and counts
+from it directly; do not mirror it into separate state. `onFailure` reports
+unavailable storage, corrupt data, dropped entries, and rejected writes, so
+render that message in an element with `role="alert"` when one arrives.
+
+`src/styles.css` already styles semantic elements — headings, `section`, `form`,
+`label`, `input`, `select`, `button`, `ul`/`li`, `table`, and `[role="alert"]` —
+responsively, with focus rings and a dark scheme. Write accessible markup and it
+is styled; you should not need to add CSS or class names.
