@@ -38,6 +38,9 @@ fi
 set +e
 wsl -d Ubuntu -e bash -lc "
   rm -rf $WSL_DIR/artifacts/runs   # keep one run's audit trail per result directory
+  # output/app is disposable and reset every run. An interrupted run can leave
+  # it without its marker file, after which prepare-output refuses to touch it.
+  rm -rf $WSL_DIR/output/app
   export PATH=\$HOME/tools/node22/bin:\$PATH
   export BERGET_API_KEY='$BERGET_API_KEY'
   export CHALLENGE_PROVIDER=berget
