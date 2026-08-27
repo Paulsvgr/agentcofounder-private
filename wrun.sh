@@ -23,13 +23,17 @@ echo "model: $MODEL (thinking=$THINKING)"
 # Mirror the current source into the WSL filesystem. node_modules and previous
 # run output stay put, so only changed sources move.
 # Git Bash reports /c/... for what WSL mounts at /mnt/c/...
-SRC="/mnt$(pwd)"
-wsl -d Ubuntu -e bash -lc "
-  rsync -a \
-    --exclude node_modules --exclude .git --exclude runs \
-    --exclude 'artifacts/runs' --exclude 'output/app' --exclude dist \
-    '$SRC/' $WSL_DIR/
-"
+# SKIP_SYNC lets a batch sync once up front, so an edit made mid-batch cannot
+# silently change the configuration being measured.
+if [ "${SKIP_SYNC:-0}" != "1" ]; then
+  SRC="/mnt$(pwd)"
+  wsl -d Ubuntu -e bash -lc "
+    rsync -a \
+      --exclude node_modules --exclude .git --exclude runs \
+      --exclude 'artifacts/runs' --exclude 'output/app' --exclude dist \
+      '$SRC/' $WSL_DIR/
+  "
+fi
 
 set +e
 wsl -d Ubuntu -e bash -lc "

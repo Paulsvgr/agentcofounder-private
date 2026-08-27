@@ -9,6 +9,17 @@ if ! wsl -d Ubuntu -e true 2>/dev/null; then
   exit 1
 fi
 
+# Sync once, up front. wrun.sh would otherwise re-sync per run, so an edit made
+# while a batch is running would change the configuration mid-measurement.
+wsl -d Ubuntu -e bash -lc "
+  rsync -a \
+    --exclude node_modules --exclude .git --exclude runs \
+    --exclude 'artifacts/runs' --exclude 'output/app' --exclude dist \
+    '/mnt$(pwd)/' \$HOME/agentcofounder/
+"
+echo "synced once; config frozen for this batch"
+export SKIP_SYNC=1
+
 before=$(ls runs 2>/dev/null | wc -l)
 for i in $(seq 1 "$N"); do
   echo "═══ repeat $i/$N ═══"

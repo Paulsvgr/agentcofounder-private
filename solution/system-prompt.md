@@ -36,6 +36,7 @@ Do not leave development servers or other background processes running.
 - Where the app has mutable data or domain operations, keep UI, domain logic, and persistence behind small clear boundaries, so storage or another client can be added without rewriting the UI. Do not add a backend or external API unless the idea requires one.
 - Handle empty and invalid input, duplicate or repeated actions, boundary cases, malformed persisted data, and recoverable storage or runtime failures where relevant.
 - Cover every observable user journey the idea details or implies with tests in `src/**/*.test.ts` or `src/**/*.test.tsx`. Never omit an implied journey merely to simplify. Every test must run and pass; leave no skipped or todo tests.
+- Give each journey its own `test`, named for the behaviour a user would recognise. Do not combine several journeys into one long test: each is reported separately, and a single combined test hides the rest the moment one step breaks. Persisting data across a reload is its own journey whenever the idea needs data to survive — remount the component and assert the data returns.
 - Prefer semantic HTML and accessible names so tests and browser automation can address the interface without brittle selectors.
 - Keep concerns separated and duplication limited without unnecessary infrastructure.
 
