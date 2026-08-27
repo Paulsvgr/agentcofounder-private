@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { decideRead, recordRead, type SeenRange } from "../solution/extensions/lean-context.js";
 
@@ -65,5 +66,19 @@ describe("recordRead", () => {
     const seen = new Map<string, SeenRange>();
     recordRead("src/App.tsx", seen, 1, undefined);
     expect(decideRead("src/App.tsx", seen, 900, 50).block).toBe(true);
+  });
+});
+
+describe("edit redirection", () => {
+  it("documents why edits are redirected rather than allowed", () => {
+    // Guard the reasoning, since the block only pays off if the replacement
+    // write is genuinely cheaper than the repair loop an edit invites.
+    const source = readFileSync(
+      new URL("../solution/extensions/lean-context.ts", import.meta.url),
+      "utf8",
+    );
+    expect(source).toContain('event.toolName === "edit"');
+    expect(source).toContain("block: true");
+    expect(source).toContain("complete new contents");
   });
 });

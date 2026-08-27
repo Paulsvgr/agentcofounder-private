@@ -114,7 +114,27 @@ export default function leanContext(pi: ExtensionAPI) {
   pi.on("tool_call", async (event, context) => {
     const input = event.input as Record<string, unknown>;
 
-    if (event.toolName === "write" || event.toolName === "edit") {
+    // Edit count predicts the token score better than anything else measured
+    // (r = 0.91 over 22 runs). An edit has to match the file's exact current
+    // text, so it pulls the model into read-edit-read-edit repair loops, and
+    // every read inflates each remaining turn for the rest of the run. A whole
+    // -file write needs no such loop: the model already knows what the file
+    // should contain. Rewriting costs a few hundred output tokens; one avoided
+    // repair turn saves tens of thousands of input tokens.
+    if (event.toolName === "edit") {
+      const relative = relativePath(appRoot, String(input.path ?? ""));
+      seen.delete(relative);
+      if (context.hasUI) context.ui.notify(`Redirected edit to a full write: ${relative}`, "info");
+      return {
+        block: true,
+        reason:
+          `Use write to replace ${relative} with its complete new contents instead of editing ` +
+          `it in place. You already know what the file should contain, so rewriting it in one ` +
+          `step is cheaper and more reliable than matching and patching existing text.`,
+      };
+    }
+
+    if (event.toolName === "write") {
       // The file now differs from whatever was last shown, so allow a re-read.
       seen.delete(relativePath(appRoot, String(input.path ?? "")));
       return undefined;
