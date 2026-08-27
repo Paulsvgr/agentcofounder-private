@@ -62,11 +62,29 @@ if (rows.length === 0) {
   console.log(cols.map((c) => "-".repeat(width[c])).join("  "));
   for (const r of rows) console.log(line(r));
 
-  const best = rows.reduce((a, b) => (a.efficiency <= b.efficiency ? a : b));
-  const first = rows[0];
-  console.log(`\nbest: ${best.run} at ${best.efficiency.toLocaleString()}`);
-  if (best !== first) {
-    const delta = (1 - best.efficiency / first.efficiency) * 100;
-    console.log(`vs first run (${first.efficiency.toLocaleString()}): ${delta.toFixed(1)}% lower`);
+  // A run with no model calls never reached the provider (quota rejection,
+  // auth failure). It scores zero tokens without meaning anything, so it must
+  // not win a comparison.
+  const scored = rows.filter((r) => r.calls > 0 && r.input > 0);
+  const unreached = rows.length - scored.length;
+  if (unreached > 0) {
+    console.log(`\n${unreached} run(s) never reached the model and are excluded below.`);
+  }
+  if (scored.length === 0) {
+    console.log("No scored runs yet.");
+  } else {
+    const efficiencies = scored.map((r) => r.efficiency).sort((a, b) => a - b);
+    const median = efficiencies[Math.floor(efficiencies.length / 2)];
+    const gateFails = scored.filter((r) => r.gate === "FAIL").length;
+    const successes = scored.filter((r) => r.status === "success").length;
+    console.log(
+      `\nscored runs : ${scored.length}` +
+        `\nefficiency  : best ${efficiencies[0].toLocaleString()}` +
+        ` | median ${median.toLocaleString()}` +
+        ` | worst ${efficiencies.at(-1).toLocaleString()}` +
+        ` (${(efficiencies.at(-1) / efficiencies[0]).toFixed(1)}x spread)` +
+        `\ngate passes : ${scored.length - gateFails}/${scored.length}` +
+        `\nsuccess     : ${successes}/${scored.length}`,
+    );
   }
 }
