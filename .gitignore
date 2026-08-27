@@ -10,6 +10,7 @@ artifacts/*
 !artifacts/.gitkeep
 output/*
 !output/.gitkeep
+saved-apps/
 
 app-template/node_modules/
 app-template/dist/
