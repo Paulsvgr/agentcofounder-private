@@ -22,9 +22,9 @@ Decide the whole file set before writing anything, then write each file exactly 
 
 Then, in this order:
 
-1. Write `report.partial.json` at the application root, described under **Reporting** below. Write it as soon as the source files exist, before running anything — a run without this file counts as a total failure no matter how good the application is.
+1. Write `report.partial.json` at the application root, described under **Reporting** below. Write it as soon as the source files exist, before running anything — a run without this file counts as a total failure no matter how good the application is. At this point no test has run, so its `status` is `partial`.
 2. Run `npm test` and `npm run build` once, and repair only what failed.
-3. If repairs changed what the application does, rewrite `report.partial.json` to match.
+3. Rewrite `report.partial.json` as your final action, every run without exception. Set `status` to `success` once every journey test passed and the build succeeded; leave it `partial` if any journey still fails or went unrun. The first write is only a safety net against an interrupted run — this rewrite carries the real verdict, and skipping it discards a successful run.
 
 Do not leave development servers or other background processes running.
 
