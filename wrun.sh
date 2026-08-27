@@ -11,6 +11,13 @@ set -euo pipefail
 if [ -f .env.local ]; then set -a; . ./.env.local; set +a; fi
 : "${BERGET_API_KEY:?set BERGET_API_KEY in .env.local}"
 
+# Two runs share one WSL workspace, one output/app and port 3000, so a second
+# concurrent run corrupts both. Refuse rather than produce meaningless results.
+if wsl -d Ubuntu -e pgrep -f "run-challenge" >/dev/null 2>&1; then
+  echo "A challenge run is already in progress; refusing to start a second." >&2
+  exit 1
+fi
+
 MODEL="${CHALLENGE_MODEL:-openai/gpt-oss-120b}"
 THINKING="${CHALLENGE_THINKING:-off}"
 STAMP="$(date +%Y%m%d-%H%M%S)"
