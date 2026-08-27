@@ -1,58 +1,44 @@
-Build the smallest maintainable application that covers every user journey the product idea details or implies. Minimize unnecessary complexity, not coverage or sound internal structure, and do not add capabilities the idea does not justify.
+Build the smallest maintainable application that covers every user journey the product idea details or implies. Do not add capabilities the idea does not justify.
 
-Work autonomously in the current directory. Do not ask clarifying questions. Resolve genuine ambiguity with a sensible product decision and record that decision under `assumptions`.
+Work autonomously in the current directory. Do not ask clarifying questions. Resolve genuine ambiguity with a sensible product decision and record it under `assumptions`.
 
 ## The workspace, already in place
 
-The directory holds a working React 19 + TypeScript + Vite seed. These files exist and are described here so you never need to open them:
+A working React 19 + TypeScript + Vite seed. These files exist and are described here so you never open them:
 
-- `index.html` — mounts `<div id="root">` and loads `/src/main.tsx`. Change only the `<title>`; keep both of those.
-- `src/main.tsx` — renders your `App` in StrictMode and imports `./styles.css`. No change needed.
-- `src/App.tsx` — placeholder component. Replace it, exporting a component called `App` from this exact path.
-- `src/lib/` — tested persistence primitives for ideas that keep a collection of records: `useCollection` (persisted list with add/update/remove), `createId`, and the storage layer beneath them. Their API is given under **Provided primitives** below. Use them when the idea keeps records; build whatever the idea actually needs when it does not, and delete unused files from `src/lib/` only.
-- `src/styles.css` — complete semantic stylesheet: responsive, accessible, dark-scheme aware. Keep it and write semantic markup; you should not need to add CSS or class names.
-- `src/test/setup.ts` — imports `@testing-library/jest-dom/vitest`. No change needed.
-- `vite.config.ts`, `vitest.config.ts` — port 3000, strict port, jsdom, React plugin. Do not change either.
-- `package.json` — scripts `dev`, `build`, `test`. Available: react, react-dom, @testing-library/react, @testing-library/dom, @testing-library/user-event, @testing-library/jest-dom, vitest, jsdom, typescript.
+- `index.html` — keeps `<div id="root">` and the `/src/main.tsx` script; change only the `<title>`.
+- `src/main.tsx` — renders your `App` and imports `./styles.css`. No change needed.
+- `src/App.tsx` — placeholder. Replace it, exporting a component called `App` from this exact path.
+- `src/lib/` — tested persistence primitives for ideas that keep records; see **Provided primitives** below. Delete unused files here only.
+- `src/styles.css` — complete semantic stylesheet, responsive and dark-scheme aware. Keep it; write semantic markup and you should not need CSS.
+- `src/test/setup.ts` — loads jest-dom. No change needed.
+- `vite.config.ts`, `vitest.config.ts` — port 3000, jsdom, React plugin. Do not change.
+- `package.json` — scripts `dev`, `build`, `test`. Available: react, react-dom, @testing-library/{react,dom,user-event,jest-dom}, vitest, jsdom, typescript.
 
-Do not read, list, or search these files, and do not install packages — only what the committed lockfile already provides is available.
-
-Four things must keep existing exactly as they are, because the build and the
-test runner load them by path: `src/main.tsx`, `src/styles.css`,
-`src/test/setup.ts`, and `<div id="root">` inside `index.html`. Deleting or
-moving any of them breaks every test. `src/lib/` is the only directory whose
-unused files you may remove.
+Do not read, list or search these files, and do not install packages. `main.tsx`, `styles.css`, `test/setup.ts` and `<div id="root">` are loaded by path — removing any of them breaks every test.
 
 ## How to work
 
-Decide the whole file set before writing anything, then write each file exactly once with the `write` tool, complete and final. A file only exists once `write` has created it — never present file contents as text in your reply, as nothing is saved that way. Do not assemble a file through successive `edit` calls, and do not re-read a file you just wrote — its contents are already known to you. Reserve `edit` for repairing a specific failure that test or build output actually reported.
+Decide the whole file set before writing anything, then write each file exactly once with the `write` tool, complete and final. Do not assemble a file through successive `edit` calls, and do not re-read a file you just wrote. A file exists only once `write` has created it — never present file contents as text in your reply. Reserve `edit` for repairing a failure the test or build output actually reported.
 
-Then, in this order:
-
-1. Run `npm test` and `npm run build` once, and repair only what failed.
-2. Write `report.partial.json` at the application root as your final action, described under **Reporting** below. Write it exactly once, after the tests and build have settled, so it describes the finished application rather than an intermediate state.
-
-Do not leave development servers or other background processes running.
+Then run `npm test` and `npm run build` once, repair only what failed, and write `report.partial.json` as your final action. Leave no development server running.
 
 ## Required outcome
 
-- The application starts with `npm run dev` at exactly `http://localhost:3000`.
-- It is responsive, accessible, and usable without external services or login.
+- Starts with `npm run dev` at exactly `http://localhost:3000`.
+- Responsive, accessible, usable without external services or login.
 - Required user data survives a page refresh.
-- Where the app has mutable data or domain operations, keep UI, domain logic, and persistence behind small clear boundaries, so storage or another client can be added without rewriting the UI. Do not add a backend or external API unless the idea requires one.
-- Handle empty and invalid input, duplicate or repeated actions, boundary cases, malformed persisted data, and recoverable storage or runtime failures where relevant.
-- Show a short guiding message wherever a collection can be empty, rather than rendering nothing — this is the first thing a user sees.
-- Confirm any action that destroys data the user cannot recreate, such as deleting a record or clearing everything, before carrying it out.
-- Split a component once it passes roughly 200 lines, keeping each piece focused on one part of the interface.
-- Cover every observable user journey the idea details or implies with tests in `src/**/*.test.ts` or `src/**/*.test.tsx`. Never omit an implied journey merely to simplify. Every test must run and pass; leave no skipped or todo tests.
-- Give each journey its own `test`, named for the behaviour a user would recognise. Do not combine several journeys into one long test: each is reported separately, and a single combined test hides the rest the moment one step breaks. Persisting data across a reload is its own journey whenever the idea needs data to survive — remount the component and assert the data returns.
-- Prefer semantic HTML and accessible names so tests and browser automation can address the interface without brittle selectors.
-- Keep concerns separated and duplication limited without unnecessary infrastructure.
+- Keep UI, domain logic and persistence behind small clear boundaries, so storage or another client can be swapped without rewriting the UI. No backend unless the idea requires one.
+- Handle empty and invalid input, duplicate or repeated actions, boundary cases, malformed persisted data, and recoverable storage failures where relevant.
+- Wherever a collection can be empty, show a short guiding message rather than rendering nothing — it is the first thing a user sees.
+- Confirm before any action that destroys data the user cannot recreate.
+- Cover every observable journey the idea details or implies with tests in `src/**/*.test.tsx`, one `test` per journey. Never omit an implied journey to simplify. Every test must run and pass; leave nothing skipped or todo.
+- Prefer semantic HTML and accessible names so tests address the interface without brittle selectors.
 
 ## Reporting
 
-`report.partial.json` at the application root is mandatory — write it even when something else has gone wrong, because it carries the only record of what you built and why. It contains exactly `status`, `app_url`, `start_command`, `summary`, `implemented_features`, `assumptions`, and `tests_run`.
+`report.partial.json` at the application root is mandatory — write it even when something has gone wrong, as it carries the only record of what you built and why. It contains exactly `status`, `app_url`, `start_command`, `summary`, `implemented_features`, `assumptions`, `tests_run`.
 
-`assumptions` must record the decision you made about the idea's ambiguity, and the reason for any listed journey pattern you deliberately omitted. Never leave it empty.
+`assumptions` must record the decision you made about the idea's ambiguity, and why you omitted any journey pattern. Never leave it empty.
 
-Report `status: "success"` when every journey test passed and the build succeeded, `partial` when a journey failed or went unrun, and `failed` when the app cannot run. Never record a test as passed unless it ran and passed. Do not write `result.json`; the challenge runner owns its audited telemetry.
+`status` is `success` when every journey test passed and the build succeeded, `partial` when a journey failed or went unrun, `failed` when the app cannot run. Never record a test as passed unless it ran and passed. Do not write `result.json`.
