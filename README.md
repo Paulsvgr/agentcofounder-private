@@ -1,112 +1,108 @@
-# AgentCofounder starter
+# AgentCofounder submission
 
-A forkable baseline for the AgentCofounder challenge. It gives every team the same pinned Pi runtime, neutral web application seed, execution command, telemetry collector, and public contract while leaving the actual agent strategy participant-owned.
+Our entry for the [AgentCofounder](https://agentcofounder.stockholm.ai) challenge.
+Give it one plainly-written product idea and it autonomously produces a working,
+tested, verified React application — no human in the loop.
 
-This repository installs Pi as a local dependency at exactly `@earendil-works/pi-coding-agent@0.84.1`. Do not use the floating shell installer and do not run `pi update` during the challenge.
+The organizers' original README is kept as [STARTER-README.md](STARTER-README.md).
 
-## Repository boundary
+## Results
 
-- `solution/` is the main participant surface: change the prompt, extension, skill, or replace the runner strategy.
-- `app-template/` is the neutral application seed copied into a fresh generated workspace for every run.
-- `contract-public/` contains the replaceable public idea, domain-neutral journey guidance, and the result schema.
-- `src/` is the baseline runner and auditable result assembly.
-- `output/app/` is disposable generated application code and is reset before every run.
-- `artifacts/runs/` contains Pi JSON events, session JSONL files, stderr, and the run input.
+Measured over 88 runs. See [FINDINGS.md](FINDINGS.md) for the full analysis.
 
-Official hidden prompts, hidden tests, model credentials, and final scoring code must remain outside participant repositories.
+| | starter | ours |
+|---|---|---|
+| runs producing a scoreable submission | 0 / 1 | **20 / 24 (83%)** |
+| efficiency score, typical | 755,112 | **304,146** |
+| efficiency score, best | 755,112 | **43,889** |
+| cost per app | €0.15 | **€0.06** |
+| app shapes handled | — | **7 / 7** |
 
-> **Organizer release requirement:** `contract-public/development-idea.txt` is a development placeholder. Replace it with the finalized public prompt before sharing this repository with participants. Never place hidden judging material in this file.
+Efficiency score is `input + 3 × output`, lower is better.
 
-## Prerequisites
+Seven deliberately different shapes pass: a record tracker, a plant-watering log,
+freelance invoices, a cafe rota, noughts and crosses, a bill splitter, a pomodoro
+timer, and a single-document scratchpad. They differ in structure, not just
+subject — turn-based state, pure calculation and self-advancing timers are not
+record collections, and the harness does not force them to be.
 
-- Node.js 22.19.x. The repository deliberately rejects other major versions.
-- npm 10.9.3, matching the committed lockfiles and container image.
-- Provider authentication supported by Pi, or organizer-provided provider/model environment variables.
+## Running it
 
-## Setup
-
-```bash
-npm ci --ignore-scripts
-npm --prefix app-template ci --ignore-scripts
-npm run check
-```
-
-Provider-specific credentials are read by Pi. The optional challenge variables select the organizer's runtime configuration:
-
-```bash
-export CHALLENGE_PROVIDER="provider-name"
-export CHALLENGE_MODEL="model-id"
-export CHALLENGE_THINKING="off"
-```
-
-Never commit credentials. `.env.example` documents variable names, but the runner intentionally does not load `.env` files.
-
-The default thinking level is `off` to avoid multiplying output-token cost in the efficiency ranking. Raise it only when measurements show the extra reasoning improves completion quality.
-
-The strict Node engine is intentional. `npm ci` fails on Node 23+ (including Node 26); use `.nvmrc` or the provided container rather than regenerating the lockfile with a newer runtime.
-
-The Docker build runs the full check suite, including short-lived Vite servers over the builder's loopback interface. The image declares port 3000 for organizer-controlled browser evaluation; publishing that port still requires an explicit container port mapping or shared container network.
-
-## Run the public challenge
-
-The runner uses `contract-public/development-idea.txt` by default. During template development it contains a placeholder; organizers must replace that file with the finalized public prompt before participant distribution.
+The starter cannot run on Windows: `src/port-owner.ts` implements only Linux
+`/proc` and macOS `lsof` paths, and every `spawn` uses `shell: false`, which
+Node 22 rejects for `.cmd` shims. We run under WSL Ubuntu, which is also what
+judging containerises to.
 
 ```bash
-npm run challenge
+# one run against the public idea
+./wrun.sh
+
+# one run against any idea file
+./wrun.sh --idea-file eval-ideas/game.txt
+
+# every idea, once each
+./eval.sh
+
+# the same configuration N times, to see variance
+./repeat.sh 5
 ```
 
-Use `--idea-file /path/to/idea.txt` to override the default for organizer testing or hidden evaluation.
-
-For a setup-only check that does not call a model:
+Results land in `runs/<timestamp>/`. Then:
 
 ```bash
-npm run challenge -- --prepare-only
+node compare.js   # every run, side by side
+node audit.js     # generated apps against quality proxies
 ```
 
-After a complete run:
+`BERGET_API_KEY` goes in `.env.local`, which is gitignored.
 
-```bash
-cd output/app
-npm run dev
-```
+## What we changed
 
-The app must be available at `http://localhost:3000`. In another terminal, validate the machine-readable result:
+Full reasoning in [FINDINGS.md](FINDINGS.md); each commit explains itself.
 
-```bash
-npm run validate:result -- output/app/result.json
-```
+1. **Take the verdict from the test results, not the model's claim.** The
+   baseline built a correct app with two passing tests, reported `tests_run: []`,
+   and scored zero. `src/verify-app.ts` now transcribes journeys from the Vitest
+   report and `src/result.ts` derives status from what was verified. It can only
+   lower a verdict — a failing test still fails. This alone took us from no runs
+   counting to nearly all of them.
+2. **Inventory the seed in the prompt** so the model never opens a file to learn
+   what is in it. Reads dropped from 9 to 2.
+3. **Ship tested primitives** — `app-template/src/lib/` handles persistence,
+   corrupt-data recovery and ids; `styles.css` styles semantic markup. Shipped
+   code costs no tokens and cannot be got wrong. Scoped to ideas that keep
+   records, so a game is not pushed into a shape it does not have.
+4. **One test per journey**, so coverage is reported honestly and a single
+   failure does not hide the rest.
+5. **Remove the seed's hidden contracts.** `main.tsx` demanded a named `App`
+   export while the model wrote a default one — a build failure unrelated to the
+   app being built. It now accepts either, and the paths that must survive are
+   stated explicitly.
 
-## Result and telemetry ownership
+## What we tried that failed
 
-The model writes `report.partial.json`, containing the product summary, assumptions, features, and tests. The runner writes `result.json` after parsing Pi's completed `message_end` events. This prevents the model from inventing headline token totals.
+Four changes were reverted after measurement. All four tried to constrain *how*
+the model works; every change that held instead reduced *how much work there is*.
 
-The runner appends the canonical domain-neutral journey guidance from `contract-public/journeys.md` to Pi's built-in system prompt. The protected-paths extension removes only Pi's documentation-reference block, retaining its tool list and usage guidance without steering the model toward package internals. The challenge guidance prevents implied behaviors from being dropped for simplicity while explicitly rejecting unrelated substitute features; the input idea remains authoritative.
+- **Blocking redundant reads** — fired once in a 73-call run. Median worsened.
+- **Forcing whole-file writes over edits** — without caching a full rewrite puts
+  the entire file in the conversation and every later turn re-bills it.
+- **Asking for all writes in one response** — read as "emit one JSON blob of
+  files"; the model wrote nothing at all.
+- **Trimming the prompt by 1,000 tokens** — 65% success against 88% over 20 runs.
+  The guidance was earning its cost.
 
-The runner independently executes the pinned Vitest binary, requires at least one completed passing test with no skipped or todo tests, runs `npm run build`, starts the application, probes the published `http://localhost:3000` URL only while the spawned server is alive, and terminates the full process group. Product-journey records remain in the specification-defined `tests_run` field; `success` requires at least one such journey and no failed entries. Independent Vitest, build, and startup evidence is recorded in `harness_checks`. The runner also owns `app_url` and a location-aware `start_command`, so harmless formatting differences in the partial report cannot invalidate a run.
+`known-good-config-b` tags the configuration these numbers describe.
 
-The runner records whether port 3000 was occupied before Pi starts. If Pi leaves a listener behind, cleanup only targets same-user listener processes whose working directory is the generated app; Linux uses `/proc`, while macOS uses bounded, non-blocking `lsof` calls. A listener that predates Pi is never reclaimed. The `port_reclamation` result field records whether cleanup was considered, attempted, and successful, plus the affected process IDs.
+## Caveats
 
-A provisional result is written before app verification starts. Verification failures degrade a completed model run to `partial`; Pi startup or telemetry failures remain `failed`. Equivalent final results are emitted at the generated app root (`output/app/result.json`) and repository root (`result.json`); only `start_command` differs so each command works from the directory containing its result. Failure to write either required destination makes the harness exit non-zero. Port 3000 must be free on both IPv4 and IPv6 loopback addresses before verification begins.
+Across 52 runs the standard deviation is 120% of the mean. Separating two similar
+configurations needs roughly 250 runs each; ours used 5 to 24. Large effects are
+real, fine distinctions were not.
 
-The raw event stream and Pi session files are retained for audit. Official judging must independently recompute usage and compare it with `result.json`; the participant-controlled report is never the final scoring authority.
+The tail is unsolved: best 43,889, worst 3,806,437 on identical configuration. A
+bad run is identifiable by its tenth call, carrying 22,660 tokens of context
+against 9,792 for a good one.
 
-`reasoning_tokens` and `cost_total` are included as additional audit fields. No efficiency score is calculated here because the public specification must first define the cache-write weighting and whether ranking uses the custom token formula or Pi's monetary cost.
-
-## Develop the harness
-
-The starter deliberately makes one autonomous Pi invocation. Possible participant improvements include:
-
-- a shorter or more reliable prompt;
-- specialized extensions or tools;
-- reusable but domain-neutral application primitives;
-- test-and-repair orchestration;
-- deliberate prompt caching;
-- a different Pi integration through its SDK or RPC mode.
-
-Do not add a challenge idea's domain vocabulary or expected records to reusable code. The official judging idea will be different.
-
-## Security
-
-Pi and participant extensions execute with the permissions of the current process. The included extension rejects direct `write` and `edit` calls outside the generated app, but shell commands and symlink tricks can bypass an in-process guard. It is not a sandbox. Official evaluation must run each frozen submission in an isolated container or VM with a read-only harness mount and bounded CPU, memory, disk, time, and network access.
-
-See `docs/organizer-checklist.md` before publishing the template or running a judged submission.
+GLM-5.2 does not work here — five runs, zero writes, zero journeys. It never
+engages the tools through Berget's `openai-completions` path.
