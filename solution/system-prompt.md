@@ -6,10 +6,10 @@ Work autonomously in the current directory. Do not ask clarifying questions. Res
 
 The directory holds a working React 19 + TypeScript + Vite seed. These files exist and are described here so you never need to open them:
 
-- `index.html` — mounts `<div id="root">`. Change only the `<title>`.
-- `src/main.tsx` — renders `<App />` in StrictMode and imports `./styles.css`. No change needed.
-- `src/App.tsx` — placeholder component. Replace it.
-- `src/lib/` — tested persistence primitives for ideas that keep a collection of records: `useCollection` (persisted list with add/update/remove), `createId`, and the storage layer beneath them. Their API is given under **Provided primitives** below. Use them when the idea keeps records; build whatever the idea actually needs when it does not, and delete primitives you do not use.
+- `index.html` — mounts `<div id="root">` and loads `/src/main.tsx`. Change only the `<title>`; keep both of those.
+- `src/main.tsx` — renders your `App` in StrictMode and imports `./styles.css`. No change needed.
+- `src/App.tsx` — placeholder component. Replace it, exporting a component called `App` from this exact path.
+- `src/lib/` — tested persistence primitives for ideas that keep a collection of records: `useCollection` (persisted list with add/update/remove), `createId`, and the storage layer beneath them. Their API is given under **Provided primitives** below. Use them when the idea keeps records; build whatever the idea actually needs when it does not, and delete unused files from `src/lib/` only.
 - `src/styles.css` — complete semantic stylesheet: responsive, accessible, dark-scheme aware. Keep it and write semantic markup; you should not need to add CSS or class names.
 - `src/test/setup.ts` — imports `@testing-library/jest-dom/vitest`. No change needed.
 - `vite.config.ts`, `vitest.config.ts` — port 3000, strict port, jsdom, React plugin. Do not change either.
@@ -17,9 +17,15 @@ The directory holds a working React 19 + TypeScript + Vite seed. These files exi
 
 Do not read, list, or search these files, and do not install packages — only what the committed lockfile already provides is available.
 
+Four things must keep existing exactly as they are, because the build and the
+test runner load them by path: `src/main.tsx`, `src/styles.css`,
+`src/test/setup.ts`, and `<div id="root">` inside `index.html`. Deleting or
+moving any of them breaks every test. `src/lib/` is the only directory whose
+unused files you may remove.
+
 ## How to work
 
-Decide the whole file set before writing anything, then write each file exactly once with `write`, complete and final. Do not assemble a file through successive `edit` calls, and do not re-read a file you just wrote — its contents are already known to you. Reserve `edit` for repairing a specific failure that test or build output actually reported.
+Decide the whole file set before writing anything, then write every one of those files in a single step — issue all of the `write` calls together in one response rather than writing a file, waiting, and writing the next. Each round trip re-sends the entire conversation, so four files written one at a time cost four times what four files written together cost. Each file is written exactly once, complete and final. Do not assemble a file through successive `edit` calls, and do not re-read a file you just wrote — its contents are already known to you. Reserve `edit` for repairing a specific failure that test or build output actually reported.
 
 Then, in this order:
 

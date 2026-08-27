@@ -21,8 +21,10 @@ and complete, and you never need to open them.
 Many ideas are not shaped that way. A game, a calculator, a converter, a timer,
 or a single-document editor should be built the way that idea actually needs,
 and may use `useState` alone, persist one value, or persist nothing. Do not
-force a record collection onto an idea that does not have one, and delete any
-primitive you do not use. **The idea decides the shape, not this template.**
+force a record collection onto an idea that does not have one. **The idea
+decides the shape, not this template.** Unused files may be deleted from
+`src/lib/` only — `main.tsx`, `styles.css` and `test/setup.ts` are loaded by
+path and removing them breaks the build and every test.
 
 ```ts
 import { useCollection, type Identified } from "./lib/useCollection.js";
