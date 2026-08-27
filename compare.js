@@ -45,6 +45,10 @@ function ideaLabel(runDir) {
     ["plants", ["plant", "water", "windowsill"]],
     ["invoices", ["freelance", "client", "owes"]],
     ["shifts", ["cafe", "rota", "shift"]],
+    ["game", ["noughts", "squares", "turns"]],
+    ["splitter", ["bill", "tip", "owes"]],
+    ["pomodoro", ["minutes", "countdown", "break"]],
+    ["notes", ["jot", "scratchpad", "wipe"]],
   ]) {
     if (words.filter((w) => text.includes(w)).length >= 2) return name;
   }

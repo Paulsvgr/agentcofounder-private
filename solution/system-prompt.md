@@ -9,7 +9,7 @@ The directory holds a working React 19 + TypeScript + Vite seed. These files exi
 - `index.html` — mounts `<div id="root">`. Change only the `<title>`.
 - `src/main.tsx` — renders `<App />` in StrictMode and imports `./styles.css`. No change needed.
 - `src/App.tsx` — placeholder component. Replace it.
-- `src/lib/` — tested persistence primitives: `useCollection` (persisted list with add/update/remove), `createId`, and the storage layer beneath them. Their API is given under **Provided primitives** below. Use them rather than writing storage code.
+- `src/lib/` — tested persistence primitives for ideas that keep a collection of records: `useCollection` (persisted list with add/update/remove), `createId`, and the storage layer beneath them. Their API is given under **Provided primitives** below. Use them when the idea keeps records; build whatever the idea actually needs when it does not, and delete primitives you do not use.
 - `src/styles.css` — complete semantic stylesheet: responsive, accessible, dark-scheme aware. Keep it and write semantic markup; you should not need to add CSS or class names.
 - `src/test/setup.ts` — imports `@testing-library/jest-dom/vitest`. No change needed.
 - `vite.config.ts`, `vitest.config.ts` — port 3000, strict port, jsdom, React plugin. Do not change either.

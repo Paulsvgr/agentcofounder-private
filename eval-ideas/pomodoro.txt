@@ -1,0 +1,1 @@
+I'm trying to study in blocks of twenty five minutes with a five minute break after each one. I want something on screen that counts down, that I can start and pause and reset if I get interrupted, and that switches over to the break by itself when the time's up. It'd be good to see how many blocks I've got through today. Just me at my desk, nothing that needs an account.
