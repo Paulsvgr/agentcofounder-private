@@ -18,7 +18,9 @@ Then write those files, each in a single complete `write`.
 
 - Isolate persistence and domain operations from components behind a small repository or service boundary. Prefer browser-local persistence; do not invent an external API.
 - Reading persisted data must survive absent, malformed, or partial values, and writes must survive a storage failure without losing the in-memory session.
-- Give every control an accessible name, label every input, and provide empty states, validation messages, and a responsive layout.
+- Give every control an accessible name, label every input, and provide validation messages and a responsive layout.
+- Every collection that can be empty needs its own message saying so and what to do next; rendering an empty container is not an empty state.
+- Anything that destroys unrecoverable data asks first.
 - Keep components focused so another developer can extend the app without a rewrite.
 
 ## Test rules
