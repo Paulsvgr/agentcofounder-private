@@ -37,6 +37,7 @@ fi
 
 set +e
 wsl -d Ubuntu -e bash -lc "
+  rm -rf $WSL_DIR/artifacts/runs   # keep one run's audit trail per result directory
   export PATH=\$HOME/tools/node22/bin:\$PATH
   export BERGET_API_KEY='$BERGET_API_KEY'
   export CHALLENGE_PROVIDER=berget

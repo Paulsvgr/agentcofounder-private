@@ -9,7 +9,11 @@ function toolCounts(runDir) {
   const artifacts = path.join(runDir, "artifacts", "runs");
   if (!existsSync(artifacts)) return {};
   const counts = {};
-  for (const stamp of readdirSync(artifacts)) {
+  // The WSL workspace keeps every run's artifacts, so a run directory can hold
+  // stamps from earlier runs too. Only the newest belongs to this run --
+  // counting them all made tool use look like it grew run over run.
+  const stamps = readdirSync(artifacts).sort().slice(-1);
+  for (const stamp of stamps) {
     const events = path.join(artifacts, stamp, "events.jsonl");
     if (!existsSync(events)) continue;
     for (const line of readFileSync(events, "utf8").split(/\r?\n/u)) {
