@@ -63,6 +63,8 @@ for (const stamp of readdirSync("runs").sort()) {
   const tools = toolCounts(path.join("runs", stamp));
   rows.push({
     run: stamp,
+    // The call log records the model the provider actually served.
+    model: String(r.call_log?.[0]?.model ?? "?").split("/").pop().slice(0, 14),
     idea: ideaLabel(path.join("runs", stamp)),
     status: r.status,
     calls: r.model_calls,
