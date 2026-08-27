@@ -5,15 +5,27 @@ description: Turn a non-technical product idea into a small, tested browser appl
 
 # MVP Builder
 
-1. Extract the entity, its attributes, every journey detailed or implied by the idea, and any ambiguity.
-2. Use the public journey guidance as a coverage check. Implement every applicable pattern, but omit patterns the idea does not imply instead of inventing substitute features; record the rationale in `assumptions`.
-3. Prefer browser-local persistence unless the idea genuinely requires a backend. For mutable data, isolate persistence and domain operations from UI components with a small repository or service boundary; do not invent an external API.
-4. Implement accessible controls, validation, empty states, errors, and responsive layout. Handle duplicate or repeated actions, boundary values, malformed stored data, and recoverable storage or runtime failures where relevant.
-5. Keep components focused, separate concerns, and avoid duplication so another developer or agent can extend the app without a rewrite.
-6. Use only the dependencies already installed from the committed lockfile. Do not add packages or run dependency-install commands.
-7. Test every applicable observable user behavior with the included Vitest, jsdom, and Testing Library setup. Startup and assumptions reporting are runner obligations, not UI test journeys. Every committed test must run and pass; do not leave skipped or todo tests.
-8. Run the tests and production build before reporting success.
-9. Write `report.partial.json` with this exact shape:
+Read the idea once and settle these before writing any file:
+
+1. **The entity** — its name and every attribute the idea mentions.
+2. **The journeys** — every observable behaviour the idea details or implies. Check coverage against the public journey guidance, but omit patterns the idea does not imply rather than inventing substitutes, and say why in `assumptions`.
+3. **The ambiguity** — most ideas contain one underspecified detail. Decide it, and record the decision in `assumptions`.
+4. **The file set** — usually a domain/storage module, one or more components, a stylesheet, and a test file per journey group.
+
+Then write those files, each in a single complete `write`.
+
+## Design rules
+
+- Isolate persistence and domain operations from components behind a small repository or service boundary. Prefer browser-local persistence; do not invent an external API.
+- Reading persisted data must survive absent, malformed, or partial values, and writes must survive a storage failure without losing the in-memory session.
+- Give every control an accessible name, label every input, and provide empty states, validation messages, and a responsive layout.
+- Keep components focused so another developer can extend the app without a rewrite.
+
+## Test rules
+
+Cover each observable journey with Testing Library, driving the UI the way a user would — by role, label, and visible text rather than test IDs or implementation details. Startup and assumption reporting are runner obligations, not UI journeys. Every committed test must run and pass; leave nothing skipped or todo, and never record a test as passed unless it ran and passed.
+
+## Report shape
 
 ```json
 {
@@ -22,16 +34,11 @@ description: Turn a non-technical product idea into a small, tested browser appl
   "start_command": "npm run dev",
   "summary": "Short description of the application",
   "implemented_features": ["Feature"],
-  "assumptions": ["Ambiguity and the decision made"],
+  "assumptions": ["The ambiguity and the decision made"],
   "tests_run": [
-    {
-      "command": "npm test",
-      "journey": "User-visible behaviour that was verified",
-      "result": "passed"
-    }
+    { "command": "npm test", "journey": "User-visible behaviour that was verified", "result": "passed" }
   ]
 }
 ```
 
-Use `success` only when `tests_run` contains at least one user journey and every entry passed. Use `partial` when useful functionality remains incomplete or any journey failed or was not run, and `failed` when the app cannot run. Never invent a passing test.
-Use only `passed` or `failed` for each test result. Record an unrun check as `failed` and explain why in its journey.
+Use `passed` or `failed` for each entry, nothing else. `success` requires at least one journey with every entry passed; use `partial` when a journey failed or went unrun, and `failed` when the app cannot run.
