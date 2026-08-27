@@ -4,21 +4,20 @@
 set -euo pipefail
 N="${1:-3}"
 
-# A stopped daemon otherwise looks like N instant no-op runs.
-if ! docker info >/dev/null 2>&1; then
-  echo "Docker daemon is not reachable -- start Docker Desktop first." >&2
+if ! wsl -d Ubuntu -e true 2>/dev/null; then
+  echo "WSL Ubuntu is not reachable." >&2
   exit 1
 fi
-docker build -q -t agentcofounder:base . >/dev/null
 
 before=$(ls runs 2>/dev/null | wc -l)
 for i in $(seq 1 "$N"); do
   echo "═══ repeat $i/$N ═══"
-  ./run.sh >/dev/null 2>&1 || true
+  ./wrun.sh >/dev/null 2>&1 || true
 done
 after=$(ls runs 2>/dev/null | wc -l)
 if [ "$after" -eq "$before" ]; then
-  echo "No run produced a result -- check provider quota and the daemon." >&2
+  echo "No run produced a result -- check provider quota and WSL." >&2
   exit 1
 fi
+
 node compare.js

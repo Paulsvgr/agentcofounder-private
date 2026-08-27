@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "demo",
+      "runtimeExecutable": "C:\\Users\\moham\\tools\\node22\\npm.cmd",
+      "runtimeArgs": ["--prefix", "demo", "run", "dev"],
+      "port": 3000
+    }
+  ]
+}
