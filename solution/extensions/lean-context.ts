@@ -39,21 +39,30 @@ export interface ReadDecision {
   reason?: string;
 }
 
+/** The span of a file the model has already been shown, as 1-based line numbers. */
+export interface SeenRange {
+  from: number;
+  to: number;
+}
+
 /**
  * Decide one read.
  *
- * `seen` maps a path to the content the model has already been shown; a path is
- * dropped from it whenever the file is written, so a genuine re-read after a
- * change is always allowed.
+ * Pi's read tool always supplies `offset` and `limit` — a whole-file read
+ * arrives as `{offset: 1, limit: 400}` — so "is this ranged?" cannot decide
+ * anything. What matters is whether the requested span falls inside a span
+ * already returned for that path, with no write since. A request reaching
+ * beyond what was shown is always allowed, because it can return new lines.
+ *
+ * `seen` holds the span shown per path; the caller deletes the entry on write,
+ * so a re-read after a change is always allowed.
  */
 export function decideRead(
   relative: string,
-  seen: Set<string>,
-  partial: boolean,
+  seen: Map<string, SeenRange>,
+  offset: number | undefined,
+  limit: number | undefined,
 ): ReadDecision {
-  // A ranged read asks for a slice the model may not have. Never block it.
-  if (partial) return { block: false };
-
   if (DOCUMENTED.has(relative)) {
     return {
       block: true,
@@ -63,21 +72,44 @@ export function decideRead(
     };
   }
 
-  if (seen.has(relative)) {
-    return {
-      block: true,
-      reason:
-        `${relative} is unchanged since you last saw its contents in this session, so reading ` +
-        `it again returns what you already have. Write the file if you need it different.`,
-    };
-  }
+  const previous = seen.get(relative);
+  if (!previous) return { block: false };
 
-  return { block: false };
+  const from = typeof offset === "number" && offset > 0 ? offset : 1;
+  const to = typeof limit === "number" && limit > 0 ? from + limit - 1 : Number.MAX_SAFE_INTEGER;
+  const alreadyShown = from >= previous.from && to <= previous.to;
+  if (!alreadyShown) return { block: false };
+
+  return {
+    block: true,
+    reason:
+      `You already have lines ${previous.from}-${previous.to} of ${relative} from earlier in ` +
+      `this session and it has not changed since. Re-reading returns the same content. If it ` +
+      `needs to be different, write it.`,
+  };
+}
+
+/** Merge a newly returned span into what the model has been shown for a path. */
+export function recordRead(
+  relative: string,
+  seen: Map<string, SeenRange>,
+  offset: number | undefined,
+  limit: number | undefined,
+): void {
+  const from = typeof offset === "number" && offset > 0 ? offset : 1;
+  const to = typeof limit === "number" && limit > 0 ? from + limit - 1 : Number.MAX_SAFE_INTEGER;
+  const previous = seen.get(relative);
+  seen.set(
+    relative,
+    previous
+      ? { from: Math.min(previous.from, from), to: Math.max(previous.to, to) }
+      : { from, to },
+  );
 }
 
 export default function leanContext(pi: ExtensionAPI) {
   const appRoot = process.cwd();
-  const seen = new Set<string>();
+  const seen = new Map<string, SeenRange>();
 
   pi.on("tool_call", async (event, context) => {
     const input = event.input as Record<string, unknown>;
@@ -91,11 +123,12 @@ export default function leanContext(pi: ExtensionAPI) {
     if (event.toolName !== "read") return undefined;
 
     const relative = relativePath(appRoot, String(input.path ?? ""));
-    const partial = input.offset !== undefined || input.limit !== undefined;
-    const decision = decideRead(relative, seen, partial);
+    const offset = typeof input.offset === "number" ? input.offset : undefined;
+    const limit = typeof input.limit === "number" ? input.limit : undefined;
+    const decision = decideRead(relative, seen, offset, limit);
 
     if (!decision.block) {
-      seen.add(relative);
+      recordRead(relative, seen, offset, limit);
       return undefined;
     }
 
