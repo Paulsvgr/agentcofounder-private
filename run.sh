@@ -30,7 +30,14 @@ CODE=$?
 set -e
 
 mkdir -p "$DEST"
-for p in /challenge/result.json /challenge/output /challenge/artifacts; do
+# Copy explicit paths only. Copying /challenge/output wholesale pulls ~200MB of
+# node_modules and dies partway, silently losing the generated src/.
+for p in /challenge/result.json \
+         /challenge/artifacts \
+         /challenge/output/app/src \
+         /challenge/output/app/report.partial.json \
+         /challenge/output/app/package.json \
+         /challenge/output/app/index.html; do
   docker cp "$NAME:$p" "$DEST/" 2>/dev/null || echo "  (no $p)"
 done
 docker rm -f "$NAME" >/dev/null
