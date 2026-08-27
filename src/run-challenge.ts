@@ -215,6 +215,8 @@ export function buildPiArguments(
     path.join(artifactDirectory, "sessions"),
     "--extension",
     path.join(REPOSITORY_ROOT, "solution", "extensions", "protected-paths.ts"),
+    "--extension",
+    path.join(REPOSITORY_ROOT, "solution", "extensions", "lean-context.ts"),
     "--skill",
     path.join(REPOSITORY_ROOT, "solution", "skills", "mvp-builder"),
   ];
