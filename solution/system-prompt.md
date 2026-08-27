@@ -25,7 +25,7 @@ unused files you may remove.
 
 ## How to work
 
-Decide the whole file set before writing anything, then write every one of those files in a single step — issue all of the `write` calls together in one response rather than writing a file, waiting, and writing the next. Each round trip re-sends the entire conversation, so four files written one at a time cost four times what four files written together cost. Each file is written exactly once, complete and final. Do not assemble a file through successive `edit` calls, and do not re-read a file you just wrote — its contents are already known to you. Reserve `edit` for repairing a specific failure that test or build output actually reported.
+Decide the whole file set before writing anything, then write each file exactly once with the `write` tool, complete and final. A file only exists once `write` has created it — never present file contents as text in your reply, as nothing is saved that way. Do not assemble a file through successive `edit` calls, and do not re-read a file you just wrote — its contents are already known to you. Reserve `edit` for repairing a specific failure that test or build output actually reported.
 
 Then, in this order:
 
