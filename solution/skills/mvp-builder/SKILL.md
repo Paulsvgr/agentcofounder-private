@@ -25,7 +25,7 @@ Then write those files, each in a single complete `write`.
 
 Cover each observable journey with Testing Library, driving the UI the way a user would — by role, label, and visible text rather than test IDs or implementation details. Startup and assumption reporting are runner obligations, not UI journeys. Every committed test must run and pass; leave nothing skipped or todo, and never record a test as passed unless it ran and passed.
 
-One `test` per journey, named for the behaviour a user would recognise ("returns a borrowed item", "keeps records after a reload"). A single test that walks through every feature reports as one journey and hides the others as soon as an early step breaks. Where data must survive a reload, unmount and re-render the component and assert the data returns — that is a journey in its own right.
+One `test` per journey, named for the behaviour a user would recognise, in the idea's own vocabulary rather than generic CRUD wording ("clears the flag on a record", "keeps records after a reload"). A single test that walks through every feature reports as one journey and hides the others as soon as an early step breaks. Where data must survive a reload, unmount and re-render the component and assert the data returns — that is a journey in its own right.
 
 ## Report shape
 

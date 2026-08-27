@@ -32,6 +32,25 @@ function toolCounts(runDir) {
   return counts;
 }
 
+/** Name the idea a run was given, from the copy kept in its audit trail. */
+function ideaLabel(runDir) {
+  const artifacts = path.join(runDir, "artifacts", "runs");
+  if (!existsSync(artifacts)) return "?";
+  const stamp = readdirSync(artifacts).sort().at(-1);
+  const ideaPath = path.join(artifacts, stamp, "idea.txt");
+  if (!existsSync(ideaPath)) return "?";
+  const text = readFileSync(ideaPath, "utf8").toLowerCase();
+  for (const [name, words] of [
+    ["books", ["book", "shelves", "borrow"]],
+    ["plants", ["plant", "water", "windowsill"]],
+    ["invoices", ["freelance", "client", "owes"]],
+    ["shifts", ["cafe", "rota", "shift"]],
+  ]) {
+    if (words.filter((w) => text.includes(w)).length >= 2) return name;
+  }
+  return "other";
+}
+
 const rows = [];
 for (const stamp of readdirSync("runs").sort()) {
   const resultPath = path.join("runs", stamp, "result.json");
@@ -40,6 +59,7 @@ for (const stamp of readdirSync("runs").sort()) {
   const tools = toolCounts(path.join("runs", stamp));
   rows.push({
     run: stamp,
+    idea: ideaLabel(path.join("runs", stamp)),
     status: r.status,
     calls: r.model_calls,
     input: r.input_tokens,
