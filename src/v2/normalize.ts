@@ -1,12 +1,19 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import type { PiUsage } from "../types.js";
+import {
+  ACTIVITY_CLASSIFIER_VERSION,
+  classifyCallActivity,
+  summarizeActivities,
+  type ActivityBucket,
+  type ActivityPhase,
+} from "./classify.js";
 import { compareUsage } from "./reconcile.js";
 import { EFFICIENCY_WEIGHTS, weightedCost } from "./weights.js";
 import type { RunResult } from "../types.js";
 
 export const CALL_LEDGER_SCHEMA = "agentcofounder.call_ledger.v1" as const;
-export const CLASSIFIER_VERSION = "v1-tools-paths" as const;
+export const CLASSIFIER_VERSION = ACTIVITY_CLASSIFIER_VERSION;
 
 export interface LedgerTool {
   name: string;
@@ -31,6 +38,8 @@ export interface CallLedgerEntry {
   total_tokens: number;
   weighted_cost: number;
   cumulative_weighted: number;
+  /** Heuristic — one call may mix activities; see tools. */
+  activity: ActivityPhase;
   tools: LedgerTool[];
 }
 
@@ -41,6 +50,7 @@ export interface CallLedger {
   classifier_version: typeof CLASSIFIER_VERSION;
   weights: typeof EFFICIENCY_WEIGHTS;
   calls: CallLedgerEntry[];
+  activity_summary: ActivityBucket[];
   reconciliation: {
     matched: boolean;
     fields: ReturnType<typeof compareUsage>;
@@ -212,12 +222,17 @@ export function buildCallLedgerFromEvents(content: string, runId: string, events
         total_tokens: usage.totalTokens,
         weighted_cost: callWeighted,
         cumulative_weighted: cumulativeWeighted,
+        activity: "other",
         tools: [],
       });
     }
   }
 
   flushPendingTools();
+
+  for (const call of calls) {
+    call.activity = classifyCallActivity(call.tools);
+  }
 
   return {
     schema: CALL_LEDGER_SCHEMA,
@@ -226,6 +241,7 @@ export function buildCallLedgerFromEvents(content: string, runId: string, events
     classifier_version: CLASSIFIER_VERSION,
     weights: EFFICIENCY_WEIGHTS,
     calls,
+    activity_summary: summarizeActivities(calls),
     reconciliation: {
       matched: true,
       fields: [],

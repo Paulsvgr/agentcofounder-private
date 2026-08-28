@@ -12,13 +12,13 @@ Phase F stays frozen as evidence on `setup/measure`. V2 is built on `main` as a 
 - [x] [TEAM-GUIDE.md](./TEAM-GUIDE.md) — narrative doc for teammates
 - [x] Historical runs, exports, sessions, experiment manifests kept locally
 
-### M2 — Exact evidence + token reconciliation — **in progress**
+### M2 — Exact evidence + token reconciliation — **done**
 
 - [x] Single-run reconcile (`npm run reconcile:run`)
 - [x] Batch reconcile (`npm run reconcile:all`) — 66/66 complete runs match (Aug 2026)
 - [x] Per-call ledger (`npm run normalize:run`) → `artifacts/analysis/<run-id>/ledger.json`
 - [x] Hackathon weighted cost on each call (`src/v2/weights.ts`)
-- [ ] Deterministic activity classification (tools + file paths → test/build/source/css/repair)
+- [x] Activity classification (`src/v2/classify.ts`) — recon/source/css/test/build/finalize/repair
 
 ### M3 — Harness-owned ground truth (forward-looking)
 
@@ -45,9 +45,9 @@ Each intervention independently switchable:
 
 Only claim an optimization works after M2–M4 exist.
 
-### Analysis station (after M2 classification)
+### Analysis station (next)
 
-- Canvas/UI over normalized ledger.
+- Canvas/UI over normalized ledger + `activity_summary`.
 - Run vs run, experiment vs experiment, token breakdown by activity and phase.
 - Every number drillable to raw Pi events.
 - Versioned classifiers; re-run analysis without re-running Pi.

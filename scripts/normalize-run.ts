@@ -36,6 +36,14 @@ async function main(): Promise<void> {
     `weighted_total: ${ledger.calls.at(-1)?.cumulative_weighted.toFixed(0) ?? "0"}`,
   );
   console.log(`reconciliation: ${ledger.reconciliation.matched ? "OK" : "MISMATCH"}`);
+  if (ledger.activity_summary.length > 0) {
+    console.log("activity:");
+    for (const bucket of ledger.activity_summary.slice(0, 6)) {
+      console.log(
+        `  ${bucket.activity.padEnd(8)} calls=${String(bucket.call_count).padStart(2)} weighted=${bucket.weighted_cost.toFixed(0)} share=${(bucket.share_of_total * 100).toFixed(1)}%`,
+      );
+    }
+  }
   console.log(`wrote: ${outputPath}`);
 
   process.exit(ledger.reconciliation.matched ? 0 : 1);

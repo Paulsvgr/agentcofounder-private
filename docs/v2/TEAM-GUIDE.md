@@ -153,6 +153,8 @@ Each call includes:
 - **Weighted cost** per call: `input×1 + output×3 + cacheRead×0.1` ([hackathon formula](https://agentcofounder.stockholm.ai/))
 - Cumulative weighted total
 - Tools invoked that turn (bash, read, write, edit) with paths/commands
+- **`activity`** heuristic per call: `recon`, `source`, `css`, `test`, `build`, `finalize`, `repair`, `mixed`, `other`
+- **`activity_summary`** rollup (calls + weighted cost share per activity)
 - Embedded reconciliation vs `result.json`
 
 **Does not modify:** `result.json`. Safe for submission repo.
@@ -207,16 +209,37 @@ Do **not** duplicate long explanations in README — link here instead.
 
 ---
 
-## 9. What's next
+## 9. Activity classification (M2 complete)
+
+Each ledger call gets a heuristic **`activity`** label from tools and paths (`src/v2/classify.ts`):
+
+| Activity | Typical signal |
+|----------|----------------|
+| `recon` | read / ls / inspect only |
+| `source` | write/edit `.ts` / `.tsx` under `src/` |
+| `css` | write/edit `.css` |
+| `test` | `npm test`, vitest, `.test.tsx` |
+| `build` | `npm run build`, dev server startup |
+| `finalize` | `report.partial.json`, verification |
+| `repair` | tool returned error |
+| `mixed` | multiple categories in one call |
+
+**Not ground truth** — one call can mix work; use for aggregates, not single-call verdicts.
+
+Re-run normalize after classifier changes; ledger is derived and recomputable.
+
+---
+
+## 10. What's next
 
 | Milestone | Status |
 |-----------|--------|
 | M1 — v2 branch + plan | **Done** |
-| M2 — reconcile + ledger | **Done** (activity classification **next**) |
+| M2 — reconcile + ledger + classification | **Done** |
 | M3 — harness-owned acceptance | Not started |
 | M4 — multi-prompt task set | Not started |
 | M5 — modular build architecture | Not started |
-| Analysis station UI | After M2 classification |
+| Analysis station UI | Next |
 
 **Recommended next step:** M2 activity classification — tag each ledger call (test, build, source, css, repair) from tools and file paths.
 

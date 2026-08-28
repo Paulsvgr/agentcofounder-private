@@ -21,6 +21,8 @@ describe("buildCallLedger", () => {
     expect(ledger.reconciliation.matched).toBe(true);
     expect(ledger.calls.length).toBeGreaterThan(0);
     expect(ledger.calls[0]?.tools.length).toBeGreaterThan(0);
+    expect(ledger.calls[0]?.activity).toBeTruthy();
+    expect(ledger.activity_summary.length).toBeGreaterThan(0);
 
     const reconcile = await reconcileRun(runDirectory);
     expect(reconcile.ok).toBe(true);
