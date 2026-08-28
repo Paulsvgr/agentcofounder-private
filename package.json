@@ -12,6 +12,7 @@
     "validate:result": "node --import tsx src/validate-result.ts",
     "typecheck": "tsc --noEmit",
     "replay:run": "node --import tsx scripts/replay-run.ts",
+    "reconcile:run": "node --import tsx scripts/reconcile-run.ts",
     "test": "vitest run",
     "app:test": "npm --prefix app-template test -- --passWithNoTests",
     "app:build": "npm --prefix app-template run build",
