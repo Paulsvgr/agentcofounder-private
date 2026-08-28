@@ -1,7 +1,29 @@
 import { cp, lstat, mkdir, readFile, rm, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-const MARKER = ".agent-cofounder-output";
+export const APP_OUTPUT_MARKER = ".agent-cofounder-output";
+export const APP_OUTPUT_MARKER_CONTENT = "managed by agent-cofounder-starter\n";
+
+const MARKER = APP_OUTPUT_MARKER;
+
+export function appTemplateCopyFilter(source: string): boolean {
+  return !source.split(path.sep).includes("node_modules") && !source.endsWith(`${path.sep}dist`);
+}
+
+export async function copyAppTemplateTree(
+  sourceDirectory: string,
+  destinationDirectory: string,
+  options?: { writeMarker?: boolean },
+): Promise<void> {
+  await mkdir(destinationDirectory, { recursive: true });
+  await cp(sourceDirectory, destinationDirectory, {
+    recursive: true,
+    filter: appTemplateCopyFilter,
+  });
+  if (options?.writeMarker ?? true) {
+    await writeFile(path.join(destinationDirectory, MARKER), APP_OUTPUT_MARKER_CONTENT, "utf8");
+  }
+}
 
 function isInside(parent: string, candidate: string): boolean {
   const relative = path.relative(parent, candidate);
@@ -51,11 +73,6 @@ export async function prepareOutput(
     await rm(outputDirectory, { recursive: true });
   }
 
-  await mkdir(outputDirectory, { recursive: true });
-  await cp(path.join(repositoryRoot, "app-template"), outputDirectory, {
-    recursive: true,
-    filter: (source) => !source.split(path.sep).includes("node_modules") && !source.endsWith(`${path.sep}dist`),
-  });
-  await writeFile(path.join(outputDirectory, MARKER), "managed by agent-cofounder-starter\n", "utf8");
+  await copyAppTemplateTree(path.join(repositoryRoot, "app-template"), outputDirectory);
   return outputDirectory;
 }

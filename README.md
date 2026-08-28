@@ -78,6 +78,18 @@ The app must be available at `http://localhost:3000`. In another terminal, valid
 npm run validate:result -- output/app/result.json
 ```
 
+## Replay a past run (no AI)
+
+Rebuild a saved run's React app from Pi session logs — deterministic, zero model calls. Replays `write` and `edit` tool calls in order, runs `npm test` and `npm run build`, and compares the result to the saved app under `saved-apps/`.
+
+```bash
+npm run replay:run -- artifacts/runs/<run-id>
+```
+
+Writes `artifacts/replay/<run-id>/report.json`. Exit code is non-zero if replay failures, template drift, test/build failure, or file mismatch.
+
+New runs snapshot `app-template/` into `artifacts/runs/<run-id>/app-template/` so replay uses the exact template from that run. Older runs without a snapshot use a drift check against the current template.
+
 ## Result and telemetry ownership
 
 The model writes `report.partial.json`, containing the product summary, assumptions, features, and tests. The runner writes `result.json` after parsing Pi's completed `message_end` events. This prevents the model from inventing headline token totals.

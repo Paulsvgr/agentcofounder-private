@@ -3,7 +3,7 @@ import { createWriteStream } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { prepareOutput } from "./prepare-output.js";
+import { copyAppTemplateTree, prepareOutput } from "./prepare-output.js";
 import { auditAppPortAfterPi } from "./port-owner.js";
 import { signalProcessTree, terminateProcessTree, usesDetachedProcessGroup } from "./process-tree.js";
 import {
@@ -260,6 +260,11 @@ async function main(): Promise<void> {
   const artifactDirectory = path.join(REPOSITORY_ROOT, "artifacts", "runs", runId);
   await mkdir(path.join(artifactDirectory, "sessions"), { recursive: true });
   await writeFile(path.join(artifactDirectory, "idea.txt"), idea, "utf8");
+  await copyAppTemplateTree(
+    path.join(REPOSITORY_ROOT, "app-template"),
+    path.join(artifactDirectory, "app-template"),
+    { writeMarker: false },
+  );
 
   const eventFile = path.join(artifactDirectory, "events.jsonl");
   const stderrFile = path.join(artifactDirectory, "pi.stderr.log");
