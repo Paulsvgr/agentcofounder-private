@@ -1,18 +1,16 @@
 ---
+
 name: mvp-builder
 description: Turn a non-technical product idea into a small, tested browser application while recording assumptions.
----
+--------------------------------------------------------------------------------------------------------------------
 
 # MVP Builder
 
 ## Reusable UI
 
 The project contains reusable UI primitives in `src/components/ui`.
-
 Inspect and reuse them before implementing equivalent UI primitives yourself.
-
 Prefer composition of existing primitives over creating duplicate components.
-
 Do not force requirements into an existing primitive when it does not fit.
 
 1. Extract the entity, its attributes, every journey detailed or implied by the idea, and any ambiguity.
@@ -21,8 +19,8 @@ Do not force requirements into an existing primitive when it does not fit.
 4. Implement accessible controls, validation, empty states, errors, and responsive layout. Handle duplicate or repeated actions, boundary values, malformed stored data, and recoverable storage or runtime failures where relevant.
 5. Keep components focused, separate concerns, and avoid duplication so another developer or agent can extend the app without a rewrite.
 6. Use only the dependencies already installed from the committed lockfile. Do not add packages or run dependency-install commands.
-7. Test every applicable observable user behavior with the included Vitest, jsdom, and Testing Library setup. Startup and assumptions reporting are runner obligations, not UI test journeys. Every committed test must run and pass; do not leave skipped or todo tests.
-8. Run the tests and production build before reporting success.
+7. Test the critical end-to-end user journeys and highest-risk behavior. Prefer a small number of high-value tests; avoid one test per minor journey, duplicate coverage, cosmetic checks, and trivial interaction variants. Every committed test must run and pass.
+8. After a failing full test run, use Vitest file/name filters to rerun only the affected failing test(s) while repairing. Do not run `npm test` again until targeted repairs pass and you are ready for final verification. Run test and build commands directly; never pipe, truncate, or otherwise mask their exit codes.
 9. Write `report.partial.json` with this exact shape:
 
 ```json
