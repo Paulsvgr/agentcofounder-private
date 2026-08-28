@@ -316,18 +316,20 @@ Re-run normalize after classifier changes; ledger is derived and recomputable.
 
 ## 11. What's next
 
-Phase 1 experiment foundation status: [PLAN.md](./PLAN.md).
+Roadmap: [PLAN.md](./PLAN.md) Phase 2.
 
 | Step | Topic | Status |
 |------|-------|--------|
-| 4–7 | HarnessConfig, run manifest, shared run storage | **Done** |
-| 8 | Experiment runner (interleaved arms) | **Next** |
-| 9 | Analysis Station reads config + manifest + replay | Planned |
-| 10 | Lock V2 baseline (5 runs, costs tokens) | After runner |
-| 11 | First real intervention | After baseline |
+| 1–7 | Measurement foundation (config, manifest, shared storage) | **Done** |
+| 8 | Analysis Station + runs app use manifest/config/template | **Next** |
+| 9 | Lock V2 baseline (5 runs, costs tokens) | Planned |
+| 10 | Template/resources — select components → assemble before Pi | After baseline |
+| 11 | Planner, themes, guards, error memory | Later |
 
-**Do not** start template/CSS/planner work before step 10. Classifier percentages must
-not drive the roadmap — see §10 and PLAN (M6).
+**No dedicated experiment runner.** Compare baseline vs treatment manually; use
+`RUN_*` env vars and `config_hash` in the manifest to label and group runs.
+
+Classifier percentages must not drive the roadmap — see §10 and PLAN (M6).
 
 ---
 
@@ -442,13 +444,15 @@ Run detail page shows `RunManifestPanel` when `data.manifest` is present.
 
 ---
 
-## 15. Experiment metadata (until the V2 runner lands)
+## 15. Experiment metadata (manual labeling)
 
 **Problem:** Phase F used ad-hoc `RUN_APPROACH` strings per arm. V2 needs structured
 cohort/arm/rep metadata that survives export and lands in `data.manifest.experiment`.
 
-**Solution (today):** Set env vars before `npm run challenge`; they are copied into
+**Solution:** Set env vars before `npm run challenge`; they are copied into
 `run-manifest.json` and flow through export → `data.manifest.experiment`.
+Use this when running baseline vs treatment manually — there is no automated
+experiment runner.
 
 ```bash
 export RUN_COHORT="v2-baseline-lock"
@@ -458,12 +462,11 @@ export RUN_INTERVENTION="baseline"
 npm run challenge
 ```
 
-**Next (step 8):** An experiment runner will schedule **interleaved** control/treatment
-reps, validate interventions via `HarnessConfig`, and set these fields automatically.
-Until then, set env manually or via shell wrapper.
+Compare groups later in the runs UI or analysis tools using `config_hash`, arm,
+and rep from each run's manifest.
 
-Phase F one-arm runner (reference only, frozen on `setup/measure`):
-`ac-control/scripts/run-experiment.ts` — do not extend for V2.
+Phase F one-arm batch runner (reference only, frozen on `setup/measure`):
+`ac-control/scripts/run-experiment.ts` — not extended for V2.
 
 ---
 

@@ -44,10 +44,7 @@ be called an improvement without going through it.
 
 ---
 
-## Phase 1 — experiment foundation
-
-Build the machine that can test improvements before building improvements.
-Nothing here spends model tokens.
+## Phase 1 — measurement foundation
 
 | # | Step | Status |
 |---|------|--------|
@@ -58,14 +55,29 @@ Nothing here spends model tokens.
 | 5 | Run manifest — code, template, prompt, model, config per run | **done** |
 | 6 | Audit existing run-server/storage + manifest ingestion plan | **done** |
 | 7 | Wire manifest into export/publish pipeline (no new server) | **done** |
-| 8 | Experiment runner — interleaved arms, one intervention per treatment | **next** |
-| 9 | Analysis Station reads config, template and replay status | |
-| 10 | **Lock the V2 baseline** | |
-| 11 | First real experiment | |
 
-No CSS, shadcn, planner or template work before step 10.
+Steps 1–7 are **done**. Every run can record full provenance (`HarnessConfig`,
+template hash, prompts, model, experiment metadata) and publish it to shared
+storage. Compare baseline vs treatment **manually** when needed — label runs with
+`RUN_COHORT` / `RUN_ARM` / `RUN_REP` / `RUN_INTERVENTION` (see TEAM-GUIDE §15).
+We are **not** building a dedicated A/B experiment runner.
 
-### Config model
+---
+
+## Phase 2 — build Agent Cofounder (current order)
+
+| # | Step | Status |
+|---|------|--------|
+| 8 | Analysis Station + runs app use manifest/config/template provenance | **next** |
+| 9 | **Lock the V2 baseline** (5 runs, same template as today) | |
+| 10 | Template/resources — select components → assemble app before Pi → tell Pi what was added | |
+| 11 | Planner, themes, guards, error memory, … | later |
+
+After step 9, template and resource work is in scope. Do not bundle planner +
+components + theme + guards into the first template slice — one intervention at
+a time still applies when comparing runs.
+
+### Config model (keep — for tracking, not a runner)
 
 All toggles default to `false`, so the baseline is an exact configuration with a
 hash rather than a word we agree on. Runs pool into the same arm only when their
@@ -74,9 +86,8 @@ uses a structured diff.
 
 An **intervention** is a named set of config fields. For example,
 `component_assembly` may require `docs_retrieval` and `template` and still be one
-intervention. The runner checks that the baseline-to-treatment diff stays inside
-the fields the intervention declares — that enforces "one thing at a time" without
-pinning it to a single boolean.
+intervention. Use `validateIntervention()` when defining a treatment config to
+ensure the diff from baseline stays inside declared fields.
 
 See [TEAM-GUIDE §12](./TEAM-GUIDE.md#12-harnessconfig--experiment-toggles-and-identity)
 and `npm run config:show`.
@@ -94,7 +105,7 @@ and `npm run config:show`.
 | M4 | Harness-owned ground truth | not started |
 | M5 | Task benchmark | not started |
 | M6 | Analysis Station v0 | partial — see below |
-| M7 | Fresh baseline | Phase 1 step 10 |
+| M7 | Fresh baseline | Phase 2 step 9 |
 | M8 | Preparation Agent | later |
 | M9 | Resource resolver + assembler | app-template work lives here |
 | M10 | Deterministic guards | later |
@@ -126,12 +137,12 @@ not on classification.
 
 ### Deliberate deviation from spec order
 
-The spec lists M8 (Planner) before M9 (resources/template). We invert it and
-start with app-template slices, because template changes cost no extra model
-calls and are fast to test, and spec section 9 Stage C treats the
-single-variable experiments as parallel rather than strictly ordered.
+The spec lists M8 (Planner) before M9 (resources/template). We start with
+**resource/template assembly** (Phase 2 step 10) after baseline lock, because
+those slices are the core product direction and manifest provenance lets us track
+exactly what was mounted per run. Planner, themes, and guards follow later.
 
-Template is split into separately testable slices — one per treatment:
+Template work stays **one slice at a time** when comparing runs:
 
 ```text
 template.persistence    (5b: variance yes, mean no)
