@@ -56,9 +56,9 @@ Nothing here spends model tokens.
 | 3 | Replay validated across all saved apps | **done** |
 | 4 | `HarnessConfig` — toggles, hash, intervention model | **done** |
 | 5 | Run manifest — code, template, prompt, model, config per run | **done** |
-| 6 | Audit existing run-server/storage + manifest ingestion plan | **next** |
-| 7 | Wire manifest into export/publish pipeline (no new server) | |
-| 8 | Experiment runner — interleaved arms, one intervention per treatment | |
+| 6 | Audit existing run-server/storage + manifest ingestion plan | **done** |
+| 7 | Wire manifest into export/publish pipeline (no new server) | **code done** — deploy + POST→GET verify |
+| 8 | Experiment runner — interleaved arms, one intervention per treatment | **next** |
 | 9 | Analysis Station reads config, template and replay status | |
 | 10 | **Lock the V2 baseline** | |
 | 11 | First real experiment | |
@@ -90,7 +90,7 @@ to a single boolean.
 | M4 | Harness-owned ground truth | not started |
 | M5 | Task benchmark | not started |
 | M6 | Analysis Station v0 | partial — see below |
-| M7 | Fresh baseline | Phase 1 step 8 |
+| M7 | Fresh baseline | Phase 1 step 10 |
 | M8 | Preparation Agent | later |
 | M9 | Resource resolver + assembler | app-template work lives here |
 | M10 | Deterministic guards | later |
