@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit",
     "replay:run": "node --import tsx scripts/replay-run.ts",
     "reconcile:run": "node --import tsx scripts/reconcile-run.ts",
+    "reconcile:all": "node --import tsx scripts/reconcile-all.ts",
     "test": "vitest run",
     "app:test": "npm --prefix app-template test -- --passWithNoTests",
     "app:build": "npm --prefix app-template run build",

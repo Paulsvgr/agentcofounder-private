@@ -90,6 +90,17 @@ Writes `artifacts/replay/<run-id>/report.json`. Exit code is non-zero if replay 
 
 New runs snapshot `app-template/` into `artifacts/runs/<run-id>/app-template/` so replay uses the exact template from that run. Older runs without a snapshot use a drift check against the current template.
 
+## Reconcile token totals (audit)
+
+Optional audit helper: verify that summing `events.jsonl` reproduces the official totals in `result.json`. Useful after harness changes or before trusting analysis numbers.
+
+```bash
+npm run reconcile:run -- <run-id>
+npm run reconcile:all
+```
+
+Skips incomplete run folders (missing `events.jsonl` or `result.json`). Exits non-zero if any complete run mismatches.
+
 ## Result and telemetry ownership
 
 The model writes `report.partial.json`, containing the product summary, assumptions, features, and tests. The runner writes `result.json` after parsing Pi's completed `message_end` events. This prevents the model from inventing headline token totals.

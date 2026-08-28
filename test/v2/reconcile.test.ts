@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { compareUsage, reconcileRun } from "../../src/v2/reconcile.js";
+import { compareUsage, reconcileAllRuns, reconcileRun } from "../../src/v2/reconcile.js";
 import type { UsageSummary } from "../../src/types.js";
 
 const REPOSITORY_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -60,5 +60,20 @@ describe("reconcileRun", () => {
     const report = await reconcileRun(runDirectory);
     expect(report.ok).toBe(true);
     expect(report.fields.every((field) => field.match)).toBe(true);
+  });
+});
+
+describe("reconcileAllRuns", () => {
+  it("reports no mismatches for complete local runs", async () => {
+    const runsDirectory = path.join(REPOSITORY_ROOT, "artifacts", "runs");
+    try {
+      await readFile(path.join(runsDirectory, SAMPLE_RUN, "events.jsonl"), "utf8");
+    } catch {
+      return;
+    }
+
+    const report = await reconcileAllRuns(runsDirectory);
+    expect(report.mismatches).toEqual([]);
+    expect(report.ok.length).toBeGreaterThan(0);
   });
 });

@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { access, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { collectUsageFromJsonLines } from "../usage.js";
 import type { RunResult, UsageSummary } from "../types.js";
@@ -30,6 +30,27 @@ export interface ReconcileReport {
   result_path: string;
   ok: boolean;
   fields: ReconcileFieldDiff[];
+}
+
+export interface ReconcileSkip {
+  run_id: string;
+  reason: "missing_events" | "missing_result";
+}
+
+export interface ReconcileBatchReport {
+  runs_directory: string;
+  ok: string[];
+  skipped: ReconcileSkip[];
+  mismatches: ReconcileReport[];
+}
+
+async function pathExists(filePath: string): Promise<boolean> {
+  try {
+    await access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function pickUsageTotals(source: UsageSummary): Record<TokenField, number> {
@@ -83,5 +104,46 @@ export async function reconcileRun(runDirectory: string): Promise<ReconcileRepor
     result_path: resultPath,
     ok: fields.every((field) => field.match),
     fields,
+  };
+}
+
+export async function reconcileAllRuns(runsDirectory: string): Promise<ReconcileBatchReport> {
+  const entries = await readdir(runsDirectory, { withFileTypes: true });
+  const runIds = entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
+
+  const ok: string[] = [];
+  const skipped: ReconcileSkip[] = [];
+  const mismatches: ReconcileReport[] = [];
+
+  for (const runId of runIds) {
+    const runDirectory = path.join(runsDirectory, runId);
+    const eventsPath = path.join(runDirectory, "events.jsonl");
+    const resultPath = path.join(runDirectory, "result.json");
+
+    const hasEvents = await pathExists(eventsPath);
+    const hasResult = await pathExists(resultPath);
+
+    if (!hasEvents) {
+      skipped.push({ run_id: runId, reason: "missing_events" });
+      continue;
+    }
+    if (!hasResult) {
+      skipped.push({ run_id: runId, reason: "missing_result" });
+      continue;
+    }
+
+    const report = await reconcileRun(runDirectory);
+    if (report.ok) {
+      ok.push(runId);
+    } else {
+      mismatches.push(report);
+    }
+  }
+
+  return {
+    runs_directory: runsDirectory,
+    ok,
+    skipped,
+    mismatches,
   };
 }
