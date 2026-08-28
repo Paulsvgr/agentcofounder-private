@@ -12,6 +12,7 @@
     "validate:result": "node --import tsx src/validate-result.ts",
     "typecheck": "tsc --noEmit",
     "replay:run": "node --import tsx scripts/replay-run.ts",
+    "replay:all": "node --import tsx scripts/replay-all.ts",
     "reconcile:run": "node --import tsx scripts/reconcile-run.ts",
     "reconcile:all": "node --import tsx scripts/reconcile-all.ts",
     "normalize:run": "node --import tsx scripts/normalize-run.ts",

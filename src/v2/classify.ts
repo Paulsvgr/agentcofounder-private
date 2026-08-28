@@ -50,6 +50,26 @@ export function isSourceFilePath(detail: string): boolean {
   );
 }
 
+/**
+ * Bash commands that mutate app or test source without the write/edit tools.
+ * Replay only reproduces write/edit calls, so any match here means the session
+ * log alone is not enough to rebuild the app faithfully.
+ */
+export function isSourceMutationCommand(detail: string): boolean {
+  if (isReportWrite(detail)) return false;
+  if (/\bsed\s+-i\b/.test(detail)) return true;
+  if (/\bperl\s+-pi/.test(detail)) return true;
+
+  const touchesSource = isSourceFilePath(detail) || isCssPath(detail);
+  if (!touchesSource) return false;
+
+  if (/\btee\b/.test(detail)) return true;
+  if (/>>?\s*[^\s&|;]+\.(tsx?|jsx?|css)\b/.test(detail)) return true;
+  if (/cat\s+<<[\s\S]*>>?\s*[^\s&|;]+\.(tsx?|jsx?)/.test(detail)) return true;
+  if (/(?:^|[;&|]\s*)(?:rm|mv|cp)\s/.test(detail)) return true;
+  return false;
+}
+
 function toolSignals(tool: LedgerTool): Set<ActivityPhase> {
   const signals = new Set<ActivityPhase>();
   const details = [tool.detail, ...tool.paths];

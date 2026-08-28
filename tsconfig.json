@@ -11,5 +11,11 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["src/**/*.ts", "solution/**/*.ts", "test/**/*.ts", "vitest.config.ts"]
+  "include": [
+    "src/**/*.ts",
+    "scripts/**/*.ts",
+    "solution/**/*.ts",
+    "test/**/*.ts",
+    "vitest.config.ts"
+  ]
 }

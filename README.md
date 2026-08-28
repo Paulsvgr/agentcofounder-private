@@ -86,9 +86,13 @@ See [TEAM-GUIDE §3](docs/v2/TEAM-GUIDE.md#3-run-replay--rebuild-apps-without-ai
 
 ```bash
 npm run replay:run -- artifacts/runs/<run-id>
+npm run replay:run -- artifacts/runs/<run-id> --compare-only
+npm run replay:all
 ```
 
-Writes `artifacts/replay/<run-id>/report.json`.
+Writes `artifacts/replay/<run-id>/report.json` and `artifacts/replay/batch-summary.json`.
+Each report carries a verdict of `identical`, `diverged` or `unverified` — a run
+that cannot be checked is never reported as a match.
 
 ## Reconcile token totals (audit)
 

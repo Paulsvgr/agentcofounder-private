@@ -4,13 +4,14 @@
  * Usage:
  *   npm run replay:run -- artifacts/runs/<run-id>
  *   npm run replay:run -- path/to/session.jsonl --original saved-apps/<label>-<run-id>
+ *   npm run replay:run -- artifacts/runs/<run-id> --compare-only
  */
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { access, lstat, mkdir, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { isSourceMutationCommand } from "../src/analyze-run.js";
+import { isSourceMutationCommand } from "../src/v2/classify.js";
 import { copyAppTemplateTree } from "../src/prepare-output.js";
 
 const SOURCE_DIRECTORY = path.dirname(fileURLToPath(import.meta.url));
@@ -65,8 +66,16 @@ interface TemplateDriftEntry {
   current_hash: string;
 }
 
-interface ReplayReport {
+/**
+ * `unverified` exists so a run with no original app can never be reported as a
+ * match. Absence of a comparison is not evidence of fidelity.
+ */
+export type ReplayVerdict = "identical" | "diverged" | "unverified";
+
+export interface ReplayReport {
   run_id: string;
+  verdict: ReplayVerdict;
+  warnings: string[];
   replay_dir: string;
   source_file: string;
   original_dir: string | null;
@@ -77,9 +86,14 @@ interface ReplayReport {
   skipped_outside_app: number;
   bash_mutation_warnings: number;
   failures: ReplayFailure[];
-  test: CommandResult;
-  build: CommandResult;
+  test: CommandResult | null;
+  build: CommandResult | null;
   compare: CompareResult | null;
+}
+
+export interface ReplayOptions {
+  original?: string;
+  compareOnly: boolean;
 }
 
 const COMPARE_SKIP = new Set(["node_modules", "dist", "HOW-TO-OPEN.md", "result.json"]);
@@ -90,9 +104,13 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function printHelp(): void {
-  console.log(`Usage: npm run replay:run -- <run-dir|session.jsonl|events.jsonl> [--original path]
+  console.log(`Usage: npm run replay:run -- <run-dir|session.jsonl|events.jsonl> [options]
 
 Replays write/edit tool calls from a saved Pi session to rebuild the generated app.
+
+Options:
+  --original <path>   App directory to compare the replay against
+  --compare-only      Skip npm test/build; only rebuild and compare file trees
 `);
 }
 
@@ -308,19 +326,29 @@ async function applyWrite(op: Extract<FsOp, { kind: "write" }>): Promise<void> {
   await writeFile(op.targetPath, op.content, "utf8");
 }
 
+export function applyEditsToContent(
+  content: string,
+  edits: Array<{ oldText: string; newText: string }>,
+): string {
+  let current = content;
+  for (const entry of edits) {
+    if (!current.includes(entry.oldText)) {
+      throw new Error("oldText not found in file");
+    }
+    // A function replacer is required: a string replacement expands `$&`, `$'`
+    // and backtick patterns, which silently corrupts generated regex-escaping code.
+    current = current.replace(entry.oldText, () => entry.newText);
+  }
+  return current;
+}
+
 async function applyEdit(op: Extract<FsOp, { kind: "edit" }>): Promise<void> {
   if (op.edits.length === 0) {
     throw new Error("edit call had no valid oldText/newText entries");
   }
 
-  let current = await readFile(op.targetPath, "utf8");
-  for (const entry of op.edits) {
-    if (!current.includes(entry.oldText)) {
-      throw new Error("oldText not found in file");
-    }
-    current = current.replace(entry.oldText, entry.newText);
-  }
-  await writeFile(op.targetPath, current, "utf8");
+  const current = await readFile(op.targetPath, "utf8");
+  await writeFile(op.targetPath, applyEditsToContent(current, op.edits), "utf8");
 }
 
 async function resolveTemplateSource(runDirectory: string): Promise<{
@@ -334,9 +362,14 @@ async function resolveTemplateSource(runDirectory: string): Promise<{
   return { sourceDirectory: CURRENT_TEMPLATE_DIRECTORY, templateSource: "current-app-template" };
 }
 
-async function seedReplayDirectory(replayDir: string, sourceDirectory: string): Promise<void> {
+async function seedReplayDirectory(
+  replayDir: string,
+  sourceDirectory: string,
+  needsDependencies: boolean,
+): Promise<void> {
   await rm(replayDir, { recursive: true, force: true });
   await copyAppTemplateTree(sourceDirectory, replayDir);
+  if (!needsDependencies) return;
 
   const nodeModulesTarget = path.join(replayDir, "node_modules");
   const nodeModulesSource = path.join(CURRENT_TEMPLATE_DIRECTORY, "node_modules");
@@ -380,6 +413,15 @@ async function hashTree(root: string, prefix = ""): Promise<Map<string, string>>
   }
 
   return hashes;
+}
+
+/**
+ * Some early saved apps only kept `dist/`, `node_modules/` and `result.json`.
+ * Comparing against one of those would report every source file as "extra",
+ * which looks like a replay failure but is really a missing reference.
+ */
+async function isUsableOriginal(directory: string): Promise<boolean> {
+  return await pathExists(path.join(directory, "package.json"));
 }
 
 async function resolveOriginalDirectory(runId: string, explicit?: string): Promise<string | null> {
@@ -474,7 +516,7 @@ function runNpmScript(script: "test" | "build", cwd: string): CommandResult {
   }
 }
 
-function parseArguments(argv: string[]): { input: string; original?: string } {
+function parseArguments(argv: string[]): { input: string; original?: string; compareOnly: boolean } {
   if (argv.includes("--help") || argv.length === 0) {
     printHelp();
     process.exit(argv.includes("--help") ? 0 : 2);
@@ -484,7 +526,7 @@ function parseArguments(argv: string[]): { input: string; original?: string } {
   const original =
     originalFlagIndex >= 0 ? argv[originalFlagIndex + 1] : undefined;
   const positional = argv.filter((arg, index) => {
-    if (arg === "--original") return false;
+    if (arg === "--original" || arg === "--compare-only") return false;
     if (originalFlagIndex >= 0 && index === originalFlagIndex + 1) return false;
     return true;
   });
@@ -494,22 +536,69 @@ function parseArguments(argv: string[]): { input: string; original?: string } {
     process.exit(2);
   }
 
-  return { input: positional[0]!, original };
+  return {
+    input: positional[0]!,
+    ...(original === undefined ? {} : { original }),
+    compareOnly: argv.includes("--compare-only"),
+  };
 }
 
-async function main(): Promise<void> {
-  const args = parseArguments(process.argv.slice(2));
-  const inputPath = path.resolve(args.input);
-  const runDirectory = (await lstat(inputPath)).isDirectory()
-    ? inputPath
-    : path.dirname(inputPath);
+function decideVerdict(
+  compare: CompareResult | null,
+  failures: ReplayFailure[],
+  bashMutationWarnings: number,
+  templateSource: TemplateSource,
+  templateDrift: TemplateDriftEntry[],
+): { verdict: ReplayVerdict; warnings: string[] } {
+  const warnings: string[] = [];
+  if (failures.length > 0) {
+    warnings.push(`${failures.length} replay operation(s) failed to apply`);
+  }
+  if (bashMutationWarnings > 0) {
+    warnings.push(
+      `${bashMutationWarnings} bash command(s) mutated source outside write/edit and were not replayed`,
+    );
+  }
+  if (templateSource === "current-app-template") {
+    warnings.push("no template snapshot in run folder; seeded from the current app-template");
+  }
 
-  const { rows, sourceFile, runId } = await loadRows(args.input);
+  if (compare === null) {
+    warnings.push("no original app to compare against; fidelity is unverified");
+    return { verdict: "unverified", warnings };
+  }
+  if (compare.matches) return { verdict: "identical", warnings };
+
+  // Files the agent never touched can only differ because the template moved on.
+  // That says nothing about replay fidelity, so it must not be reported as a mismatch.
+  const driftPaths = new Set(templateDrift.map((entry) => entry.path));
+  const differing = [
+    ...compare.mismatched,
+    ...compare.missing_in_replay,
+    ...compare.extra_in_replay,
+  ];
+  const unexplained = differing.filter((candidate) => !driftPaths.has(candidate));
+  if (unexplained.length === 0) {
+    warnings.push(
+      `all ${differing.length} differing file(s) are template drift; the template this run used is gone`,
+    );
+    return { verdict: "unverified", warnings };
+  }
+
+  warnings.push(`${unexplained.length} differing file(s) not explained by template drift`);
+  return { verdict: "diverged", warnings };
+}
+
+export async function replayRun(input: string, options: ReplayOptions): Promise<ReplayReport> {
+  const inputPath = path.resolve(input);
+  const runDirectory = (await lstat(inputPath)).isDirectory() ? inputPath : path.dirname(inputPath);
+
+  const { rows, sourceFile, runId } = await loadRows(input);
   const originalCwd = extractCwd(rows);
   const replayDir = path.join(REPOSITORY_ROOT, "artifacts", "replay", runId, "app");
   const { sourceDirectory, templateSource } = await resolveTemplateSource(runDirectory);
 
-  await seedReplayDirectory(replayDir, sourceDirectory);
+  await seedReplayDirectory(replayDir, sourceDirectory, !options.compareOnly);
 
   const { ops, skippedOutsideApp, bashMutationWarnings, touchedRelativePaths } = extractFsOps(
     rows,
@@ -540,18 +629,32 @@ async function main(): Promise<void> {
     }
   }
 
-  const originalDir = await resolveOriginalDirectory(runId, args.original);
+  const resolvedOriginal = await resolveOriginalDirectory(runId, options.original);
+  const originalUsable = resolvedOriginal !== null && (await isUsableOriginal(resolvedOriginal));
+  const originalDir = originalUsable ? resolvedOriginal : null;
   const templateDrift =
     templateSource === "current-app-template" && originalDir
       ? await detectTemplateDrift(originalDir, touchedRelativePaths)
       : [];
 
-  const test = runNpmScript("test", replayDir);
-  const build = runNpmScript("build", replayDir);
+  const test = options.compareOnly ? null : runNpmScript("test", replayDir);
+  const build = options.compareOnly ? null : runNpmScript("build", replayDir);
   const compare = originalDir ? await compareTrees(replayDir, originalDir) : null;
+  const { verdict, warnings } = decideVerdict(
+    compare,
+    failures,
+    bashMutationWarnings,
+    templateSource,
+    templateDrift,
+  );
+  if (resolvedOriginal !== null && !originalUsable) {
+    warnings.push(`saved app ${path.basename(resolvedOriginal)} has no source files to compare`);
+  }
 
   const report: ReplayReport = {
     run_id: runId,
+    verdict,
+    warnings,
     replay_dir: replayDir,
     source_file: sourceFile,
     original_dir: originalDir,
@@ -570,20 +673,32 @@ async function main(): Promise<void> {
   const reportPath = path.join(REPOSITORY_ROOT, "artifacts", "replay", runId, "report.json");
   await mkdir(path.dirname(reportPath), { recursive: true });
   await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
-
-  console.log(JSON.stringify(report, null, 2));
-
-  const success =
-    failures.length === 0 &&
-    test.ok &&
-    build.ok &&
-    templateDrift.length === 0 &&
-    (compare?.matches ?? true);
-
-  process.exit(success ? 0 : 1);
+  return report;
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+export function replaySucceeded(report: ReplayReport): boolean {
+  return (
+    report.verdict === "identical" &&
+    report.failures.length === 0 &&
+    report.template_drift.length === 0 &&
+    (report.test?.ok ?? true) &&
+    (report.build?.ok ?? true)
+  );
+}
+
+async function main(): Promise<void> {
+  const args = parseArguments(process.argv.slice(2));
+  const report = await replayRun(args.input, {
+    ...(args.original === undefined ? {} : { original: args.original }),
+    compareOnly: args.compareOnly,
+  });
+  console.log(JSON.stringify(report, null, 2));
+  process.exit(replaySucceeded(report) ? 0 : 1);
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
+}

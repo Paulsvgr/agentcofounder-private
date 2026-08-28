@@ -30,7 +30,7 @@ function parseArgs(argv: string[]): { runArg: string; compareArg?: string } {
       index += 1;
       continue;
     }
-    positional.push(token);
+    if (token !== undefined) positional.push(token);
   }
 
   const runArg = positional[0];
@@ -39,7 +39,7 @@ function parseArgs(argv: string[]): { runArg: string; compareArg?: string } {
     process.exit(2);
   }
 
-  return { runArg, compareArg };
+  return { runArg, ...(compareArg === undefined ? {} : { compareArg }) };
 }
 
 async function main(): Promise<void> {

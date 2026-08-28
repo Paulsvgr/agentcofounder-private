@@ -95,17 +95,50 @@ Roadmap detail: [PLAN.md](./PLAN.md).
 
 ```bash
 npm run replay:run -- artifacts/runs/<run-id>
+npm run replay:run -- artifacts/runs/<run-id> --compare-only   # skip test/build
+npm run replay:all                                             # every run with a saved app
+npm run replay:all -- --with-checks                            # also run test/build
 ```
 
-**Output:** `artifacts/replay/<run-id>/report.json`
+**Output:** `artifacts/replay/<run-id>/report.json`, batch summary in
+`artifacts/replay/batch-summary.json`.
 
-**Checks:** `npm test`, `npm run build`, file hash match vs `saved-apps/`
+### Verdicts
 
-**Notes:**
+| Verdict | Meaning |
+|---------|---------|
+| `identical` | Replayed tree matches the saved app byte for byte |
+| `diverged` | Files differ for a reason template drift does not explain |
+| `unverified` | Fidelity could not be established — never treat as a pass |
 
-- New runs snapshot `app-template/` into the run folder for exact replay.
-- Older runs without a snapshot use a template drift check.
-- v1 does not replay bash — only filesystem writes/edits.
+`unverified` covers three cases: no saved app to compare against, a saved app
+with no source files, and a run whose only differences are template drift.
+Absence of a comparison is not evidence of fidelity, so it never reports as a match.
+
+### Known limits
+
+- **Bash is not replayed.** Only `write` and `edit` calls are. Commands that
+  mutate source (`sed -i`, `rm src/…`, redirects) are counted and surfaced as a
+  warning, but their effect is missing from the replayed app.
+- **Historical runs have no template snapshot.** Runs made before the snapshot
+  landed seed from the current `app-template`, so any template change since then
+  shows up as drift. New runs snapshot the template into the run folder.
+- Edits are applied with a function replacer — a string replacement would expand
+  `$&` and corrupt generated regex-escaping code. Guarded by `test/replay-run.test.ts`.
+
+### V1 validation (Aug 2026)
+
+`npm run replay:all` over the 57 runs with saved apps:
+
+| | |
+|---|---|
+| identical | 5 |
+| diverged | 9 — 6 failed edits, 3 bash mutations, 0 unexplained |
+| unverified | 43 — 36 template drift, 7 saved apps without source |
+
+Every divergence has a named cause. The engine reproduces write/edit sequences
+faithfully; what blocks verification on old runs is missing template evidence,
+not the replay logic.
 
 **On branches:** `main` and `v2` (merged from `main`).
 
@@ -283,6 +316,7 @@ Re-run normalize after classifier changes; ledger is derived and recomputable.
 ```bash
 npm run challenge                  # run agent (costs tokens)
 npm run replay:run -- <run-id>     # rebuild app from logs, no AI
+npm run replay:all                 # replay fidelity across all saved apps
 npm run reconcile:run -- <run-id>  # audit one run's token math
 npm run reconcile:all              # audit all complete runs
 npm run normalize:run -- <run-id>  # build analysis ledger
