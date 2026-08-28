@@ -163,7 +163,40 @@ Each call includes:
 
 ---
 
-## 6. Phase F experiments (frozen on `setup/measure`)
+## 6. Analysis station — interactive run report
+
+**Problem:** `ledger.json` is rich but hard to scan in an editor — teammates need a quick visual breakdown without writing ad-hoc scripts.
+
+**Solution:** Build ledger + a self-contained HTML report in one command.
+
+```bash
+npm run analyze:run -- <run-id>
+npm run analyze:run -- <run-id> --compare <other-run-id>
+```
+
+**Output** (under `artifacts/analysis/<run-id>/`):
+
+| File | Role |
+|------|------|
+| `ledger.json` | Per-call ledger (same as `normalize:run`) |
+| `station.json` | Structured report for tooling |
+| `station.html` | Open in browser — stats, activity bars, cumulative chart, call table |
+
+The HTML page includes:
+
+- Weighted total, token breakdown, reconciliation status
+- Activity cost share (`activity_summary`)
+- Cumulative weighted cost over run time
+- Filterable call table — expand any row to see tools/paths
+- With `--compare`: side-by-side activity deltas vs another run
+
+**Does not modify:** `result.json` or run artifacts. Read-only analysis.
+
+**Schema:** `agentcofounder.analysis_station.v1` — see `src/v2/station.ts`.
+
+---
+
+## 7. Phase F experiments (frozen on `setup/measure`)
 
 Seven cumulative interventions on the public book-lending prompt. Full write-up: [`docs/phase-f-strategy.md`](../phase-f-strategy.md) on `setup/measure`.
 
@@ -183,7 +216,7 @@ Seven cumulative interventions on the public book-lending prompt. Full write-up:
 
 ---
 
-## 7. Hackathon rules we must not break
+## 8. Hackathon rules we must not break
 
 From the [official spec](https://agentcofounder.stockholm.ai/):
 
@@ -196,7 +229,7 @@ All V2 analysis tools are **read-only** on run artifacts.
 
 ---
 
-## 8. Documentation maintenance
+## 9. Documentation maintenance
 
 When adding a feature:
 
@@ -209,7 +242,7 @@ Do **not** duplicate long explanations in README — link here instead.
 
 ---
 
-## 9. Activity classification (M2 complete)
+## 10. Activity classification (M2 complete)
 
 Each ledger call gets a heuristic **`activity`** label from tools and paths (`src/v2/classify.ts`):
 
@@ -230,18 +263,18 @@ Re-run normalize after classifier changes; ledger is derived and recomputable.
 
 ---
 
-## 10. What's next
+## 11. What's next
 
 | Milestone | Status |
 |-----------|--------|
 | M1 — v2 branch + plan | **Done** |
 | M2 — reconcile + ledger + classification | **Done** |
+| Analysis station (v1) | **Done** |
 | M3 — harness-owned acceptance | Not started |
 | M4 — multi-prompt task set | Not started |
 | M5 — modular build architecture | Not started |
-| Analysis station UI | Next |
 
-**Recommended next step:** M2 activity classification — tag each ledger call (test, build, source, css, repair) from tools and file paths.
+**Recommended next step:** M3 — harness-owned acceptance tests (forward-looking; not the abandoned local `acceptance/` folder).
 
 ---
 
@@ -253,5 +286,6 @@ npm run replay:run -- <run-id>     # rebuild app from logs, no AI
 npm run reconcile:run -- <run-id>  # audit one run's token math
 npm run reconcile:all              # audit all complete runs
 npm run normalize:run -- <run-id>  # build analysis ledger
+npm run analyze:run -- <run-id>    # ledger + HTML analysis station
 npm run check                      # typecheck + unit tests + app template
 ```

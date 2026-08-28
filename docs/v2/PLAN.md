@@ -45,12 +45,13 @@ Each intervention independently switchable:
 
 Only claim an optimization works after M2–M4 exist.
 
-### Analysis station (next)
+### Analysis station — **done (v1)**
 
-- Canvas/UI over normalized ledger + `activity_summary`.
-- Run vs run, experiment vs experiment, token breakdown by activity and phase.
-- Every number drillable to raw Pi events.
-- Versioned classifiers; re-run analysis without re-running Pi.
+- [x] `npm run analyze:run` → `ledger.json`, `station.json`, `station.html`
+- [x] Activity breakdown, cumulative cost chart, filterable call table with tool drill-down
+- [x] Optional `--compare <run-id>` for activity deltas
+- [ ] Run vs experiment batch views (future)
+- [ ] Link numbers back to raw `events.jsonl` line refs (future)
 
 ## Principles
 

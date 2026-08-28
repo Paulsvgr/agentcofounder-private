@@ -107,6 +107,17 @@ See [TEAM-GUIDE §5](docs/v2/TEAM-GUIDE.md#5-normalize--per-call-analysis-ledger
 npm run normalize:run -- <run-id>
 ```
 
+## Analyze a past run (interactive report)
+
+See [TEAM-GUIDE §6](docs/v2/TEAM-GUIDE.md#6-analysis-station--interactive-run-report). Builds ledger + HTML report under `artifacts/analysis/<run-id>/`.
+
+```bash
+npm run analyze:run -- <run-id>
+npm run analyze:run -- <run-id> --compare <other-run-id>
+```
+
+Open `artifacts/analysis/<run-id>/station.html` in a browser.
+
 ## Result and telemetry ownership
 
 The model writes `report.partial.json`, containing the product summary, assumptions, features, and tests. The runner writes `result.json` after parsing Pi's completed `message_end` events. This prevents the model from inventing headline token totals.

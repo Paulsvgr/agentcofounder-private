@@ -15,6 +15,7 @@
     "reconcile:run": "node --import tsx scripts/reconcile-run.ts",
     "reconcile:all": "node --import tsx scripts/reconcile-all.ts",
     "normalize:run": "node --import tsx scripts/normalize-run.ts",
+    "analyze:run": "node --import tsx scripts/analyze-run.ts",
     "test": "vitest run",
     "app:test": "npm --prefix app-template test -- --passWithNoTests",
     "app:build": "npm --prefix app-template run build",
