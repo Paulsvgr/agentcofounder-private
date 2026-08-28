@@ -56,12 +56,14 @@ Nothing here spends model tokens.
 | 3 | Replay validated across all saved apps | **done** |
 | 4 | `HarnessConfig` — toggles, hash, intervention model | **done** |
 | 5 | Run manifest — code, template, prompt, model, config per run | **done** |
-| 6 | Experiment runner — interleaved arms, one intervention per treatment | **next** |
-| 7 | Analysis Station reads config, template and replay status | |
-| 8 | **Lock the V2 baseline** | |
-| 9 | First real experiment | |
+| 6 | Audit existing run-server/storage + manifest ingestion plan | **next** |
+| 7 | Wire manifest into export/publish pipeline (no new server) | |
+| 8 | Experiment runner — interleaved arms, one intervention per treatment | |
+| 9 | Analysis Station reads config, template and replay status | |
+| 10 | **Lock the V2 baseline** | |
+| 11 | First real experiment | |
 
-No CSS, shadcn, planner or template work before step 8.
+No CSS, shadcn, planner or template work before step 10.
 
 ### Config model
 
