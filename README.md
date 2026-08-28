@@ -1,5 +1,7 @@
 # AgentCofounder starter
 
+**Team working on analysis / V2:** read [`docs/v2/TEAM-GUIDE.md`](docs/v2/TEAM-GUIDE.md) first (branch map, what we built, and how to run each tool). Milestone plan: [`docs/v2/PLAN.md`](docs/v2/PLAN.md).
+
 A forkable baseline for the AgentCofounder challenge. It gives every team the same pinned Pi runtime, neutral web application seed, execution command, telemetry collector, and public contract while leaving the actual agent strategy participant-owned.
 
 This repository installs Pi as a local dependency at exactly `@earendil-works/pi-coding-agent@0.84.1`. Do not use the floating shell installer and do not run `pi update` during the challenge.
@@ -80,36 +82,30 @@ npm run validate:result -- output/app/result.json
 
 ## Replay a past run (no AI)
 
-Rebuild a saved run's React app from Pi session logs — deterministic, zero model calls. Replays `write` and `edit` tool calls in order, runs `npm test` and `npm run build`, and compares the result to the saved app under `saved-apps/`.
+See [TEAM-GUIDE §3](docs/v2/TEAM-GUIDE.md#3-run-replay--rebuild-apps-without-ai) for context. Replays `write`/`edit` from Pi logs — no model calls.
 
 ```bash
 npm run replay:run -- artifacts/runs/<run-id>
 ```
 
-Writes `artifacts/replay/<run-id>/report.json`. Exit code is non-zero if replay failures, template drift, test/build failure, or file mismatch.
-
-New runs snapshot `app-template/` into `artifacts/runs/<run-id>/app-template/` so replay uses the exact template from that run. Older runs without a snapshot use a drift check against the current template.
+Writes `artifacts/replay/<run-id>/report.json`.
 
 ## Reconcile token totals (audit)
 
-Optional audit helper: verify that summing `events.jsonl` reproduces the official totals in `result.json`. Useful after harness changes or before trusting analysis numbers.
+See [TEAM-GUIDE §4](docs/v2/TEAM-GUIDE.md#4-reconcile--verify-token-accounting).
 
 ```bash
 npm run reconcile:run -- <run-id>
 npm run reconcile:all
 ```
 
-Skips incomplete run folders (missing `events.jsonl` or `result.json`). Exits non-zero if any complete run mismatches.
-
 ## Normalize a past run (analysis ledger)
 
-Build a per-call ledger from `events.jsonl` — tokens, tools, and file paths per model call. Writes derived output only (`artifacts/analysis/<run-id>/ledger.json`); does not modify `result.json`.
+See [TEAM-GUIDE §5](docs/v2/TEAM-GUIDE.md#5-normalize--per-call-analysis-ledger). Writes `artifacts/analysis/<run-id>/ledger.json` only — does not modify `result.json`.
 
 ```bash
 npm run normalize:run -- <run-id>
 ```
-
-Uses the hackathon efficiency weights (`input×1 + output×3 + cacheRead×0.1`). Reconciliation against `result.json` is included in the ledger file.
 
 ## Result and telemetry ownership
 

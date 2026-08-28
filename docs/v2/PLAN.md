@@ -2,20 +2,23 @@
 
 Phase F stays frozen as evidence on `setup/measure`. V2 is built on `main` as a clean experimental platform.
 
+**Team onboarding:** [TEAM-GUIDE.md](./TEAM-GUIDE.md)
+
 ## Milestones
 
-### M1 — Preserve and audit (this branch)
+### M1 — Preserve and audit — **done**
 
-- Keep all historical runs, exports, sessions, experiment manifests.
-- Document architecture and what to keep vs replace.
-- Safe branch for teammates (`v2` off `main`; Phase F on `setup/measure`).
+- [x] `v2` branch off `main`; Phase F preserved on `setup/measure`
+- [x] [TEAM-GUIDE.md](./TEAM-GUIDE.md) — narrative doc for teammates
+- [x] Historical runs, exports, sessions, experiment manifests kept locally
 
-### M2 — Exact evidence + token reconciliation
+### M2 — Exact evidence + token reconciliation — **in progress**
 
-- Normalized call ledger from `events.jsonl` / sessions.
-- Sum of per-call input + output + cache read must equal official `result.json` totals.
-- Run reconciliation across all historical runs; fail the build if any drift.
-- Deterministic activity classification from tool names and file paths.
+- [x] Single-run reconcile (`npm run reconcile:run`)
+- [x] Batch reconcile (`npm run reconcile:all`) — 66/66 complete runs match (Aug 2026)
+- [x] Per-call ledger (`npm run normalize:run`) → `artifacts/analysis/<run-id>/ledger.json`
+- [x] Hackathon weighted cost on each call (`src/v2/weights.ts`)
+- [ ] Deterministic activity classification (tools + file paths → test/build/source/css/repair)
 
 ### M3 — Harness-owned ground truth (forward-looking)
 
@@ -42,7 +45,7 @@ Each intervention independently switchable:
 
 Only claim an optimization works after M2–M4 exist.
 
-### Analysis station (after M2)
+### Analysis station (after M2 classification)
 
 - Canvas/UI over normalized ledger.
 - Run vs run, experiment vs experiment, token breakdown by activity and phase.
@@ -57,6 +60,6 @@ Only claim an optimization works after M2–M4 exist.
 4. Held-out tasks before claiming general improvements.
 5. Git describes code under test; shared storage holds run evidence.
 
-## Already on `main`
+## Shipped on `main` (also on `v2`)
 
-- **Run replay** (`npm run replay:run`) — rebuild apps from session logs without model calls; template snapshot per run.
+- **Run replay** (`npm run replay:run`) — rebuild apps from session logs; template snapshot per run.
