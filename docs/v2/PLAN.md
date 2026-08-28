@@ -54,9 +54,9 @@ Nothing here spends model tokens.
 | 1 | Spec committed as source of truth | **done** |
 | 2 | Replay runs at all; `scripts/` in typecheck | **done** |
 | 3 | Replay validated across all saved apps | **done** |
-| 4 | `HarnessConfig` — toggles, hash, intervention model | **next** |
-| 5 | Run manifest — code, template, prompt, model, config per run | |
-| 6 | Experiment runner — interleaved arms, one intervention per treatment | |
+| 4 | `HarnessConfig` — toggles, hash, intervention model | **done** |
+| 5 | Run manifest — code, template, prompt, model, config per run | **done** |
+| 6 | Experiment runner — interleaved arms, one intervention per treatment | **next** |
 | 7 | Analysis Station reads config, template and replay status | |
 | 8 | **Lock the V2 baseline** | |
 | 9 | First real experiment | |

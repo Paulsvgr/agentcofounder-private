@@ -17,6 +17,12 @@ import { collectUsageFromJsonLines } from "./usage.js";
 import type { RunResult } from "./types.js";
 import { validateResultObject } from "./validate-result.js";
 import { portHasListener, unavailableAppVerification, verifyGeneratedApp } from "./verify-app.js";
+import {
+  buildPreRunManifest,
+  buildRunManifestOutcome,
+  finalizeRunManifest,
+  writeRunManifest,
+} from "./v2/manifest.js";
 
 interface Arguments {
   ideaFile: string;
@@ -53,10 +59,13 @@ Options:
   --help                  Show this help
 
 Environment:
-  CHALLENGE_PROVIDER      Optional Pi provider override
-  CHALLENGE_MODEL         Optional Pi model override
-  CHALLENGE_THINKING      Optional Pi thinking level (default: off)
-  CHALLENGE_TIMEOUT_MS    Wall-clock limit for Pi (default: 900000)
+  CHALLENGE_PROVIDER         Optional Pi provider override
+  CHALLENGE_MODEL            Optional Pi model override
+  CHALLENGE_THINKING         Optional Pi thinking level (default: off)
+  CHALLENGE_MAX_TOKENS       Optional max output tokens (recorded in run manifest)
+  CHALLENGE_CONTEXT_WINDOW   Optional model context window (recorded in run manifest)
+  CHALLENGE_TIMEOUT_MS       Wall-clock limit for Pi (default: 900000)
+  RUN_COHORT / RUN_ARM / RUN_REP / RUN_INTERVENTION  Optional experiment metadata
 `);
 }
 
@@ -266,9 +275,22 @@ async function main(): Promise<void> {
     { writeMarker: false },
   );
 
+  const manifest = await buildPreRunManifest({
+    runId,
+    repositoryRoot: REPOSITORY_ROOT,
+    ideaFile: args.ideaFile,
+    ideaText: idea,
+    templateSnapshotDirectory: path.join(artifactDirectory, "app-template"),
+    systemPrompt,
+    publicJourneys,
+    agentsMd: appContext,
+  });
+  await writeRunManifest(artifactDirectory, manifest);
+
   const eventFile = path.join(artifactDirectory, "events.jsonl");
   const stderrFile = path.join(artifactDirectory, "pi.stderr.log");
   const appPortHadListenerBeforePi = await portHasListener(APP_PORT);
+  const piStartedAt = Date.now();
   const pi = await runPi(
     buildPiArguments(idea, systemPrompt, publicJourneys, appContext, artifactDirectory),
     outputDirectory,
@@ -276,6 +298,7 @@ async function main(): Promise<void> {
     stderrFile,
     timeoutFromEnvironment(),
   );
+  const wallMs = Date.now() - piStartedAt;
   const portReclamation = await auditAppPortAfterPi(APP_PORT, outputDirectory, appPortHadListenerBeforePi);
   if (portReclamation.listener_after_pi) {
     const message = `${portReclamation.diagnostic}; pids=${portReclamation.process_ids.join(",") || "none"}`;
@@ -305,6 +328,10 @@ async function main(): Promise<void> {
     resultPaths = await writeResult(outputDirectory, result, [rootResultPath]);
   }
   const missingResultPaths = missingRequiredResultPaths(resultPaths, requiredResultPaths);
+  await writeRunManifest(
+    artifactDirectory,
+    finalizeRunManifest(manifest, buildRunManifestOutcome(result, usage, wallMs)),
+  );
   const validationErrors = await validateResultObject(result);
   if (validationErrors.length > 0) {
     for (const error of validationErrors) console.error(`- ${error}`);
