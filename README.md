@@ -101,6 +101,16 @@ npm run reconcile:all
 
 Skips incomplete run folders (missing `events.jsonl` or `result.json`). Exits non-zero if any complete run mismatches.
 
+## Normalize a past run (analysis ledger)
+
+Build a per-call ledger from `events.jsonl` — tokens, tools, and file paths per model call. Writes derived output only (`artifacts/analysis/<run-id>/ledger.json`); does not modify `result.json`.
+
+```bash
+npm run normalize:run -- <run-id>
+```
+
+Uses the hackathon efficiency weights (`input×1 + output×3 + cacheRead×0.1`). Reconciliation against `result.json` is included in the ledger file.
+
 ## Result and telemetry ownership
 
 The model writes `report.partial.json`, containing the product summary, assumptions, features, and tests. The runner writes `result.json` after parsing Pi's completed `message_end` events. This prevents the model from inventing headline token totals.
