@@ -11,7 +11,7 @@ import { execFileSync } from "node:child_process";
 import { access, lstat, mkdir, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { isSourceMutationCommand } from "../src/v2/classify.js";
+import { isSourceMutationCommand } from "../src/v2/source-paths.js";
 import { copyAppTemplateTree } from "../src/prepare-output.js";
 
 const SOURCE_DIRECTORY = path.dirname(fileURLToPath(import.meta.url));
@@ -85,6 +85,7 @@ export interface ReplayReport {
   edits_replayed: number;
   skipped_outside_app: number;
   bash_mutation_warnings: number;
+  malformed_jsonl_lines: number;
   failures: ReplayFailure[];
   test: CommandResult | null;
   build: CommandResult | null;
@@ -123,27 +124,50 @@ async function pathExists(candidate: string): Promise<boolean> {
   }
 }
 
-async function readJsonl(filePath: string): Promise<unknown[]> {
+interface JsonlRead {
+  rows: unknown[];
+  malformedLines: number;
+}
+
+/**
+ * Malformed lines are counted rather than swallowed: a dropped line can be a
+ * dropped write, and replay must never lose a file change without saying so.
+ */
+async function readJsonl(filePath: string): Promise<JsonlRead> {
   const raw = await readFile(filePath, "utf8");
   const rows: unknown[] = [];
+  let malformedLines = 0;
   for (const line of raw.split(/\r?\n/u)) {
     if (line.trim() === "") continue;
     try {
       rows.push(JSON.parse(line));
     } catch {
-      // Keep going; malformed lines remain in the raw artifact.
+      malformedLines += 1;
     }
   }
-  return rows;
+  return { rows, malformedLines };
 }
 
-async function loadRows(input: string): Promise<{ rows: unknown[]; sourceFile: string; runId: string }> {
+interface LoadedRows {
+  rows: unknown[];
+  sourceFile: string;
+  runId: string;
+  malformedLines: number;
+}
+
+async function loadRows(input: string): Promise<LoadedRows> {
   const absoluteInput = path.resolve(input);
   const stat = await lstat(absoluteInput);
 
   if (stat.isFile()) {
     const runId = path.basename(absoluteInput).replace(/\.jsonl$/u, "");
-    return { rows: await readJsonl(absoluteInput), sourceFile: absoluteInput, runId };
+    const read = await readJsonl(absoluteInput);
+    return {
+      rows: read.rows,
+      sourceFile: absoluteInput,
+      runId,
+      malformedLines: read.malformedLines,
+    };
   }
 
   const runId = path.basename(absoluteInput);
@@ -155,19 +179,28 @@ async function loadRows(input: string): Promise<{ rows: unknown[]; sourceFile: s
 
   if (sessionFiles.length > 0) {
     const rows: unknown[] = [];
+    let malformedLines = 0;
     for (const filePath of sessionFiles) {
-      rows.push(...(await readJsonl(filePath)));
+      const read = await readJsonl(filePath);
+      rows.push(...read.rows);
+      malformedLines += read.malformedLines;
     }
     rows.sort((left, right) =>
       String(isRecord(left) ? left.timestamp : "").localeCompare(
         String(isRecord(right) ? right.timestamp : ""),
       ),
     );
-    return { rows, sourceFile: sessionFiles.join(","), runId };
+    return { rows, sourceFile: sessionFiles.join(","), runId, malformedLines };
   }
 
   const eventsFile = path.join(absoluteInput, "events.jsonl");
-  return { rows: await readJsonl(eventsFile), sourceFile: eventsFile, runId };
+  const read = await readJsonl(eventsFile);
+  return {
+    rows: read.rows,
+    sourceFile: eventsFile,
+    runId,
+    malformedLines: read.malformedLines,
+  };
 }
 
 function extractCwd(rows: unknown[]): string {
@@ -179,7 +212,12 @@ function extractCwd(rows: unknown[]): string {
   return path.join(REPOSITORY_ROOT, "output", "app");
 }
 
-function remapPath(originalPath: string, originalCwd: string, replayDir: string): string | null {
+/**
+ * The app marker is checked before the session cwd on purpose. A session whose
+ * cwd is the repository root would otherwise remap `<root>/output/app/src/App.tsx`
+ * to `<replay>/output/app/src/App.tsx` and quietly rebuild the wrong tree.
+ */
+export function remapPath(originalPath: string, originalCwd: string, replayDir: string): string | null {
   if (originalPath.trim() === "") return null;
 
   const cwd = path.resolve(originalCwd);
@@ -187,15 +225,15 @@ function remapPath(originalPath: string, originalCwd: string, replayDir: string)
     ? path.resolve(originalPath)
     : path.resolve(cwd, originalPath);
 
-  if (resolved === cwd || resolved.startsWith(`${cwd}${path.sep}`)) {
-    return path.join(replayDir, path.relative(cwd, resolved));
-  }
-
   const marker = `${path.sep}output${path.sep}app`;
   const markerIndex = resolved.indexOf(marker);
   if (markerIndex >= 0) {
     const relative = resolved.slice(markerIndex + marker.length + 1);
-    return path.join(replayDir, relative);
+    return relative === "" ? replayDir : path.join(replayDir, relative);
+  }
+
+  if (resolved === cwd || resolved.startsWith(`${cwd}${path.sep}`)) {
+    return path.join(replayDir, path.relative(cwd, resolved));
   }
 
   return null;
@@ -549,10 +587,14 @@ function decideVerdict(
   bashMutationWarnings: number,
   templateSource: TemplateSource,
   templateDrift: TemplateDriftEntry[],
+  malformedLines: number,
 ): { verdict: ReplayVerdict; warnings: string[] } {
   const warnings: string[] = [];
   if (failures.length > 0) {
     warnings.push(`${failures.length} replay operation(s) failed to apply`);
+  }
+  if (malformedLines > 0) {
+    warnings.push(`${malformedLines} malformed JSONL line(s) could not be parsed`);
   }
   if (bashMutationWarnings > 0) {
     warnings.push(
@@ -593,7 +635,7 @@ export async function replayRun(input: string, options: ReplayOptions): Promise<
   const inputPath = path.resolve(input);
   const runDirectory = (await lstat(inputPath)).isDirectory() ? inputPath : path.dirname(inputPath);
 
-  const { rows, sourceFile, runId } = await loadRows(input);
+  const { rows, sourceFile, runId, malformedLines } = await loadRows(input);
   const originalCwd = extractCwd(rows);
   const replayDir = path.join(REPOSITORY_ROOT, "artifacts", "replay", runId, "app");
   const { sourceDirectory, templateSource } = await resolveTemplateSource(runDirectory);
@@ -646,6 +688,7 @@ export async function replayRun(input: string, options: ReplayOptions): Promise<
     bashMutationWarnings,
     templateSource,
     templateDrift,
+    malformedLines,
   );
   if (resolvedOriginal !== null && !originalUsable) {
     warnings.push(`saved app ${path.basename(resolvedOriginal)} has no source files to compare`);
@@ -664,6 +707,7 @@ export async function replayRun(input: string, options: ReplayOptions): Promise<
     edits_replayed: editsReplayed,
     skipped_outside_app: skippedOutsideApp,
     bash_mutation_warnings: bashMutationWarnings,
+    malformed_jsonl_lines: malformedLines,
     failures,
     test,
     build,

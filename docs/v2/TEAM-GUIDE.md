@@ -125,6 +125,11 @@ Absence of a comparison is not evidence of fidelity, so it never reports as a ma
   shows up as drift. New runs snapshot the template into the run folder.
 - Edits are applied with a function replacer — a string replacement would expand
   `$&` and corrupt generated regex-escaping code. Guarded by `test/replay-run.test.ts`.
+- Unparseable session lines are counted in `malformed_jsonl_lines` and raised as
+  a warning, since a dropped line can be a dropped file write.
+- Source-path and mutation predicates live in `src/v2/source-paths.ts`, kept
+  apart from the activity classifier so a classifier rewrite cannot change what
+  replay considers a source mutation.
 
 ### V1 validation (Aug 2026)
 

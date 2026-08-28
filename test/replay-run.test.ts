@@ -1,5 +1,46 @@
 import { describe, expect, it } from "vitest";
-import { applyEditsToContent } from "../scripts/replay-run.js";
+import { applyEditsToContent, remapPath } from "../scripts/replay-run.js";
+
+const REPLAY_DIR = "/replay/app";
+
+describe("remapPath", () => {
+  it("maps a path relative to the session cwd", () => {
+    expect(remapPath("/repo/output/app/src/App.tsx", "/repo/output/app", REPLAY_DIR)).toBe(
+      "/replay/app/src/App.tsx",
+    );
+  });
+
+  it("resolves relative paths against the session cwd", () => {
+    expect(remapPath("src/App.tsx", "/repo/output/app", REPLAY_DIR)).toBe(
+      "/replay/app/src/App.tsx",
+    );
+  });
+
+  // Regression: with cwd checked first, a repository-root cwd nested the whole
+  // output path inside the replay directory and rebuilt the wrong tree.
+  it("strips the app prefix even when cwd is the repository root", () => {
+    expect(remapPath("/repo/output/app/src/App.tsx", "/repo", REPLAY_DIR)).toBe(
+      "/replay/app/src/App.tsx",
+    );
+  });
+
+  it("maps a run from a different repository checkout", () => {
+    expect(remapPath("/elsewhere/output/app/src/main.tsx", "/elsewhere/output/app", REPLAY_DIR)).toBe(
+      "/replay/app/src/main.tsx",
+    );
+  });
+
+  it("still maps a custom output directory through the cwd branch", () => {
+    expect(remapPath("/repo/output/custom/src/App.tsx", "/repo/output/custom", REPLAY_DIR)).toBe(
+      "/replay/app/src/App.tsx",
+    );
+  });
+
+  it("rejects paths outside the app workspace", () => {
+    expect(remapPath("/etc/passwd", "/repo/output/app", REPLAY_DIR)).toBeNull();
+    expect(remapPath("   ", "/repo/output/app", REPLAY_DIR)).toBeNull();
+  });
+});
 
 describe("applyEditsToContent", () => {
   it("inserts replacement text verbatim", () => {

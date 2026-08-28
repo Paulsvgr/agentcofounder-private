@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   classifyCallActivity,
-  isCssPath,
   isNpmTestCommand,
   summarizeActivities,
 } from "../../src/v2/classify.js";
+import { isCssPath } from "../../src/v2/source-paths.js";
 import type { LedgerTool } from "../../src/v2/normalize.js";
 
 function tool(partial: Partial<LedgerTool> & Pick<LedgerTool, "name">): LedgerTool {
