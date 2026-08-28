@@ -12,7 +12,7 @@ This document is the **narrative source of truth** for what we built, why, and h
 |--------|---------|-------------|
 | **`main`** | Clean hackathon starter + run replay | Submission baseline |
 | **`setup/measure`** | Phase F experiments (Exp1–6, 5b) and historical runs | Frozen evidence — do not stack new experiments here |
-| **`v2`** | Analysis platform (reconcile, ledger, future M3–M5) | **Start here** for analysis and new work |
+| **`v2`** | Experiment foundation + analysis platform | **Start here** for new work |
 
 **Rules:**
 
@@ -49,7 +49,17 @@ source ~/.pi/agent/challenge-env.sh   # before each challenge run
 
 ```bash
 export CHALLENGE_PROVIDER="zai"
+export CHALLENGE_MODEL="glm-5.2"
 export CHALLENGE_THINKING="off"    # default — lower output token cost
+export CHALLENGE_MAX_TOKENS="8192"          # recorded in run manifest (optional)
+export CHALLENGE_CONTEXT_WINDOW="128000"    # recorded in run manifest (optional)
+export CHALLENGE_TIMEOUT_MS="900000"        # default 15 minutes
+
+# Optional experiment metadata (written into run-manifest.json)
+export RUN_COHORT="v2-baseline-lock"
+export RUN_ARM="control"
+export RUN_REP="1"
+export RUN_INTERVENTION="baseline"
 ```
 
 **Run the challenge** (costs model tokens):
@@ -69,6 +79,7 @@ Each complete run folder contains:
 |------------|------|
 | `events.jsonl` | Raw Pi telemetry (immutable) |
 | `result.json` | Official totals — **written by harness, not agent** |
+| `run-manifest.json` | V2 provenance — config, template/prompt hashes, model, experiment (see §13) |
 | `sessions/` | Pi session JSONL |
 | `idea.txt` | Prompt used |
 | `app-template/` | Template snapshot (new runs only — for replay) |
@@ -296,6 +307,8 @@ Each ledger call gets a heuristic **`activity`** label from tools and paths (`sr
 | `mixed` | multiple categories in one call |
 
 **Not ground truth** — one call can mix work; use for aggregates, not single-call verdicts.
+The classifier is spec-breaking (~38% `mixed`); **do not use activity shares to pick the
+next improvement.** See [PLAN.md](./PLAN.md) (M6).
 
 Re-run normalize after classifier changes; ledger is derived and recomputable.
 
@@ -303,16 +316,154 @@ Re-run normalize after classifier changes; ledger is derived and recomputable.
 
 ## 11. What's next
 
-| Milestone | Status |
-|-----------|--------|
-| M1 — v2 branch + plan | **Done** |
-| M2 — reconcile + ledger + classification | **Done** |
-| Analysis station (v1) | **Done** |
-| M3 — harness-owned acceptance | Not started |
-| M4 — multi-prompt task set | Not started |
-| M5 — modular build architecture | Not started |
+Phase 1 experiment foundation status: [PLAN.md](./PLAN.md).
 
-**Recommended next step:** M3 — harness-owned acceptance tests (forward-looking; not the abandoned local `acceptance/` folder).
+| Step | Topic | Status |
+|------|-------|--------|
+| 4–7 | HarnessConfig, run manifest, shared run storage | **Done** |
+| 8 | Experiment runner (interleaved arms) | **Next** |
+| 9 | Analysis Station reads config + manifest + replay | Planned |
+| 10 | Lock V2 baseline (5 runs, costs tokens) | After runner |
+| 11 | First real intervention | After baseline |
+
+**Do not** start template/CSS/planner work before step 10. Classifier percentages must
+not drive the roadmap — see §10 and PLAN (M6).
+
+---
+
+## 12. HarnessConfig — experiment toggles and identity
+
+**Problem:** Saying “baseline” without a hash lets runs pool incorrectly and makes
+one-intervention-at-a-time comparisons ambiguous.
+
+**Solution:** Every run records a full `HarnessConfig` in `run-manifest.json`.
+Comparison identity is the pair **`config_schema_version` + `config_hash`** (not
+the hash alone). See `src/v2/config.ts`.
+
+**Baseline today** (`DEFAULT_CONFIG`): all boolean toggles `false` except
+`agent_test_authoring: true`; `template: "baseline"`;
+`execution_strategy: "single_session"`.
+
+```bash
+npm run config:show                              # baseline config + identity
+npm run config:show -- path/to/treatment.json   # resolve a treatment file
+```
+
+**Interventions:** A named change declares which config fields it may touch.
+`validateIntervention()` checks baseline → treatment diffs stay inside those fields
+(e.g. turning on `component_assembly` and `docs_retrieval` together can still be
+one intervention if both are declared).
+
+**Important:** Config is **recorded in the manifest** but **not yet read by the
+runtime harness** — `npm run challenge` behaviour is unchanged until a toggle is
+deliberately wired in for an experiment.
+
+**Does not modify:** `result.json` or Pi behaviour (today).
+
+---
+
+## 13. Run manifest — per-run provenance
+
+**Problem:** `result.json` is harness measurement truth, not “what template,
+config, and prompts produced this app?” Historical exports only carried git +
+approach labels.
+
+**Solution:** Internal research metadata in `artifacts/runs/<run-id>/run-manifest.json`
+(schema `agentcofounder.run_manifest.v1`). Written **before** Pi starts, finalized
+with **outcome** after the run.
+
+| Block | Contents |
+|-------|----------|
+| `config` + `config_hash` | Full harness config at run time |
+| `template` | Template id + `tree_sha256` of snapshotted `app-template/` |
+| `prompt` | SHA-256 of system prompt, journeys, `AGENTS.md` |
+| `model` | Provider, model, thinking, `max_tokens`, `context_window`, timeout |
+| `git` | Branch, commit, dirty flag |
+| `experiment` | From `RUN_COHORT` / `RUN_ARM` / `RUN_REP` / `RUN_INTERVENTION` |
+| `versions` | Null slots for future planner/assembler/guards |
+| `outcome` | Status, tokens, weighted cost, wall time (null until run completes) |
+
+```bash
+# Inspect after a run (no extra command — file is on disk)
+cat artifacts/runs/<run-id>/run-manifest.json
+```
+
+**Does not modify:** `result.json`. **`--prepare-only`** does not write a manifest.
+
+Code: `src/v2/manifest.ts`, wired in `src/run-challenge.ts`.
+
+---
+
+## 14. Shared run storage — export, publish, and `data.manifest`
+
+**Problem:** Local `artifacts/runs/` is not shared across the team; we already have
+a runs UI and API for comparing ~90 historical runs.
+
+**Solution:** Keep the existing stack — **no new run server**. Publish **derived**
+export JSON; the API stores measurement and provenance separately.
+
+```text
+v2 harness (this repo)
+  artifacts/runs/<id>/run-manifest.json + events + result
+        ↓
+ac-control branch v2-manifest-export
+  npm run export:run -- <id>     → artifacts/exports/<id>.json
+        ↓  (top-level "manifest" on paste — transport only)
+seed script → POST https://admin.coretechs.se/hackathon/api/v1/runs/
+        ↓
+DB:  data.export   (meta, harness, efficiency — measurement)
+     data.manifest (full run_manifest.v1 — provenance)
+UI:  https://agentcofounder-hackathon.vercel.app
+```
+
+**Publish one run** (from `ac-control`, needs `HACKATHON_ACCESS_CODE`):
+
+```bash
+export AGENTCOFOUNDER_ROOT=/path/to/harness-with-artifacts   # often ac-control clone
+export RUNS_APP_ROOT=/path/to/agentcofounder-hackathon
+npm run publish:run -- <run-id> [--approach <label>]
+```
+
+Or export only: `npm run export:run -- <run-id>` and paste JSON in the UI.
+
+**Legacy runs** without `run-manifest.json` export with `"manifest": null` — normal.
+
+**After ingest:** `data.manifest` exists on the run record; **`data.export.manifest`
+does not** — Django strips manifest from export on save. That is intentional.
+
+**Two different “manifest” names in the UI:**
+
+| Name | What |
+|------|------|
+| `runs-classification.json` overlay | Historical experiment labels, human ratings |
+| `data.manifest` | Harness V2 provenance (config, template, experiment arm) |
+
+Run detail page shows `RunManifestPanel` when `data.manifest` is present.
+
+---
+
+## 15. Experiment metadata (until the V2 runner lands)
+
+**Problem:** Phase F used ad-hoc `RUN_APPROACH` strings per arm. V2 needs structured
+cohort/arm/rep metadata that survives export and lands in `data.manifest.experiment`.
+
+**Solution (today):** Set env vars before `npm run challenge`; they are copied into
+`run-manifest.json` and flow through export → `data.manifest.experiment`.
+
+```bash
+export RUN_COHORT="v2-baseline-lock"
+export RUN_ARM="control"          # or treatment arm name
+export RUN_REP="3"
+export RUN_INTERVENTION="baseline"
+npm run challenge
+```
+
+**Next (step 8):** An experiment runner will schedule **interleaved** control/treatment
+reps, validate interventions via `HarnessConfig`, and set these fields automatically.
+Until then, set env manually or via shell wrapper.
+
+Phase F one-arm runner (reference only, frozen on `setup/measure`):
+`ac-control/scripts/run-experiment.ts` — do not extend for V2.
 
 ---
 
@@ -320,6 +471,8 @@ Re-run normalize after classifier changes; ledger is derived and recomputable.
 
 ```bash
 npm run challenge                  # run agent (costs tokens)
+npm run challenge -- --prepare-only
+npm run config:show                # baseline HarnessConfig + identity
 npm run replay:run -- <run-id>     # rebuild app from logs, no AI
 npm run replay:all                 # replay fidelity across all saved apps
 npm run reconcile:run -- <run-id>  # audit one run's token math
@@ -328,3 +481,7 @@ npm run normalize:run -- <run-id>  # build analysis ledger
 npm run analyze:run -- <run-id>    # ledger + HTML analysis station
 npm run check                      # typecheck + unit tests + app template
 ```
+
+**Publish to shared runs UI** (from `ac-control` on branch `v2-manifest-export`):
+`npm run export:run -- <run-id>` then paste, or `npm run publish:run -- <run-id>`.
+See [§14](#14-shared-run-storage--export-publish-and-datamanifest).

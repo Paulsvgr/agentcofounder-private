@@ -69,13 +69,17 @@ No CSS, shadcn, planner or template work before step 10.
 
 All toggles default to `false`, so the baseline is an exact configuration with a
 hash rather than a word we agree on. Runs pool into the same arm only when their
-`config_sha256` matches; comparing across arms uses a structured diff.
+**`config_schema_version` + `config_hash`** pair matches; comparing across arms
+uses a structured diff.
 
-An **intervention** is a named set of config fields. `components` may require
-`resource_selection` and `assembler` and still be one intervention. The runner
-checks that the baseline-to-treatment diff stays inside the fields the
-intervention declares — that enforces "one thing at a time" without pinning it
-to a single boolean.
+An **intervention** is a named set of config fields. For example,
+`component_assembly` may require `docs_retrieval` and `template` and still be one
+intervention. The runner checks that the baseline-to-treatment diff stays inside
+the fields the intervention declares — that enforces "one thing at a time" without
+pinning it to a single boolean.
+
+See [TEAM-GUIDE §12](./TEAM-GUIDE.md#12-harnessconfig--experiment-toggles-and-identity)
+and `npm run config:show`.
 
 ---
 
@@ -161,3 +165,9 @@ Not "new template" as one package. Then we would not know which slice helped.
   session logs with no model calls. See TEAM-GUIDE for verdicts and known limits.
 - **Analysis station** (`npm run analyze:run`) — ledger, activity breakdown,
   cumulative cost, filterable call table, optional `--compare`.
+- **HarnessConfig** (`npm run config:show`) — baseline toggles, config identity,
+  intervention validation. See TEAM-GUIDE §12.
+- **Run manifest** — `run-manifest.json` per run (config, template, prompts, model,
+  experiment metadata). See TEAM-GUIDE §13.
+- **Shared run storage** — export/publish to team runs UI with `data.manifest`
+  provenance sibling. See TEAM-GUIDE §14.

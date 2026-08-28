@@ -122,6 +122,22 @@ npm run analyze:run -- <run-id> --compare <other-run-id>
 
 Open `artifacts/analysis/<run-id>/station.html` in a browser.
 
+## Harness config (V2 experiments)
+
+See [TEAM-GUIDE §12](docs/v2/TEAM-GUIDE.md#12-harnessconfig--experiment-toggles-and-identity).
+
+```bash
+npm run config:show
+npm run config:show -- path/to/treatment.json
+```
+
+## Run manifest and shared run storage
+
+Each challenge run writes `artifacts/runs/<run-id>/run-manifest.json` (provenance;
+`result.json` unchanged). To publish runs to the team UI, use the export pipeline
+documented in [TEAM-GUIDE §14](docs/v2/TEAM-GUIDE.md#14-shared-run-storage--export-publish-and-datamanifest)
+(`ac-control` branch `v2-manifest-export`: `export:run` / `publish:run`).
+
 ## Result and telemetry ownership
 
 The model writes `report.partial.json`, containing the product summary, assumptions, features, and tests. The runner writes `result.json` after parsing Pi's completed `message_end` events. This prevents the model from inventing headline token totals.
