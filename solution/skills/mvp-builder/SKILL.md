@@ -29,6 +29,8 @@ Cover each observable journey with Testing Library, driving the UI the way a use
 
 One `test` per journey, named for the behaviour a user would recognise, in the idea's own vocabulary rather than generic CRUD wording ("clears the flag on a record", "keeps records after a reload").
 
+This is Vitest, not Jest, and globals are off: import every helper you use — `describe`, `test`, `expect`, `beforeEach`, `afterEach`, `vi` — from `"vitest"` in each test file, and use `vi` rather than `jest` for mocks and timers. A missing import fails the build, not just the test.
+
 When behaviour depends on the passage of time — a countdown, an interval, anything that changes on its own — control the clock with `vi.useFakeTimers()` and advance it inside `act()`, and restore real timers afterwards. Waiting on the real clock makes a test slow and flaky, and a test that never resolves fails the run. A single test that walks through every feature reports as one journey and hides the others as soon as an early step breaks. Where data must survive a reload, unmount and re-render the component and assert the data returns — that is a journey in its own right.
 
 ## Report shape
