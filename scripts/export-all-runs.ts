@@ -8,6 +8,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { analyzeRun, writeAnalysis, type RunAnalysis } from "../src/analyze-run.js";
 import { buildRunExport, type RunExport } from "../src/export-run.js";
+import { loadRunManifestForExport } from "../src/run-manifest.js";
 import type { RunResult } from "../src/types.js";
 
 const SOURCE_DIRECTORY = path.dirname(fileURLToPath(import.meta.url));
@@ -152,11 +153,13 @@ async function main(): Promise<void> {
       }
 
       const approach = APPROACH_BY_RUN_ID[runId] ?? null;
-      const payload: RunExport = buildRunExport(result, analysis, {
+      const exportBody = buildRunExport(result, analysis, {
         approach,
         git_branch: null,
         git_commit: null,
       });
+      const manifest = await loadRunManifestForExport(RUNS_DIRECTORY, runId);
+      const payload: RunExport = { ...exportBody, manifest };
 
       // Prefer labeled approach; keep analysis provider/model.
       if (!payload.meta.approach) {

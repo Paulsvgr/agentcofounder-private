@@ -8,6 +8,7 @@ import {
   classificationFromEnv,
   type RunClassification,
 } from "./run-classification.js";
+import { loadRunManifestForExport, type RunManifest } from "./run-manifest.js";
 import type { RunResult, TestRun } from "./types.js";
 
 const SOURCE_DIRECTORY = path.dirname(fileURLToPath(import.meta.url));
@@ -89,12 +90,18 @@ export interface RunExportEfficiencyV2 {
   auto_test_trigger_hits: number;
 }
 
-/** Paste contract for the runs UI. Human rating/comments are frontend-only — not in this file. */
-export interface RunExport {
+/** Measurement paste body — meta, harness, efficiency only. */
+export interface RunExportBody {
   schema: typeof RUN_EXPORT_SCHEMA;
   meta: RunExportMeta;
   harness: RunExportHarness;
   efficiency: RunExportEfficiencyV2;
+}
+
+/** Paste contract for the runs UI. Human rating/comments are frontend-only — not in this file. */
+export interface RunExport extends RunExportBody {
+  /** V2 provenance transport field; Django stores as data.manifest sibling. */
+  manifest: RunManifest | null;
 }
 
 export interface ExportRunOptions {
@@ -195,7 +202,7 @@ export function buildRunExport(
     git_branch?: string | null;
     git_commit?: string | null;
   } = {},
-): RunExport {
+): RunExportBody {
   const gitBranch = options.git_branch !== undefined ? options.git_branch : resolveGitMeta().git_branch;
   const gitCommit = options.git_commit !== undefined ? options.git_commit : resolveGitMeta().git_commit;
   const approach =
@@ -279,7 +286,9 @@ export async function exportRun(runId: string, options: ExportRunOptions = {}): 
   const analysis = await analyzeRun(runId);
   const result = await loadResultForRun(runId, analysis);
   const analysisPath = await writeAnalysis(analysis);
-  const payload = buildRunExport(result, analysis, options);
+  const exportBody = buildRunExport(result, analysis, options);
+  const manifest = await loadRunManifestForExport(RUNS_DIRECTORY, runId);
+  const payload: RunExport = { ...exportBody, manifest };
 
   await mkdir(EXPORTS_DIRECTORY, { recursive: true });
   const exportPath = path.join(EXPORTS_DIRECTORY, `${runId}.json`);

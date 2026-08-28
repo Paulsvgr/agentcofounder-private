@@ -135,4 +135,13 @@ describe("buildRunExport", () => {
     });
     expect(JSON.stringify(payload)).not.toContain("call_log");
   });
+
+  it("does not embed manifest in buildRunExport body", () => {
+    const payload = buildRunExport(result, analysis, {
+      git_branch: "main",
+      git_commit: "d0f0b49",
+    });
+    expect(payload).not.toHaveProperty("manifest");
+    expect(Object.keys(payload).sort()).toEqual(["efficiency", "harness", "meta", "schema"]);
+  });
 });
