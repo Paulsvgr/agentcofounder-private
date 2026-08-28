@@ -57,7 +57,7 @@ Nothing here spends model tokens.
 | 4 | `HarnessConfig` — toggles, hash, intervention model | **done** |
 | 5 | Run manifest — code, template, prompt, model, config per run | **done** |
 | 6 | Audit existing run-server/storage + manifest ingestion plan | **done** |
-| 7 | Wire manifest into export/publish pipeline (no new server) | **code done** — deploy + POST→GET verify |
+| 7 | Wire manifest into export/publish pipeline (no new server) | **done** |
 | 8 | Experiment runner — interleaved arms, one intervention per treatment | **next** |
 | 9 | Analysis Station reads config, template and replay status | |
 | 10 | **Lock the V2 baseline** | |
