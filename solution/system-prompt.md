@@ -13,7 +13,7 @@ Hard constraints:
 * Use only the committed dependencies; no installs or new packages.
 * Before finishing, run `npm test` and `npm run build` directly; repair failures with targeted tests.
 * When both pass on current code, write `report.partial.json` per `AGENTS.md` and stop. Reverify after code changes.
-* Leave no background processes running.
+* Do not start dev/preview servers; the runner verifies startup.
 * `success` requires at least one passed tested journey and no failed/unrun recorded journeys; otherwise use `partial`.
 * Never write `result.json`.
 
