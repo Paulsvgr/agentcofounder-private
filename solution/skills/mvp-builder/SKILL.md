@@ -1,27 +1,20 @@
 ---
-
 name: mvp-builder
-description: Turn a non-technical product idea into a small, tested browser application while recording assumptions.
---------------------------------------------------------------------------------------------------------------------
-
+description: Build a small tested browser app from a non-technical product idea.
+---
 # MVP Builder
 
-## Reusable UI
+Reuse suitable primitives from `src/components/ui`; do not duplicate them unnecessarily.
 
-The project contains reusable UI primitives in `src/components/ui`.
-Inspect and reuse them before implementing equivalent UI primitives yourself.
-Prefer composition of existing primitives over creating duplicate components.
-Do not force requirements into an existing primitive when it does not fit.
-
-1. Extract the entity, its attributes, every journey detailed or implied by the idea, and any ambiguity.
-2. Use the public journey guidance as a coverage check. Implement every applicable pattern, but omit patterns the idea does not imply instead of inventing substitute features; record the rationale in `assumptions`.
-3. Prefer browser-local persistence unless the idea genuinely requires a backend. For mutable data, isolate persistence and domain operations from UI components with a small repository or service boundary; do not invent an external API.
-4. Implement accessible controls, validation, empty states, errors, and responsive layout. Handle duplicate or repeated actions, boundary values, malformed stored data, and recoverable storage or runtime failures where relevant.
-5. Keep components focused, separate concerns, and avoid duplication so another developer or agent can extend the app without a rewrite.
-6. Use only the dependencies already installed from the committed lockfile. Do not add packages or run dependency-install commands.
-7. Test the critical end-to-end user journeys and highest-risk behavior. Prefer a small number of high-value tests; avoid one test per minor journey, duplicate coverage, cosmetic checks, and trivial interaction variants. Every committed test must run and pass.
-8. After a failing full test run, use Vitest file/name filters to rerun only the affected failing test(s) while repairing. Do not run `npm test` again until targeted repairs pass and you are ready for final verification. Run test and build commands directly; never pipe, truncate, or otherwise mask their exit codes.
-9. Write `report.partial.json` with this exact shape:
+1. Extract the entities, attributes, implied journeys, and ambiguities.
+2. Implement every applicable journey; do not invent unsupported features. Record meaningful assumptions.
+3. Prefer local persistence. Separate mutable UI, domain logic, and persistence with small boundaries.
+4. Implement relevant accessibility, validation, empty/error states, repeats, boundaries, and malformed-data recovery.
+5. Keep components focused and avoid duplication.
+6. Use only installed dependencies.
+7. Test only critical journeys and high-risk behavior. Prefer a few high-value tests without duplicate or cosmetic coverage; all committed tests must pass.
+8. After failures, diagnose first and verify fixes with the smallest relevant Vitest target. Avoid repeated/debug tests. Run the full suite and build only for final verification. Never pipe verification commands.
+9. Write `report.partial.json` in the format defined below.
 
 ```json
 {
@@ -41,5 +34,4 @@ Do not force requirements into an existing primitive when it does not fit.
 }
 ```
 
-Use `success` only when `tests_run` contains at least one user journey and every entry passed. Use `partial` when useful functionality remains incomplete or any journey failed or was not run, and `failed` when the app cannot run. Never invent a passing test.
-Use only `passed` or `failed` for each test result. Record an unrun check as `failed` and explain why in its journey.
+Use `success` only when at least one journey was tested and every recorded test passed. Use `partial` for incomplete, failed, or unrun journeys and `failed` when the app cannot run. Never invent a pass.
