@@ -4,7 +4,7 @@ description: Build a small tested browser app from a non-technical product idea.
 ---
 # MVP Builder
 
-Reuse suitable primitives from `src/components/ui`; do not duplicate them unnecessarily.
+Reuse suitable primitives from `src/components/ui`; their public API is fully documented in `src/components/ui/index.ts`. Do not inspect individual UI primitive implementation files.
 
 1. Extract the entities, attributes, implied journeys, and ambiguities.
 2. Implement every applicable journey; do not invent unsupported features. Record meaningful assumptions.
