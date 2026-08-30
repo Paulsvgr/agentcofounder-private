@@ -1,5 +1,7 @@
 node_modules/
 .npm-cache/
+control-app/node_modules/
+control-app/dist/
 .env
 .env.*
 !.env.example

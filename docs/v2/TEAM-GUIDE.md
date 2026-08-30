@@ -234,10 +234,13 @@ npm run analyze:run -- <run-id> --compare <other-run-id>
 The HTML page includes:
 
 - Weighted total, token breakdown, reconciliation status
+- **Run manifest** provenance when `run-manifest.json` exists (config hash, template, experiment arm, model settings)
 - Activity cost share (`activity_summary`)
 - Cumulative weighted cost over run time
 - Filterable call table — expand any row to see tools/paths
-- With `--compare`: side-by-side activity deltas vs another run
+- With `--compare`: side-by-side activity deltas vs another run; compare manifest block when both runs have manifests
+
+**Runs UI:** filter and search runs by manifest fields (`config_hash`, template id, cohort, arm, model settings). Run detail shows `RunManifestPanel` when `data.manifest` is present (see §14).
 
 **Does not modify:** `result.json` or run artifacts. Read-only analysis.
 
@@ -321,10 +324,11 @@ Roadmap: [PLAN.md](./PLAN.md) Phase 2.
 | Step | Topic | Status |
 |------|-------|--------|
 | 1–7 | Measurement foundation (config, manifest, shared storage) | **Done** |
-| 8 | Analysis Station + runs app use manifest/config/template | **Next** |
-| 9 | Lock V2 baseline (5 runs, costs tokens) | Planned |
-| 10 | Template/resources — select components → assemble before Pi | After baseline |
-| 11 | Planner, themes, guards, error memory | Later |
+| 8 | Analysis Station + runs app use manifest/config/template | **Done** |
+| 9 | Lock V2 baseline (5 runs, costs tokens) | **In progress** |
+| 10 | **V2 Control App** — local run browser + launcher | **Done** |
+| 11 | Template/resources — select components → assemble before Pi | After baseline |
+| 12 | Planner, themes, guards, error memory | Later |
 
 **No dedicated experiment runner.** Compare baseline vs treatment manually; use
 `RUN_*` env vars and `config_hash` in the manifest to label and group runs.
@@ -406,23 +410,37 @@ export JSON; the API stores measurement and provenance separately.
 
 ```text
 v2 harness (this repo)
-  artifacts/runs/<id>/run-manifest.json + events + result
+  artifacts/runs/<id>/ + artifacts/runs-overlay.json + experiments catalog
         ↓
-ac-control branch v2-manifest-export
-  npm run export:run -- <id>     → artifacts/exports/<id>.json
-        ↓  (top-level "manifest" on paste — transport only)
-seed script → POST https://admin.coretechs.se/hackathon/api/v1/runs/
+control-app  buildHackathonRunRecord()  (Phase B: overlay + catalog merge)
+        ↓
+POST https://admin.coretechs.se/hackathon/api/v1/runs/   (X-Hackathon-Key)
         ↓
 DB:  data.export   (meta, harness, efficiency — measurement)
      data.manifest (full run_manifest.v1 — provenance)
+     data.classification / human fields from overlay
 UI:  https://agentcofounder-hackathon.vercel.app
 ```
 
-**Publish one run** (from `ac-control`, needs `HACKATHON_ACCESS_CODE`):
+**Publish one run — recommended (control-app):**
+
+1. Edit metadata in the control app (author, rating, experiment link).
+2. Open run detail → **Publish to team**.
+3. Enter team access key once (or set `HACKATHON_ACCESS_CODE` on the API server).
 
 ```bash
-export AGENTCOFOUNDER_ROOT=/path/to/harness-with-artifacts   # often ac-control clone
+cd control-app
+export HACKATHON_ACCESS_CODE='…'   # optional — skips key prompt in UI
+npm run dev
+# UI http://localhost:5174 → run detail → Publish to team
+```
+
+**Publish one run — CLI (ac-control):**
+
+```bash
+export AGENTCOFOUNDER_ROOT=/path/to/harness-with-artifacts
 export RUNS_APP_ROOT=/path/to/agentcofounder-hackathon
+export HACKATHON_ACCESS_CODE='…'
 npm run publish:run -- <run-id> [--approach <label>]
 ```
 
@@ -470,12 +488,48 @@ Phase F one-arm batch runner (reference only, frozen on `setup/measure`):
 
 ---
 
+## 16. V2 Control App — local browser and launcher
+
+**Problem:** Inspecting 90+ runs from the CLI is slow; provider/thinking/mega-call
+issues (Berget vs Z.ai) were invisible until we parsed session JSONL by hand.
+
+**Solution:** [`control-app/`](../../control-app/) — local React UI + Node API that
+reads `artifacts/runs/` (manifest + result only for the list), spawns
+`analyze:run` / `reconcile:run` / `challenge` on demand, and streams job output.
+
+```bash
+cd control-app
+npm install --legacy-peer-deps   # first time
+npm run dev
+```
+
+| Service | URL |
+|---------|-----|
+| UI | http://localhost:5174 |
+| API | http://localhost:4319 |
+
+**Key columns:** provider, model, thinking, **max output per call** (flags mega-calls ≥ 5000).
+
+**Launch defaults:** env profile `challenge-env-zai.sh`, provider `zai`, model `glm-5.2`.
+Use Berget only when testing contest parity — it currently triggers hidden thinking +
+27k single-call dumps.
+
+**Analyze without `result.json` in run dir:** older runs (or runs before the harness
+fix) may only have `run-manifest.json` outcome. `npm run analyze:run` now builds the
+ledger from `events.jsonl` and skips reconciliation with a clear message. New runs
+also mirror `result.json` into `artifacts/runs/<id>/`.
+
+Full reference: [CONTROL-APP.md](./CONTROL-APP.md).
+
+---
+
 ## Quick command reference
 
 ```bash
 npm run challenge                  # run agent (costs tokens)
 npm run challenge -- --prepare-only
 npm run config:show                # baseline HarnessConfig + identity
+npm run baseline:lock              # 5 baseline reps (costs tokens; see scripts/run-baseline-lock.sh)
 npm run replay:run -- <run-id>     # rebuild app from logs, no AI
 npm run replay:all                 # replay fidelity across all saved apps
 npm run reconcile:run -- <run-id>  # audit one run's token math
@@ -483,8 +537,11 @@ npm run reconcile:all              # audit all complete runs
 npm run normalize:run -- <run-id>  # build analysis ledger
 npm run analyze:run -- <run-id>    # ledger + HTML analysis station
 npm run check                      # typecheck + unit tests + app template
+
+# V2 Control App (local UI — see CONTROL-APP.md)
+cd control-app && npm run dev
 ```
 
 **Publish to shared runs UI** (from `ac-control` on branch `v2-manifest-export`):
-`npm run export:run -- <run-id>` then paste, or `npm run publish:run -- <run-id>`.
+`npm run export:run -- <run-id>` then paste, or `npm run publish:run -- <run-id>`. Export now includes overlay author, rating, comments, and classification (catalog-backed display labels when set).
 See [§14](#14-shared-run-storage--export-publish-and-datamanifest).

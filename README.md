@@ -122,6 +122,42 @@ npm run analyze:run -- <run-id> --compare <other-run-id>
 
 Open `artifacts/analysis/<run-id>/station.html` in a browser.
 
+## V2 Control App (local browser + launcher)
+
+Browse runs, compare experiments, edit metadata, inspect per-call token shape, trigger
+analyze/reconcile/replay, and launch configured challenge runs from a local UI.
+
+```bash
+cd control-app
+npm install
+npm run dev
+```
+
+- UI: http://localhost:5174 · API: http://localhost:4319
+- Default env profile: **Z.ai** (`challenge-env-zai.sh`) — see [CONTROL-APP.md](docs/v2/CONTROL-APP.md)
+- App README: [control-app/README.md](control-app/README.md)
+
+**UI highlights:**
+
+| Page | What it does |
+|------|----------------|
+| **Runs** (`/`) | Filterable run table, insights KPIs (on filtered set), comparison charts, URL-synced filters |
+| **Experiments** (`/experiments`) | Catalog + used-only slugs, create/edit/materialize, link runs to experiments |
+| **Run detail** (`/runs/:id`) | Station charts, metadata overlay, analyze/reconcile/replay, **publish to team** |
+| **New run** (`/new`) | Launch challenge with env profile + cohort/arm overrides |
+
+**Human metadata** lives in `artifacts/runs-overlay.json` (author, app rating, experiment
+link, comments). **Experiment catalog** lives in `artifacts/experiments/<id>/experiment.json`.
+
+Seed helpers (from repo root):
+
+```bash
+npm run seed:overlay        # authors + taxonomy defaults
+npm run seed:experiments      # experiment catalog from taxonomy
+```
+
+**Weighted cost** (used in insights and charts): `input + output×3 + cache_read×0.1`
+
 ## Harness config (V2 experiments)
 
 See [TEAM-GUIDE §12](docs/v2/TEAM-GUIDE.md#12-harnessconfig--experiment-toggles-and-identity).
@@ -134,9 +170,12 @@ npm run config:show -- path/to/treatment.json
 ## Run manifest and shared run storage
 
 Each challenge run writes `artifacts/runs/<run-id>/run-manifest.json` (provenance;
-`result.json` unchanged). To publish runs to the team UI, use the export pipeline
-documented in [TEAM-GUIDE §14](docs/v2/TEAM-GUIDE.md#14-shared-run-storage--export-publish-and-datamanifest)
-(`ac-control` branch `v2-manifest-export`: `export:run` / `publish:run`).
+`result.json` unchanged). To publish runs to the team UI:
+
+- **Control app (recommended):** run detail → **Publish to team** — merges overlay +
+  catalog into export and POSTs to the hackathon API. See
+  [control-app/README.md](control-app/README.md) and [TEAM-GUIDE §14](docs/v2/TEAM-GUIDE.md#14-shared-run-storage--export-publish-and-datamanifest).
+- **CLI:** `ac-control` `npm run publish:run -- <run-id>` or export JSON + paste.
 
 ## Result and telemetry ownership
 
