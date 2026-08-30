@@ -16,6 +16,9 @@ export type RunManifestTemplate = {
 };
 
 export type RunManifestExperiment = {
+  /** Primary experiment identifier (replaces legacy `cohort`). */
+  id?: string | null;
+  /** @deprecated use `id` — read via resolveManifestExperimentId() */
   cohort?: string | null;
   arm?: string | null;
   rep?: number | null;

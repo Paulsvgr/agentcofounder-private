@@ -56,7 +56,7 @@ export CHALLENGE_CONTEXT_WINDOW="128000"    # recorded in run manifest (optional
 export CHALLENGE_TIMEOUT_MS="900000"        # default 15 minutes
 
 # Optional experiment metadata (written into run-manifest.json)
-export RUN_COHORT="v2-baseline-lock"
+export RUN_EXPERIMENT="v2-baseline-lock"
 export RUN_ARM="control"
 export RUN_REP="1"
 export RUN_INTERVENTION="baseline"
@@ -240,7 +240,7 @@ The HTML page includes:
 - Filterable call table — expand any row to see tools/paths
 - With `--compare`: side-by-side activity deltas vs another run; compare manifest block when both runs have manifests
 
-**Runs UI:** filter and search runs by manifest fields (`config_hash`, template id, cohort, arm, model settings). Run detail shows `RunManifestPanel` when `data.manifest` is present (see §14).
+**Runs UI:** filter and search runs by manifest fields (`config_hash`, template id, experiment id, arm, model settings). Run detail shows `RunManifestPanel` when `data.manifest` is present (see §14).
 
 **Does not modify:** `result.json` or run artifacts. Read-only analysis.
 
@@ -385,7 +385,7 @@ with **outcome** after the run.
 | `prompt` | SHA-256 of system prompt, journeys, `AGENTS.md` |
 | `model` | Provider, model, thinking, `max_tokens`, `context_window`, timeout |
 | `git` | Branch, commit, dirty flag |
-| `experiment` | From `RUN_COHORT` / `RUN_ARM` / `RUN_REP` / `RUN_INTERVENTION` |
+| `experiment` | From `RUN_EXPERIMENT` / `RUN_ARM` / `RUN_REP` / `RUN_INTERVENTION` (`RUN_COHORT` legacy alias) |
 | `versions` | Null slots for future planner/assembler/guards |
 | `outcome` | Status, tokens, weighted cost, wall time (null until run completes) |
 
@@ -465,7 +465,7 @@ Run detail page shows `RunManifestPanel` when `data.manifest` is present.
 ## 15. Experiment metadata (manual labeling)
 
 **Problem:** Phase F used ad-hoc `RUN_APPROACH` strings per arm. V2 needs structured
-cohort/arm/rep metadata that survives export and lands in `data.manifest.experiment`.
+experiment id/arm/rep metadata that survives export and lands in `data.manifest.experiment`.
 
 **Solution:** Set env vars before `npm run challenge`; they are copied into
 `run-manifest.json` and flow through export → `data.manifest.experiment`.
@@ -473,12 +473,14 @@ Use this when running baseline vs treatment manually — there is no automated
 experiment runner.
 
 ```bash
-export RUN_COHORT="v2-baseline-lock"
+export RUN_EXPERIMENT="v2-baseline-lock"
 export RUN_ARM="control"          # or treatment arm name
 export RUN_REP="3"
 export RUN_INTERVENTION="baseline"
 npm run challenge
 ```
+
+`RUN_COHORT` is a legacy alias for `RUN_EXPERIMENT` (still read by the harness).
 
 Compare groups later in the runs UI or analysis tools using `config_hash`, arm,
 and rep from each run's manifest.

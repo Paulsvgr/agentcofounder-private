@@ -1,5 +1,6 @@
 import { access, readFile } from "node:fs/promises";
 import path from "node:path";
+import { resolveExperimentId } from "../../src/v2/experiment-metadata.js";
 import type { RunSummary } from "./types.js";
 import { getExperiment, titleFromExperimentId } from "./experiments.js";
 import {
@@ -79,7 +80,8 @@ interface RunManifestFile {
   config_hash: string;
   template: { id: string; tree_sha256: string };
   experiment: {
-    cohort: string | null;
+    id?: string | null;
+    cohort?: string | null;
     arm: string | null;
     rep: number | null;
     intervention: string | null;
@@ -345,15 +347,16 @@ function runIdToRecordedAt(runId: string): string {
 
 function buildApproachLabel(manifest: RunManifestFile | null, summary?: RunSummary): string {
   const experiment = manifest?.experiment;
-  if (experiment?.cohort && experiment.arm) {
-    const rep = experiment.rep !== null ? `-${experiment.rep}` : "";
-    return `${experiment.cohort}/${experiment.arm}${rep}`;
+  const experimentId = resolveExperimentId(experiment ?? null) ?? summary?.experiment_id ?? null;
+  if (experimentId && experiment?.arm) {
+    const rep = experiment.rep !== null && experiment.rep !== undefined ? `-${experiment.rep}` : "";
+    return `${experimentId}/${experiment.arm}${rep}`;
+  }
+  if (experimentId && summary?.arm) {
+    const rep = summary.rep !== null && summary.rep !== undefined ? `-${summary.rep}` : "";
+    return `${experimentId}/${summary.arm}${rep}`;
   }
   if (experiment?.intervention) return experiment.intervention;
-  if (summary?.cohort && summary.arm) {
-    const rep = summary.rep !== null ? `-${summary.rep}` : "";
-    return `${summary.cohort}/${summary.arm}${rep}`;
-  }
   if (summary?.intervention) return summary.intervention;
   return manifest?.template.id ?? "local";
 }
@@ -363,7 +366,7 @@ function experimentSlugLabel(slug: string): string {
 }
 
 function buildClassificationFromManifest(manifest: RunManifestFile, approach: string) {
-  const experiment = manifest.experiment.cohort ?? manifest.experiment.intervention ?? "unknown";
+  const experiment = resolveExperimentId(manifest.experiment) ?? manifest.experiment.intervention ?? "unknown";
   const arm = manifest.experiment.arm ?? "unknown";
   return {
     line: "unknown" as const,

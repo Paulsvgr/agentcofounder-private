@@ -44,7 +44,7 @@ npm run dev:web      # Vite only (:5174, proxies /api → :4319)
 Browse every folder under `artifacts/runs/` with:
 
 - **Filters** — experiment, status (quick pills), provider, model, author, plus advanced
-  filters (cohort, arm, thinking, analyzed, mega-call, date range, min thresholds).
+  filters (experiment id, arm, thinking, analyzed, mega-call, date range, min thresholds).
   Primary filters sync to the URL (`?experiment=…&status=success&model=…`) so views are
   shareable.
 - **Insights** — KPI strip and token breakdown for the **filtered set** only (success
@@ -118,7 +118,7 @@ CLI alternative (legacy): `ac-control` `npm run publish:run -- <run-id>` — see
 Launch `npm run challenge` with a chosen env profile and overrides:
 
 - Env profile from `~/.pi/agent/challenge-env*.sh` (default: **Z.ai**)
-- Provider, model, thinking, timeout, cohort/arm/rep/intervention, idea file
+- Provider, model, thinking, timeout, experiment/arm/rep/intervention, idea file
 - Live job output stream
 
 **Recommended local profile:** `challenge-env-zai.sh` · provider `zai` · model `glm-5.2` ·

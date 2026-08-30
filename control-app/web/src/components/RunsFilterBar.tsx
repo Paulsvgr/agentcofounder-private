@@ -8,7 +8,6 @@ export type RunsFilterOptions = {
   models: string[];
   authors: string[];
   thinking: string[];
-  cohorts: string[];
   arms: string[];
   interventions: string[];
 };
@@ -25,7 +24,6 @@ export type RunsFilterState = {
   manifest: TriFilter;
   result: TriFilter;
   thinking: string;
-  cohort: string;
   arm: string;
   intervention: string;
   dateFrom: string;
@@ -53,7 +51,6 @@ type Props = {
   manifestFilter: TriFilter;
   resultFilter: TriFilter;
   thinkingFilter: string;
-  cohortFilter: string;
   armFilter: string;
   interventionFilter: string;
   dateFrom: string;
@@ -71,7 +68,6 @@ type Props = {
   onManifestFilter: (value: TriFilter) => void;
   onResultFilter: (value: TriFilter) => void;
   onThinkingFilter: (value: string) => void;
-  onCohortFilter: (value: string) => void;
   onArmFilter: (value: string) => void;
   onInterventionFilter: (value: string) => void;
   onDateFrom: (value: string) => void;
@@ -151,7 +147,6 @@ export function RunsFilterBar({
   manifestFilter,
   resultFilter,
   thinkingFilter,
-  cohortFilter,
   armFilter,
   interventionFilter,
   dateFrom,
@@ -169,7 +164,6 @@ export function RunsFilterBar({
   onManifestFilter,
   onResultFilter,
   onThinkingFilter,
-  onCohortFilter,
   onArmFilter,
   onInterventionFilter,
   onDateFrom,
@@ -296,14 +290,6 @@ export function RunsFilterBar({
                 value={thinkingFilter}
                 onChange={onThinkingFilter}
                 options={selectOptions(filterOptions.thinking)}
-              />
-            ) : null}
-            {filterOptions.cohorts.length > 0 ? (
-              <FilterSelect
-                label="Cohort"
-                value={cohortFilter}
-                onChange={onCohortFilter}
-                options={selectOptions(filterOptions.cohorts)}
               />
             ) : null}
             {filterOptions.arms.length > 0 ? (

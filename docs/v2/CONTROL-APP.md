@@ -112,7 +112,7 @@ Launch form with:
 
 - **Env profile** — discovers `~/.pi/agent/challenge-env*.sh` (default: **zai**)
 - Provider, model, thinking, timeout overrides (applied after sourcing profile)
-- `RUN_COHORT`, `RUN_ARM`, `RUN_REP`, `RUN_INTERVENTION`
+- `RUN_EXPERIMENT`, `RUN_ARM`, `RUN_REP`, `RUN_INTERVENTION` (`RUN_COHORT` legacy alias)
 - Idea file path
 - Live console via SSE
 
@@ -170,7 +170,7 @@ mega-calls; use Z.ai until Berget GLM thinking config is fixed.
   "model": "glm-5.2",
   "thinking": "off",
   "timeout_ms": 900000,
-  "cohort": "v2-baseline-lock",
+  "experiment_id": "v2-baseline-lock",
   "arm": "control",
   "rep": 1,
   "intervention": "baseline",

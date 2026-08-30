@@ -59,7 +59,7 @@ be called an improvement without going through it.
 Steps 1–7 are **done**. Every run can record full provenance (`HarnessConfig`,
 template hash, prompts, model, experiment metadata) and publish it to shared
 storage. Compare baseline vs treatment **manually** when needed — label runs with
-`RUN_COHORT` / `RUN_ARM` / `RUN_REP` / `RUN_INTERVENTION` (see TEAM-GUIDE §15).
+`RUN_EXPERIMENT` / `RUN_ARM` / `RUN_REP` / `RUN_INTERVENTION` (see TEAM-GUIDE §15; `RUN_COHORT` is a legacy alias).
 We are **not** building a dedicated A/B experiment runner.
 
 ---

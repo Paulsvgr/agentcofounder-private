@@ -13,7 +13,7 @@ export interface RunSummary {
   weighted_cost: number | null;
   wall_ms: number | null;
   max_output_per_call: number | null;
-  cohort: string | null;
+  experiment_id: string | null;
   arm: string | null;
   rep: number | null;
   intervention: string | null;
@@ -54,7 +54,7 @@ export interface ChallengeLaunchRequest {
   model?: string;
   thinking?: string;
   timeout_ms?: number;
-  cohort?: string;
+  experiment_id?: string;
   arm?: string;
   rep?: number;
   intervention?: string;

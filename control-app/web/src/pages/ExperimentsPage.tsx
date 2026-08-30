@@ -46,7 +46,6 @@ interface EditState {
   title: string;
   description: string;
   status: "active" | "archived";
-  cohort: string;
   hasCatalog: boolean;
 }
 
@@ -135,7 +134,6 @@ export function ExperimentsPage() {
       title: entry.title,
       description: entry.description,
       status: entry.status,
-      cohort: entry.cohort ?? "",
       hasCatalog: entry.has_catalog,
     });
   }
@@ -164,14 +162,12 @@ export function ExperimentsPage() {
         await materializeExperiment(edit.id, {
           title: edit.title.trim(),
           description: edit.description.trim(),
-          cohort: edit.cohort.trim() || null,
           status: edit.status,
         });
       } else {
         await patchExperiment(edit.id, {
           title: edit.title.trim(),
           description: edit.description.trim(),
-          cohort: edit.cohort.trim() || null,
           status: edit.status,
         });
       }
@@ -388,10 +384,6 @@ export function ExperimentsPage() {
                     <option value="active">active</option>
                     <option value="archived">archived</option>
                   </select>
-                </label>
-                <label className="metadata-field">
-                  <span className="metadata-label">Cohort</span>
-                  <input value={edit.cohort} onChange={(event) => setEdit({ ...edit, cohort: event.target.value })} />
                 </label>
               </div>
               <footer className="metadata-footer metadata-modal-footer">

@@ -18,7 +18,7 @@ export const EXPERIMENT_STUDIES: ExperimentStudy[] = [
     result:
       "No quality regression; mechanism counter inconclusive (control had almost no leak failures). Safe to keep, but not a token win.",
     arms: ["exp1-rtl-control", "exp1-rtl-cleanup"],
-    cohortPreset: "exp1-rtl",
+    comparePreset: "exp1-rtl",
     sortOrder: 1,
   },
   {

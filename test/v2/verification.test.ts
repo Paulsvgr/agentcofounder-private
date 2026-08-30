@@ -13,12 +13,19 @@ function minimalCall(overrides: Partial<CallLedgerEntry> = {}): CallLedgerEntry 
   return {
     index: 1,
     turn: 1,
+    timestamp_ms: null,
     activity: "other",
     weighted_cost: 1,
+    cumulative_weighted: 1,
     model: "test-model",
+    stop_reason: null,
     input_tokens: 10,
     output_tokens: 5,
     cache_read_tokens: 0,
+    cache_write_tokens: 0,
+    reasoning_tokens: 0,
+    total_tokens: 15,
+    gap_seconds: null,
     seconds_since_start: 12.5,
     tools: [],
     ...overrides,
@@ -42,17 +49,17 @@ describe("buildStationVerification", () => {
           result: "failed",
         },
       ],
-    } as RunResult;
+    } as unknown as RunResult;
 
     const calls: CallLedgerEntry[] = [
       minimalCall({
         index: 3,
         activity: "repair",
-        tools: [{ name: "bash", detail: "npm test", is_error: true }],
+        tools: [{ name: "bash", detail: "npm test", is_error: true, paths: [], output: null }],
       }),
       minimalCall({
         index: 4,
-        tools: [{ name: "bash", detail: "npm test", is_error: false }],
+        tools: [{ name: "bash", detail: "npm test", is_error: false, paths: [], output: null }],
       }),
     ];
 
@@ -126,7 +133,7 @@ describe("enrichVerificationDetails", () => {
               result: "failed",
             },
           ],
-        } as RunResult,
+        } as unknown as RunResult,
       });
       const enriched = await enrichVerificationDetails(root, base);
       expect(enriched.harness_checks[0]?.detail).toContain("Port 3000 already had a listener");
@@ -169,7 +176,7 @@ describe("enrichVerificationDetails", () => {
             },
           ],
           harness_checks: [],
-        } as RunResult,
+        } as unknown as RunResult,
       });
       const enriched = await enrichVerificationDetails(root, base);
       expect(enriched.tests_run[0]?.detail).toContain("Expected element to be null");

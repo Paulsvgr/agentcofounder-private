@@ -2,6 +2,7 @@ import type { HackathonRunRecord } from "../types/runExport";
 import {
   manifestModelLine,
   manifestModelSettings,
+  resolveManifestExperimentId,
   runManifestOf,
   templateTreeHash,
 } from "../lib/manifestFields";
@@ -38,7 +39,7 @@ export function RunManifestPanel({ run }: { run: HackathonRunRecord }) {
         {row("Config schema", manifest.config_schema_version)}
         {row("Template", template?.id)}
         {row("Template tree", treeHash ?? undefined)}
-        {row("Experiment cohort", exp?.cohort ?? undefined)}
+        {row("Experiment id", resolveManifestExperimentId(exp) ?? undefined)}
         {row("Experiment arm", exp?.arm ?? undefined)}
         {row(
           "Experiment rep",

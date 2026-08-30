@@ -14,6 +14,7 @@ import {
   type PatchExperimentRequest,
 } from "./experiments.js";
 import { discoverEnvProfiles, resolveEnvProfilePath } from "./env-profiles.js";
+import { listHackathonRuns } from "./hackathon-api.js";
 import {
   matchRoute,
   parsePathname,
@@ -62,7 +63,7 @@ function setCors(res: ServerResponse): void {
 function runExperimentSlugMap(
   runs: Awaited<ReturnType<typeof listRunSummaries>>,
 ): Map<string, string | null> {
-  return new Map(runs.map((run) => [run.run_id, run.experiment_slug]));
+  return new Map(runs.map((run) => [run.run_id, run.experiment_slug ?? run.experiment_id]));
 }
 
 async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -90,6 +91,12 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
 
     if (method === "GET" && pathname === "/api/runs") {
       const runs = await listRunSummaries(RUNS_ROOT, ANALYSIS_ROOT, REPLAY_ROOT);
+      sendJson(res, 200, { runs });
+      return;
+    }
+
+    if (method === "GET" && pathname === "/api/hackathon/runs") {
+      const runs = await listHackathonRuns(RUNS_ROOT, ANALYSIS_ROOT);
       sendJson(res, 200, { runs });
       return;
     }
@@ -152,7 +159,6 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
           title: listEntry.title,
           description: listEntry.description,
           status: listEntry.status,
-          cohort: listEntry.cohort,
           arms: [],
           tags: [],
           created_at: listEntry.created_at,

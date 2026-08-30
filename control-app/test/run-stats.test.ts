@@ -23,7 +23,7 @@ function makeRun(overrides: Partial<RunSummary> = {}): RunSummary {
     weighted_cost: 1000 + 500 * 3 + 9000 * 0.1,
     wall_ms: 120_000,
     max_output_per_call: 100,
-    cohort: null,
+    experiment_id: null,
     arm: null,
     rep: null,
     intervention: null,

@@ -112,7 +112,6 @@ export function RunsPage() {
   const [manifestFilter, setManifestFilter] = useState<TriFilter>("all");
   const [resultFilter, setResultFilter] = useState<TriFilter>("all");
   const [thinkingFilter, setThinkingFilter] = useState<string>("all");
-  const [cohortFilter, setCohortFilter] = useState<string>("all");
   const [armFilter, setArmFilter] = useState<string>("all");
   const [interventionFilter, setInterventionFilter] = useState<string>("all");
   const [dateFrom, setDateFrom] = useState("");
@@ -156,7 +155,6 @@ export function RunsPage() {
       models: uniqueStrings(runs.map((run) => run.model)),
       authors: uniqueStrings([...knownAuthors, ...runs.map((run) => run.author)]),
       thinking: uniqueStrings(runs.map((run) => run.thinking)),
-      cohorts: uniqueStrings(runs.map((run) => run.cohort)),
       arms: uniqueStrings(runs.map((run) => run.arm)),
       interventions: uniqueStrings(runs.map((run) => run.intervention)),
     }),
@@ -174,13 +172,14 @@ export function RunsPage() {
       if (providerFilter !== "all" && run.provider !== providerFilter) return false;
       if (modelFilter !== "all" && run.model !== modelFilter) return false;
       if (authorFilter !== "all" && (run.author ?? "") !== authorFilter) return false;
-      if (experimentFilter !== "all" && run.experiment_slug !== experimentFilter) return false;
+      if (experimentFilter !== "all" && run.experiment_slug !== experimentFilter && run.experiment_id !== experimentFilter) {
+        return false;
+      }
       if (!matchesTri(run.has_analysis, analysisFilter)) return false;
       if (!matchesTri(run.mega_call_flag, megaFilter)) return false;
       if (!matchesTri(run.has_manifest, manifestFilter)) return false;
       if (!matchesTri(run.has_result, resultFilter)) return false;
       if (thinkingFilter !== "all" && (run.thinking ?? "off") !== thinkingFilter) return false;
-      if (cohortFilter !== "all" && run.cohort !== cohortFilter) return false;
       if (armFilter !== "all" && run.arm !== armFilter) return false;
       if (interventionFilter !== "all" && run.intervention !== interventionFilter) return false;
 
@@ -203,7 +202,7 @@ export function RunsPage() {
         run.run_id,
         run.provider,
         run.model,
-        run.cohort,
+        run.experiment_id,
         run.arm,
         run.intervention,
         run.thinking,
@@ -231,7 +230,6 @@ export function RunsPage() {
     manifestFilter,
     resultFilter,
     thinkingFilter,
-    cohortFilter,
     armFilter,
     interventionFilter,
     dateFrom,
@@ -279,7 +277,6 @@ export function RunsPage() {
     setManifestFilter("all");
     setResultFilter("all");
     setThinkingFilter("all");
-    setCohortFilter("all");
     setArmFilter("all");
     setInterventionFilter("all");
     setDateFrom("");
@@ -313,7 +310,6 @@ export function RunsPage() {
     if (manifestFilter !== "all") count += 1;
     if (resultFilter !== "all") count += 1;
     if (thinkingFilter !== "all") count += 1;
-    if (cohortFilter !== "all") count += 1;
     if (armFilter !== "all") count += 1;
     if (interventionFilter !== "all") count += 1;
     if (dateFrom) count += 1;
@@ -328,7 +324,6 @@ export function RunsPage() {
     manifestFilter,
     resultFilter,
     thinkingFilter,
-    cohortFilter,
     armFilter,
     interventionFilter,
     dateFrom,
@@ -383,7 +378,6 @@ export function RunsPage() {
         manifestFilter={manifestFilter}
         resultFilter={resultFilter}
         thinkingFilter={thinkingFilter}
-        cohortFilter={cohortFilter}
         armFilter={armFilter}
         interventionFilter={interventionFilter}
         dateFrom={dateFrom}
@@ -401,7 +395,6 @@ export function RunsPage() {
         onManifestFilter={setManifestFilter}
         onResultFilter={setResultFilter}
         onThinkingFilter={setThinkingFilter}
-        onCohortFilter={setCohortFilter}
         onArmFilter={setArmFilter}
         onInterventionFilter={setInterventionFilter}
         onDateFrom={setDateFrom}
@@ -476,8 +469,8 @@ export function RunsPage() {
                   <th onClick={() => toggleSort("app_rating")}>
                     Rating <span className="sort-mark">{sortIndicator(sortKey === "app_rating", sortAsc)}</span>
                   </th>
-                  <th onClick={() => toggleSort("cohort")}>
-                    Cohort <span className="sort-mark">{sortIndicator(sortKey === "cohort", sortAsc)}</span>
+                  <th onClick={() => toggleSort("experiment_id")}>
+                    Experiment <span className="sort-mark">{sortIndicator(sortKey === "experiment_id", sortAsc)}</span>
                   </th>
                   <th>Actions</th>
                 </tr>
@@ -525,7 +518,7 @@ export function RunsPage() {
                       <td>{run.author ?? "—"}</td>
                       <td className="num">{run.app_rating !== null ? `${run.app_rating}/10` : "—"}</td>
                       <td className="cohort-cell">
-                        <span>{run.cohort ?? "—"}</span>
+                        <span>{run.experiment_id ?? "—"}</span>
                         {run.arm ? <span className="cohort-arm">{run.arm}</span> : null}
                       </td>
                       <td>

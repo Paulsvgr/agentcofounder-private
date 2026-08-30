@@ -1,5 +1,8 @@
 import { isRunManifest, type RunManifest } from "../types/runManifest";
 import type { HackathonRunRecord } from "../types/runExport";
+import { resolveManifestExperimentId } from "./runManifest";
+
+export { resolveManifestExperimentId };
 
 export function runManifestOf(run: HackathonRunRecord): RunManifest | null {
   const manifest = run.data.manifest;
@@ -43,7 +46,7 @@ export function manifestSearchHaystack(run: HackathonRunRecord): string {
     manifest.config_schema_version,
     manifest.template?.id,
     templateTreeHash(manifest),
-    manifest.experiment?.cohort,
+    resolveManifestExperimentId(manifest.experiment),
     manifest.experiment?.arm,
     manifest.experiment?.intervention,
     manifestModelLine(manifest),

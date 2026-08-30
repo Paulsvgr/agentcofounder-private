@@ -50,7 +50,7 @@ export function ExperimentStudyCard({ study, runs, compact = false }: Props) {
 
       {!compact && <ExperimentTrajectoryCharts study={study} runs={runs} />}
 
-      {(study.buildsOn || study.cohortPreset) && (
+      {(study.buildsOn || study.comparePreset || study.cohortPreset) && (
         <p className="muted experiment-links" style={{ marginBottom: 0 }}>
           {study.buildsOn && (
             <>
@@ -61,9 +61,13 @@ export function ExperimentStudyCard({ study, runs, compact = false }: Props) {
               {" · "}
             </>
           )}
-          {study.cohortPreset && (
-            <Link to={`/cohort${study.cohortPreset === "exp1-rtl" ? "?preset=exp1-rtl" : ""}`}>
-              View cohort
+          {(study.comparePreset ?? study.cohortPreset) && (
+            <Link
+              to={`/compare${
+                (study.comparePreset ?? study.cohortPreset) === "exp1-rtl" ? "?preset=exp1-rtl" : ""
+              }`}
+            >
+              Compare runs
             </Link>
           )}
         </p>

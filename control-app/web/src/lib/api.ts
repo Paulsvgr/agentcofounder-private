@@ -1,3 +1,5 @@
+import type { HackathonRunRecord } from "../types/runExport.js";
+
 export type RunStatus = "success" | "partial" | "failed" | "incomplete";
 
 export interface RunSummary {
@@ -13,7 +15,7 @@ export interface RunSummary {
   weighted_cost: number | null;
   wall_ms: number | null;
   max_output_per_call: number | null;
-  cohort: string | null;
+  experiment_id: string | null;
   arm: string | null;
   rep: number | null;
   intervention: string | null;
@@ -53,7 +55,7 @@ export interface ChallengeLaunchRequest {
   model?: string;
   thinking?: string;
   timeout_ms?: number;
-  cohort?: string;
+  experiment_id?: string;
   arm?: string;
   rep?: number;
   intervention?: string;
@@ -151,7 +153,6 @@ export interface ExperimentSummary {
   title: string;
   description: string;
   status: ExperimentStatus;
-  cohort: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -176,7 +177,6 @@ export interface CreateExperimentRequest {
   title?: string;
   description?: string;
   status?: ExperimentStatus;
-  cohort?: string | null;
   arms?: string[];
   tags?: string[];
   created_by?: string | null;
@@ -186,7 +186,6 @@ export interface PatchExperimentRequest {
   title?: string;
   description?: string;
   status?: ExperimentStatus;
-  cohort?: string | null;
   arms?: string[];
   tags?: string[];
 }
@@ -338,6 +337,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export function fetchRuns(): Promise<{ runs: RunSummary[] }> {
   return request("/api/runs");
+}
+
+export function listRuns(): Promise<HackathonRunRecord[]> {
+  return request<{ runs: HackathonRunRecord[] }>("/api/hackathon/runs").then((body) => body.runs);
 }
 
 export function fetchRunDetail(runId: string): Promise<RunDetail> {

@@ -1,6 +1,7 @@
 import type { RunResult } from "../types.js";
 import type { ActivityBucket, ActivityPhase } from "./classify.js";
 import type { RunManifest } from "./manifest.js";
+import { resolveExperimentId } from "./experiment-metadata.js";
 import type { CallLedger, CallLedgerEntry } from "./normalize.js";
 import { buildStationVerification, type StationVerification } from "./verification.js";
 
@@ -204,7 +205,7 @@ function renderManifestBlock(manifest: RunManifest | null | undefined, title: st
     manifestField(manifest, "Config schema", manifest.config_schema_version),
     manifestField(manifest, "Template", manifest.template.id),
     manifestField(manifest, "Template tree", manifest.template.tree_sha256),
-    manifestField(manifest, "Experiment cohort", manifest.experiment.cohort),
+    manifestField(manifest, "Experiment", resolveExperimentId(manifest.experiment)),
     manifestField(manifest, "Experiment arm", manifest.experiment.arm),
     manifestField(manifest, "Experiment rep", manifest.experiment.rep),
     manifestField(manifest, "Intervention", manifest.experiment.intervention),

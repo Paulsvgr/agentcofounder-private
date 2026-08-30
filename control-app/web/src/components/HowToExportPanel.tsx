@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 export function HowToExportPanel({ defaultOpen = true }: { defaultOpen?: boolean }) {
   return (
     <details className="panel howto" open={defaultOpen}>
@@ -99,7 +101,7 @@ npm run publish:runs -- --exp1-rtl   # all Experiment 1 reps`}</pre>
         </div>
 
         <p style={{ margin: 0 }}>
-          Compare cohorts on <a href="/cohort">Cohort</a> (<code>?preset=exp1-rtl</code> for Experiment 1). Full
+          Compare runs on <Link to="/experiments">Experiments</Link>. Full
           checklist:{" "}
           <a href="/steps.html" target="_blank" rel="noreferrer">
             steps.html

@@ -25,7 +25,7 @@ describe("run-model-inference", () => {
 
   it("reads model from result call_log", () => {
     expect(
-      inferModelFromCallLog([{ model: "zai/glm-5.2", output_tokens: 1 }]),
+      inferModelFromCallLog([{ model: "zai/glm-5.2" }]),
     ).toEqual({
       provider: "zai",
       model: "glm-5.2",

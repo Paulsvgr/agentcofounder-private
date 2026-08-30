@@ -99,7 +99,6 @@ function normalizeExperimentRecord(raw: ExperimentRecord, id: string): Experimen
     title: raw.title?.trim() || titleFromExperimentId(id),
     description: raw.description ?? "",
     status: raw.status === "archived" ? "archived" : "active",
-    cohort: raw.cohort ?? null,
     arms: Array.isArray(raw.arms) ? raw.arms.map((arm) => String(arm).trim()).filter(Boolean) : [],
     tags: Array.isArray(raw.tags) ? raw.tags.map((tag) => String(tag).trim()).filter(Boolean) : [],
     created_at: raw.created_at ?? now,
@@ -114,7 +113,6 @@ function toSummary(record: ExperimentRecord): ExperimentSummary {
     title: record.title,
     description: record.description,
     status: record.status,
-    cohort: record.cohort,
     created_at: record.created_at,
     updated_at: record.updated_at,
   };
@@ -160,7 +158,6 @@ export function validateCreateExperimentRequest(body: CreateExperimentRequest): 
     title: title || titleFromExperimentId(id),
     description,
     status: body.status === "archived" ? "archived" : "active",
-    cohort: body.cohort?.trim() || null,
     arms: body.arms?.map((arm) => arm.trim()).filter(Boolean) ?? [],
     tags: body.tags?.map((tag) => tag.trim()).filter(Boolean) ?? [],
     created_by: body.created_by?.trim() || null,
@@ -248,7 +245,6 @@ export async function createExperiment(
     title: validated.title ?? titleFromExperimentId(validated.id),
     description: validated.description ?? "",
     status: validated.status ?? "active",
-    cohort: validated.cohort ?? null,
     arms: validated.arms ?? [],
     tags: validated.tags ?? [],
     created_at: now,
@@ -286,7 +282,6 @@ export async function seedExperimentsFromTaxonomy(
       title: existing?.title ?? titleFromExperimentId(id),
       description: existing?.description ?? "",
       status: existing?.status ?? "active",
-      cohort: existing?.cohort ?? null,
       arms: existing?.arms ?? [],
       tags: existing?.tags ?? [],
       created_at: existing?.created_at ?? now,
@@ -341,7 +336,6 @@ function syntheticUsedRecord(id: string): ExperimentRecord {
     title: titleFromExperimentId(id),
     description: "",
     status: "active",
-    cohort: null,
     arms: [],
     tags: [],
     created_at: now,
@@ -401,7 +395,6 @@ export function validatePatchExperimentRequest(body: PatchExperimentRequest): Pa
     patch.description = description;
   }
   if (body.status !== undefined) patch.status = body.status;
-  if (body.cohort !== undefined) patch.cohort = body.cohort?.trim() || null;
   if (body.arms !== undefined) patch.arms = body.arms.map((arm) => arm.trim()).filter(Boolean);
   if (body.tags !== undefined) patch.tags = body.tags.map((tag) => tag.trim()).filter(Boolean);
   return patch;
@@ -424,7 +417,6 @@ export async function patchExperiment(
     title: validated.title ?? existing.title,
     description: validated.description ?? existing.description,
     status: validated.status ?? existing.status,
-    cohort: validated.cohort !== undefined ? validated.cohort : existing.cohort,
     arms: validated.arms ?? existing.arms,
     tags: validated.tags ?? existing.tags,
     updated_at: new Date().toISOString(),
@@ -449,7 +441,6 @@ export async function materializeExperiment(
     title: body.title ?? titleFromExperimentId(id),
     description: body.description ?? "",
     status: body.status ?? "active",
-    cohort: body.cohort ?? null,
     arms: body.arms ?? [],
     tags: body.tags ?? [],
     created_by: body.created_by ?? null,

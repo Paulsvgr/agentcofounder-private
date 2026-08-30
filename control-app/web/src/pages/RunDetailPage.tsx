@@ -129,7 +129,7 @@ function ManifestBlock({
     {
       label: "Experiment",
       rows: [
-        ["Cohort", String(experiment?.cohort ?? "—")],
+        ["Experiment", String(experiment?.id ?? experiment?.cohort ?? "—")],
         ["Arm", String(experiment?.arm ?? "—")],
         ["Rep", String(experiment?.rep ?? "—")],
         ["Intervention", String(experiment?.intervention ?? "—")],

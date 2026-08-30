@@ -144,7 +144,7 @@ npm run dev
 | **Runs** (`/`) | Filterable run table, insights KPIs (on filtered set), comparison charts, URL-synced filters |
 | **Experiments** (`/experiments`) | Catalog + used-only slugs, create/edit/materialize, link runs to experiments |
 | **Run detail** (`/runs/:id`) | Station charts, metadata overlay, analyze/reconcile/replay, **publish to team** |
-| **New run** (`/new`) | Launch challenge with env profile + cohort/arm overrides |
+| **New run** (`/new`) | Launch challenge with env profile + experiment/arm overrides |
 
 **Human metadata** lives in `artifacts/runs-overlay.json` (author, app rating, experiment
 link, comments). **Experiment catalog** lives in `artifacts/experiments/<id>/experiment.json`.

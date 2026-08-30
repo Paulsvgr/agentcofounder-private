@@ -1,5 +1,6 @@
 import { access, readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
+import { resolveExperimentId } from "../../src/v2/experiment-metadata.js";
 import type { RunStatus, RunSummary } from "./types.js";
 import { MEGA_CALL_THRESHOLD } from "./types.js";
 import { weightedCost } from "./weights.js";
@@ -35,7 +36,8 @@ interface ManifestModel {
 }
 
 interface ManifestExperiment {
-  cohort: string | null;
+  id?: string | null;
+  cohort?: string | null;
   arm: string | null;
   rep: number | null;
   intervention: string | null;
@@ -198,6 +200,8 @@ export async function summarizeRun(
     eventsPath: path.join(runDir, "events.jsonl"),
   });
 
+  const experimentId = resolveExperimentId(manifest?.experiment ?? null);
+
   return applyOverlayToSummary(
     {
       run_id: runId,
@@ -212,7 +216,7 @@ export async function summarizeRun(
       weighted_cost: weightedCostValue,
       wall_ms: wallMs,
       max_output_per_call: maxOutput,
-      cohort: manifest?.experiment.cohort ?? null,
+      experiment_id: experimentId,
       arm: manifest?.experiment.arm ?? null,
       rep: manifest?.experiment.rep ?? null,
       intervention: manifest?.experiment.intervention ?? null,
@@ -230,7 +234,7 @@ export async function summarizeRun(
       created_at: manifest?.created_at ?? null,
       author: null,
       display_label: null,
-      experiment_slug: null,
+      experiment_slug: experimentId,
       app_rating: null,
       app_comment: null,
       run_comment: null,

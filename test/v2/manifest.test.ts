@@ -153,7 +153,7 @@ describe("buildPreRunManifest", () => {
       resource_manifest: null,
     });
     expect(manifest.experiment).toEqual({
-      cohort: null,
+      id: null,
       arm: null,
       rep: null,
       intervention: null,

@@ -12,6 +12,7 @@ function tool(partial: Partial<LedgerTool> & Pick<LedgerTool, "name">): LedgerTo
     detail: "",
     is_error: false,
     paths: [],
+    output: null,
     ...partial,
   };
 }

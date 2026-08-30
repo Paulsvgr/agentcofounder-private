@@ -56,7 +56,7 @@ function minimalManifest(runId: string): RunManifest {
       error_memory: null,
       resource_manifest: null,
     },
-    experiment: { cohort: "v2-test", arm: "control", rep: 1, intervention: "baseline" },
+    experiment: { id: "v2-test", arm: "control", rep: 1, intervention: "baseline" },
     outcome: null,
   };
 }

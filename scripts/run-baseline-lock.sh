@@ -17,7 +17,7 @@ elif [ -f "$REPO_ROOT/pi-agent/challenge-env.sh" ]; then
   source "$REPO_ROOT/pi-agent/challenge-env.sh"
 fi
 
-export RUN_COHORT="${RUN_COHORT:-v2-baseline-lock}"
+export RUN_EXPERIMENT="${RUN_EXPERIMENT:-v2-baseline-lock}"
 export RUN_ARM="${RUN_ARM:-control}"
 export RUN_INTERVENTION="${RUN_INTERVENTION:-baseline}"
 
@@ -27,7 +27,7 @@ mkdir -p "$LOG_DIR"
 STAMP="$(date -u +%Y-%m-%dT%H-%M-%SZ)"
 LOG_FILE="$LOG_DIR/${STAMP}.log"
 
-echo "V2 baseline lock — cohort=$RUN_COHORT arm=$RUN_ARM intervention=$RUN_INTERVENTION reps=$REPS" | tee -a "$LOG_FILE"
+echo "V2 baseline lock — experiment=$RUN_EXPERIMENT arm=$RUN_ARM intervention=$RUN_INTERVENTION reps=$REPS" | tee -a "$LOG_FILE"
 npm run config:show | tee -a "$LOG_FILE"
 
 for rep in $(seq 1 "$REPS"); do

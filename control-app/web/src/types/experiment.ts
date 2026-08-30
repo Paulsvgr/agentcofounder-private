@@ -11,7 +11,7 @@ export type ExperimentStudyId =
 
 export type ExperimentVerdict = "keep" | "weak-keep" | "revert";
 
-export type ExperimentCohortPreset = "study" | "exp1-rtl";
+export type ExperimentComparePreset = "study" | "exp1-rtl";
 
 export type ExperimentStudy = {
   id: ExperimentStudyId;
@@ -23,8 +23,14 @@ export type ExperimentStudy = {
   goal: string;
   result: string;
   arms: ClassificationExperiment[];
-  cohortPreset?: ExperimentCohortPreset;
+  /** Curated compare view on /compare (e.g. Exp1 RTL 10-run set). */
+  comparePreset?: ExperimentComparePreset;
+  /** @deprecated use comparePreset */
+  cohortPreset?: ExperimentComparePreset;
   supersedes?: ExperimentStudyId;
   buildsOn?: ExperimentStudyId;
   sortOrder: number;
 };
+
+/** @deprecated use ExperimentComparePreset */
+export type ExperimentCohortPreset = ExperimentComparePreset;

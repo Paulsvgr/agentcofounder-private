@@ -13,6 +13,11 @@ import {
   resolveConfig,
 } from "./config.js";
 import { weightedCost } from "./weights.js";
+import type { ExperimentMetadata } from "./experiment-metadata.js";
+import { collectExperimentMetadata } from "./experiment-metadata.js";
+
+export type { ExperimentMetadata } from "./experiment-metadata.js";
+export { collectExperimentMetadata, resolveExperimentId } from "./experiment-metadata.js";
 
 export const RUN_MANIFEST_SCHEMA = "agentcofounder.run_manifest.v1" as const;
 export const RUN_MANIFEST_FILENAME = "run-manifest.json";
@@ -58,13 +63,6 @@ export interface VersionSlots {
   guards: string | null;
   error_memory: string | null;
   resource_manifest: string | null;
-}
-
-export interface ExperimentMetadata {
-  cohort: string | null;
-  arm: string | null;
-  rep: number | null;
-  intervention: string | null;
 }
 
 export interface RunManifestOutcome {
@@ -203,17 +201,6 @@ export function collectModelSettings(): ModelSettings {
     max_tokens: readOptionalPositiveInteger("CHALLENGE_MAX_TOKENS"),
     context_window: readOptionalPositiveInteger("CHALLENGE_CONTEXT_WINDOW"),
     timeout_ms: timeout,
-  };
-}
-
-export function collectExperimentMetadata(): ExperimentMetadata {
-  const repRaw = readOptionalEnv("RUN_REP");
-  const rep = repRaw === null ? null : Number.parseInt(repRaw, 10);
-  return {
-    cohort: readOptionalEnv("RUN_COHORT"),
-    arm: readOptionalEnv("RUN_ARM"),
-    rep: Number.isFinite(rep) && rep !== null && rep > 0 ? rep : null,
-    intervention: readOptionalEnv("RUN_INTERVENTION"),
   };
 }
 

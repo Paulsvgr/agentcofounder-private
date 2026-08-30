@@ -68,7 +68,7 @@ describe("publish-run", () => {
           model: { provider: "zai", model: "glm-5.2", thinking: "off" },
           config_hash: "hash",
           template: { id: "baseline", tree_sha256: "tree" },
-          experiment: { cohort: "v2", arm: "control", rep: 2, intervention: null },
+          experiment: { id: "v2", arm: "control", rep: 2, intervention: null },
           outcome: {
             status: "success",
             pi_exit_code: 0,

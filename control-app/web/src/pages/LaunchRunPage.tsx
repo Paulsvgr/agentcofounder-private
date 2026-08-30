@@ -58,7 +58,7 @@ export function LaunchRunPage() {
       };
       if (form.provider?.trim()) payload.provider = form.provider.trim();
       if (form.model?.trim()) payload.model = form.model.trim();
-      if (form.cohort?.trim()) payload.cohort = form.cohort.trim();
+      if (form.experiment_id?.trim()) payload.experiment_id = form.experiment_id.trim();
       if (form.arm?.trim()) payload.arm = form.arm.trim();
       if (form.intervention?.trim()) payload.intervention = form.intervention.trim();
       if (form.rep !== undefined && form.rep > 0) payload.rep = form.rep;
@@ -151,8 +151,8 @@ export function LaunchRunPage() {
               />
             </label>
             <label>
-              RUN_COHORT
-              <input value={form.cohort ?? ""} onChange={(event) => updateField("cohort", event.target.value)} />
+              RUN_EXPERIMENT
+              <input value={form.experiment_id ?? ""} onChange={(event) => updateField("experiment_id", event.target.value)} />
             </label>
             <label>
               RUN_ARM

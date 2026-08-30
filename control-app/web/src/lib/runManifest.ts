@@ -1,4 +1,15 @@
-import { isRunManifest, RUN_MANIFEST_SCHEMA, type RunManifest } from "../types/runManifest";
+import { isRunManifest, RUN_MANIFEST_SCHEMA, type RunManifest, type RunManifestExperiment } from "../types/runManifest";
+
+/** Resolve experiment id from manifest metadata (supports legacy `cohort`). */
+export function resolveManifestExperimentId(
+  experiment: RunManifestExperiment | null | undefined,
+): string | null {
+  if (!experiment) return null;
+  const id = typeof experiment.id === "string" ? experiment.id.trim() : "";
+  if (id) return id;
+  const legacy = typeof experiment.cohort === "string" ? experiment.cohort.trim() : "";
+  return legacy || null;
+}
 
 const TRANSPORT_MANIFEST_KEY = "manifest";
 
@@ -30,7 +41,8 @@ export function manifestSummary(manifest: RunManifest): string[] {
   if (manifest.config_hash) lines.push(`config ${manifest.config_hash.slice(0, 12)}…`);
   if (manifest.template?.id) lines.push(`template ${manifest.template.id}`);
   if (manifest.experiment?.arm) lines.push(`arm ${manifest.experiment.arm}`);
-  if (manifest.experiment?.cohort) lines.push(`cohort ${manifest.experiment.cohort}`);
+  const experimentId = resolveManifestExperimentId(manifest.experiment);
+  if (experimentId) lines.push(`experiment ${experimentId}`);
   if (manifest.model && typeof manifest.model === "object") {
     const m = manifest.model as Record<string, unknown>;
     const provider = typeof m.provider === "string" ? m.provider : "";

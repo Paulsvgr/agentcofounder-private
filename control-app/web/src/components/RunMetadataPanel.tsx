@@ -266,7 +266,6 @@ export function RunMetadataPanel({
               title: created.experiment.title,
               description: created.experiment.description,
               status: created.experiment.status,
-              cohort: created.experiment.cohort,
               created_at: created.experiment.created_at,
               updated_at: created.experiment.updated_at,
               has_catalog: true,

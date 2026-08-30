@@ -8,7 +8,6 @@ export interface ExperimentRecord {
   title: string;
   description: string;
   status: ExperimentStatus;
-  cohort: string | null;
   arms: string[];
   tags: string[];
   created_at: string;
@@ -21,7 +20,6 @@ export interface ExperimentSummary {
   title: string;
   description: string;
   status: ExperimentStatus;
-  cohort: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -39,7 +37,6 @@ export interface CreateExperimentRequest {
   title?: string;
   description?: string;
   status?: ExperimentStatus;
-  cohort?: string | null;
   arms?: string[];
   tags?: string[];
   created_by?: string | null;
@@ -49,7 +46,6 @@ export interface PatchExperimentRequest {
   title?: string;
   description?: string;
   status?: ExperimentStatus;
-  cohort?: string | null;
   arms?: string[];
   tags?: string[];
 }

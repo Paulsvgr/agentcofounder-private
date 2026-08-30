@@ -105,7 +105,7 @@ export function buildChallengeShellCommand(
   if (request.model) exports.push(`export CHALLENGE_MODEL=${shellQuote(request.model)}`);
   if (request.thinking) exports.push(`export CHALLENGE_THINKING=${shellQuote(request.thinking)}`);
   if (request.timeout_ms) exports.push(`export CHALLENGE_TIMEOUT_MS=${String(request.timeout_ms)}`);
-  if (request.cohort) exports.push(`export RUN_COHORT=${shellQuote(request.cohort)}`);
+  if (request.experiment_id) exports.push(`export RUN_EXPERIMENT=${shellQuote(request.experiment_id)}`);
   if (request.arm) exports.push(`export RUN_ARM=${shellQuote(request.arm)}`);
   if (request.rep !== undefined) exports.push(`export RUN_REP=${String(request.rep)}`);
   if (request.intervention) exports.push(`export RUN_INTERVENTION=${shellQuote(request.intervention)}`);

@@ -1,4 +1,4 @@
-import type { RunManifest } from "./runManifest";
+import type { RunManifest } from "./runManifest.js";
 
 /** Paste contract from harness: run_export v1 (legacy) or v2 (action-flow). */
 

@@ -23,8 +23,10 @@ import {
   buildPreRunManifest,
   buildRunManifestOutcome,
   finalizeRunManifest,
+  resolveExperimentId,
   writeRunManifest,
 } from "./v2/manifest.js";
+import { ensureExperimentCatalogEntry } from "./v2/experiment-catalog.js";
 
 interface Arguments {
   ideaFile: string;
@@ -67,7 +69,8 @@ Environment:
   CHALLENGE_MAX_TOKENS       Optional max output tokens (recorded in run manifest)
   CHALLENGE_CONTEXT_WINDOW   Optional model context window (recorded in run manifest)
   CHALLENGE_TIMEOUT_MS       Wall-clock limit for Pi (default: 900000)
-  RUN_COHORT / RUN_ARM / RUN_REP / RUN_INTERVENTION  Optional experiment metadata
+  RUN_EXPERIMENT / RUN_ARM / RUN_REP / RUN_INTERVENTION  Optional experiment metadata
+  RUN_COHORT                                           Legacy alias for RUN_EXPERIMENT
 `);
 }
 
@@ -335,6 +338,15 @@ async function main(): Promise<void> {
     artifactDirectory,
     finalizeRunManifest(manifest, buildRunManifestOutcome(result, usage, wallMs)),
   );
+  const experimentId = resolveExperimentId(manifest.experiment);
+  if (experimentId) {
+    try {
+      await ensureExperimentCatalogEntry(REPOSITORY_ROOT, experimentId, manifest.experiment.arm);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn(`Experiment catalog update skipped: ${message}`);
+    }
+  }
   const validationErrors = await validateResultObject(result);
   if (validationErrors.length > 0) {
     for (const error of validationErrors) console.error(`- ${error}`);
