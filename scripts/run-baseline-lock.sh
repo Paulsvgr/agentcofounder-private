@@ -6,7 +6,10 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
-if [ -f "$HOME/.pi/agent/challenge-env.sh" ]; then
+if [ -f "$HOME/.pi/agent/challenge-env-zai.sh" ]; then
+  # shellcheck disable=SC1091
+  source "$HOME/.pi/agent/challenge-env-zai.sh"
+elif [ -f "$HOME/.pi/agent/challenge-env.sh" ]; then
   # shellcheck disable=SC1091
   source "$HOME/.pi/agent/challenge-env.sh"
 elif [ -f "$REPO_ROOT/pi-agent/challenge-env.sh" ]; then

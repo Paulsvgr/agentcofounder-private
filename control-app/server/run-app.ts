@@ -1,9 +1,10 @@
-import { access, readdir } from "node:fs/promises";
+import { access, readdir, realpath, rm } from "node:fs/promises";
 import path from "node:path";
 import { replayRun } from "../../scripts/replay-run.js";
 import { resolveSavedAppDirectory } from "../../src/snapshot-generated-app.js";
 import { isPortInUse } from "./port-check.js";
 import { jobRegistry } from "./jobs.js";
+import type { JobRecord } from "./types.js";
 
 const activeDevServers = new Map<string, { port: number; jobId: string }>();
 
@@ -48,17 +49,36 @@ export async function findFreePort(start: number, end: number): Promise<number> 
   throw new Error(`No free port between ${start} and ${end}`);
 }
 
-async function waitForPort(port: number, timeoutMs = 45_000): Promise<void> {
-  const started = Date.now();
-  while (Date.now() - started < timeoutMs) {
-    if (await isPortInUse(port)) return;
-    await new Promise((resolve) => setTimeout(resolve, 250));
-  }
-  throw new Error(`Dev server did not start on port ${port}`);
+function localViteCommand(appDirectory: string): string {
+  const binName = process.platform === "win32" ? "vite.cmd" : "vite";
+  return path.join(appDirectory, "node_modules", ".bin", binName);
 }
 
-async function ensureNodeModules(appDirectory: string): Promise<void> {
-  if (await pathExists(path.join(appDirectory, "node_modules"))) return;
+function jobLogTail(job: JobRecord | undefined, lineCount = 8): string {
+  if (!job || job.lines.length === 0) return "";
+  return job.lines.slice(-lineCount).join("\n");
+}
+
+async function nodeModulesNeedsReinstall(appDirectory: string): Promise<boolean> {
+  const nodeModulesDirectory = path.join(appDirectory, "node_modules");
+  if (!(await pathExists(nodeModulesDirectory))) return true;
+
+  const viteBin = localViteCommand(appDirectory);
+  if (!(await pathExists(viteBin))) return true;
+
+  try {
+    const resolvedVite = await realpath(viteBin);
+    const resolvedApp = await realpath(appDirectory);
+    const appPrefix = `${resolvedApp}${path.sep}`;
+    if (!resolvedVite.startsWith(appPrefix)) return true;
+  } catch {
+    return true;
+  }
+
+  return false;
+}
+
+async function installNodeModules(appDirectory: string): Promise<void> {
   const job = jobRegistry.spawnJob({
     kind: "app-dev",
     runId: null,
@@ -71,10 +91,42 @@ async function ensureNodeModules(appDirectory: string): Promise<void> {
       if (jobId !== job.id) return;
       jobRegistry.off("done", onDone);
       if (status === "succeeded" && exitCode === 0) resolve();
-      else reject(new Error(`npm ci failed with exit code ${exitCode ?? "unknown"}`));
+      else {
+        const tail = jobLogTail(jobRegistry.get(job.id));
+        reject(new Error(`npm ci failed with exit code ${exitCode ?? "unknown"}${tail ? `:\n${tail}` : ""}`));
+      }
     };
     jobRegistry.on("done", onDone);
   });
+}
+
+async function ensureNodeModules(appDirectory: string): Promise<void> {
+  if (!(await nodeModulesNeedsReinstall(appDirectory))) return;
+
+  const nodeModulesDirectory = path.join(appDirectory, "node_modules");
+  if (await pathExists(nodeModulesDirectory)) {
+    await rm(nodeModulesDirectory, { recursive: true, force: true });
+  }
+
+  await installNodeModules(appDirectory);
+}
+
+async function waitForDevServer(jobId: string, port: number, timeoutMs = 45_000): Promise<void> {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    const job = jobRegistry.get(jobId);
+    if (job && job.status !== "running") {
+      const tail = jobLogTail(job);
+      throw new Error(
+        `Dev server exited before binding to port ${port}${tail ? `:\n${tail}` : ""}`,
+      );
+    }
+    if (await isPortInUse(port)) return;
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+
+  const tail = jobLogTail(jobRegistry.get(jobId));
+  throw new Error(`Dev server did not start on port ${port}${tail ? `:\n${tail}` : ""}`);
 }
 
 export interface OpenRunAppResult {
@@ -127,11 +179,12 @@ export async function openRunApp(repoRoot: string, runId: string): Promise<OpenR
 
   await ensureNodeModules(appPath);
   const port = await findFreePort(3000, 3999);
+  const viteCommand = localViteCommand(appPath);
   const job = jobRegistry.spawnJob({
     kind: "app-dev",
     runId,
-    command: "npx",
-    args: ["vite", "--host", "127.0.0.1", "--port", String(port), "--strictPort"],
+    command: viteCommand,
+    args: ["--host", "127.0.0.1", "--port", String(port), "--strictPort"],
     cwd: appPath,
   });
 
@@ -142,7 +195,7 @@ export async function openRunApp(repoRoot: string, runId: string): Promise<OpenR
     if (current?.jobId === jobId) activeDevServers.delete(runId);
   });
 
-  await waitForPort(port);
+  await waitForDevServer(job.id, port);
 
   return {
     url: `http://127.0.0.1:${port}`,
