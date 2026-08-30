@@ -142,28 +142,74 @@ export interface ActivityBucket {
   call_count: number;
   weighted_cost: number;
   share_of_total: number;
+  input_tokens: number;
+  output_tokens: number;
+  cache_read_tokens: number;
+  cache_write_tokens: number;
+  /** Share of this bucket's input+output+cache_read tokens. */
+  input_share: number;
+  output_share: number;
+  cache_read_share: number;
 }
 
 export function summarizeActivities(
-  calls: Array<{ activity: ActivityPhase; weighted_cost: number }>,
+  calls: Array<{
+    activity: ActivityPhase;
+    weighted_cost: number;
+    input_tokens: number;
+    output_tokens: number;
+    cache_read_tokens: number;
+    cache_write_tokens?: number;
+  }>,
 ): ActivityBucket[] {
-  const totals = new Map<ActivityPhase, { call_count: number; weighted_cost: number }>();
+  const totals = new Map<
+    ActivityPhase,
+    {
+      call_count: number;
+      weighted_cost: number;
+      input_tokens: number;
+      output_tokens: number;
+      cache_read_tokens: number;
+      cache_write_tokens: number;
+    }
+  >();
   let grandTotal = 0;
 
   for (const call of calls) {
     grandTotal += call.weighted_cost;
-    const bucket = totals.get(call.activity) ?? { call_count: 0, weighted_cost: 0 };
+    const bucket = totals.get(call.activity) ?? {
+      call_count: 0,
+      weighted_cost: 0,
+      input_tokens: 0,
+      output_tokens: 0,
+      cache_read_tokens: 0,
+      cache_write_tokens: 0,
+    };
     bucket.call_count += 1;
     bucket.weighted_cost += call.weighted_cost;
+    bucket.input_tokens += call.input_tokens;
+    bucket.output_tokens += call.output_tokens;
+    bucket.cache_read_tokens += call.cache_read_tokens;
+    bucket.cache_write_tokens += call.cache_write_tokens ?? 0;
     totals.set(call.activity, bucket);
   }
 
   return [...totals.entries()]
-    .map(([activity, bucket]) => ({
-      activity,
-      call_count: bucket.call_count,
-      weighted_cost: bucket.weighted_cost,
-      share_of_total: grandTotal > 0 ? bucket.weighted_cost / grandTotal : 0,
-    }))
+    .map(([activity, bucket]) => {
+      const tokenTotal = bucket.input_tokens + bucket.output_tokens + bucket.cache_read_tokens;
+      return {
+        activity,
+        call_count: bucket.call_count,
+        weighted_cost: bucket.weighted_cost,
+        share_of_total: grandTotal > 0 ? bucket.weighted_cost / grandTotal : 0,
+        input_tokens: bucket.input_tokens,
+        output_tokens: bucket.output_tokens,
+        cache_read_tokens: bucket.cache_read_tokens,
+        cache_write_tokens: bucket.cache_write_tokens,
+        input_share: tokenTotal > 0 ? bucket.input_tokens / tokenTotal : 0,
+        output_share: tokenTotal > 0 ? bucket.output_tokens / tokenTotal : 0,
+        cache_read_share: tokenTotal > 0 ? bucket.cache_read_tokens / tokenTotal : 0,
+      };
+    })
     .sort((left, right) => right.weighted_cost - left.weighted_cost);
 }

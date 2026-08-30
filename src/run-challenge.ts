@@ -4,6 +4,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { copyAppTemplateTree, prepareOutput } from "./prepare-output.js";
+import { snapshotGeneratedApp } from "./snapshot-generated-app.js";
 import { auditAppPortAfterPi } from "./port-owner.js";
 import { signalProcessTree, terminateProcessTree, usesDetachedProcessGroup } from "./process-tree.js";
 import {
@@ -17,6 +18,7 @@ import { collectUsageFromJsonLines } from "./usage.js";
 import type { RunResult } from "./types.js";
 import { validateResultObject } from "./validate-result.js";
 import { portHasListener, unavailableAppVerification, verifyGeneratedApp } from "./verify-app.js";
+import { analyzeRun, formatAnalyzeSummary } from "./v2/analyze-run.js";
 import {
   buildPreRunManifest,
   buildRunManifestOutcome,
@@ -317,15 +319,16 @@ async function main(): Promise<void> {
   const appResultPath = path.join(outputDirectory, "result.json");
   const rootResultPath = path.join(REPOSITORY_ROOT, "result.json");
   const requiredResultPaths = [appResultPath, rootResultPath];
+  const artifactResultPath = path.join(artifactDirectory, "result.json");
   let resultPaths = await writeResult(
     outputDirectory,
     result,
-    [rootResultPath],
+    [rootResultPath, artifactResultPath],
   );
   if (canVerifyApp) {
     verification = await verifyGeneratedApp(outputDirectory, artifactDirectory, { displayRoot: REPOSITORY_ROOT });
     result = composeResult(partial, usage, pi.exitCode, verification, portReclamation, startCommand);
-    resultPaths = await writeResult(outputDirectory, result, [rootResultPath]);
+    resultPaths = await writeResult(outputDirectory, result, [rootResultPath, artifactResultPath]);
   }
   const missingResultPaths = missingRequiredResultPaths(resultPaths, requiredResultPaths);
   await writeRunManifest(
@@ -341,6 +344,26 @@ async function main(): Promise<void> {
 
   console.log(`Result written to ${resultPaths.join(" and ")}`);
   console.log(`Audit artifacts written to ${artifactDirectory}`);
+  try {
+    await snapshotGeneratedApp(outputDirectory, path.join(artifactDirectory, "app"));
+    console.log(`Generated app snapshot written to ${path.join(artifactDirectory, "app")}`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`App snapshot failed (run artifacts preserved): ${message}`);
+  }
+  try {
+    const analysis = await analyzeRun({
+      repositoryRoot: REPOSITORY_ROOT,
+      runDirectory: artifactDirectory,
+    });
+    console.log("Analysis station written automatically:");
+    for (const line of formatAnalyzeSummary(analysis)) {
+      console.log(line);
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`Analysis failed (run artifacts preserved): ${message}`);
+  }
   for (const missingResultPath of missingResultPaths) {
     console.error(`Required result destination was not written: ${missingResultPath}`);
   }

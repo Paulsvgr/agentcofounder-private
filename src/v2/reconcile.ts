@@ -1,7 +1,9 @@
-import { access, readFile, readdir } from "node:fs/promises";
+import { access, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { collectUsageFromJsonLines } from "../usage.js";
 import type { RunResult, UsageSummary } from "../types.js";
+
+export const RECONCILE_SCHEMA = "agentcofounder.reconcile.v1" as const;
 
 const TOKEN_FIELDS = [
   "model_calls",
@@ -25,11 +27,18 @@ export interface ReconcileFieldDiff {
 }
 
 export interface ReconcileReport {
+  schema?: typeof RECONCILE_SCHEMA;
+  generated_at?: string;
   run_id: string;
   events_path: string;
   result_path: string;
   ok: boolean;
   fields: ReconcileFieldDiff[];
+}
+
+export interface PersistedReconcileReport extends ReconcileReport {
+  schema: typeof RECONCILE_SCHEMA;
+  generated_at: string;
 }
 
 export interface ReconcileSkip {
@@ -82,6 +91,57 @@ export function compareUsage(official: UsageSummary, fromEvents: UsageSummary): 
       match: delta === 0,
     };
   });
+}
+
+export function reconcileAnalysisPath(repositoryRoot: string, runId: string): string {
+  return path.join(repositoryRoot, "artifacts", "analysis", runId, "reconcile.json");
+}
+
+export function toPersistedReconcileReport(report: ReconcileReport): PersistedReconcileReport {
+  return {
+    schema: RECONCILE_SCHEMA,
+    generated_at: new Date().toISOString(),
+    run_id: report.run_id,
+    events_path: report.events_path,
+    result_path: report.result_path,
+    ok: report.ok,
+    fields: report.fields,
+  };
+}
+
+export async function persistReconcileReport(
+  repositoryRoot: string,
+  report: ReconcileReport,
+): Promise<string> {
+  const outputPath = reconcileAnalysisPath(repositoryRoot, report.run_id);
+  await mkdir(path.dirname(outputPath), { recursive: true });
+  await writeFile(outputPath, `${JSON.stringify(toPersistedReconcileReport(report), null, 2)}\n`, "utf8");
+  return outputPath;
+}
+
+export async function readReconcileReportOptional(
+  repositoryRoot: string,
+  runId: string,
+): Promise<PersistedReconcileReport | null> {
+  try {
+    const raw = await readFile(reconcileAnalysisPath(repositoryRoot, runId), "utf8");
+    return JSON.parse(raw) as PersistedReconcileReport;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+    throw error;
+  }
+}
+
+export async function reconcileRunIfPossible(runDirectory: string): Promise<ReconcileReport | null> {
+  const runId = path.basename(runDirectory);
+  const eventsPath = path.join(runDirectory, "events.jsonl");
+  const resultPath = path.join(runDirectory, "result.json");
+
+  const hasEvents = await pathExists(eventsPath);
+  const hasResult = await pathExists(resultPath);
+  if (!hasEvents || !hasResult) return null;
+
+  return reconcileRun(runDirectory);
 }
 
 export async function reconcileRun(runDirectory: string): Promise<ReconcileReport> {

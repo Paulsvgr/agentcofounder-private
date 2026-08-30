@@ -65,11 +65,20 @@ describe("classifyCallActivity", () => {
 describe("summarizeActivities", () => {
   it("aggregates weighted cost by activity", () => {
     const buckets = summarizeActivities([
-      { activity: "source", weighted_cost: 100 },
-      { activity: "test", weighted_cost: 50 },
-      { activity: "source", weighted_cost: 50 },
+      { activity: "source", weighted_cost: 100, input_tokens: 40, output_tokens: 10, cache_read_tokens: 50 },
+      { activity: "test", weighted_cost: 50, input_tokens: 5, output_tokens: 5, cache_read_tokens: 0 },
+      { activity: "source", weighted_cost: 50, input_tokens: 20, output_tokens: 10, cache_read_tokens: 20 },
     ]);
-    expect(buckets[0]).toMatchObject({ activity: "source", call_count: 2, weighted_cost: 150 });
+    expect(buckets[0]).toMatchObject({
+      activity: "source",
+      call_count: 2,
+      weighted_cost: 150,
+      input_tokens: 60,
+      output_tokens: 20,
+      cache_read_tokens: 70,
+    });
+    expect(buckets[0]?.input_share).toBeCloseTo(60 / 150);
+    expect(buckets[0]?.cache_read_share).toBeCloseTo(70 / 150);
     expect(isNpmTestCommand("npm test")).toBe(true);
   });
 });

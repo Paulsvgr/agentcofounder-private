@@ -68,10 +68,11 @@ We are **not** building a dedicated A/B experiment runner.
 
 | # | Step | Status |
 |---|------|--------|
-| 8 | Analysis Station + runs app use manifest/config/template provenance | **next** |
-| 9 | **Lock the V2 baseline** (5 runs, same template as today) | |
-| 10 | Template/resources — select components → assemble app before Pi → tell Pi what was added | |
-| 11 | Planner, themes, guards, error memory, … | later |
+| 8 | Analysis Station + runs app use manifest/config/template provenance | **done** |
+| 9 | **Lock the V2 baseline** (5 runs, same template as today) | **in progress** |
+| 10 | **V2 Control App** — local run browser, analyze trigger, launch form | **done** |
+| 11 | Template/resources — select components → assemble app before Pi → tell Pi what was added | |
+| 12 | Planner, themes, guards, error memory, … | later |
 
 After step 9, template and resource work is in scope. Do not bundle planner +
 components + theme + guards into the first template slice — one intervention at
@@ -182,3 +183,5 @@ Not "new template" as one package. Then we would not know which slice helped.
   experiment metadata). See TEAM-GUIDE §13.
 - **Shared run storage** — export/publish to team runs UI with `data.manifest`
   provenance sibling. See TEAM-GUIDE §14.
+- **V2 Control App** (`control-app/`) — local run browser, per-call diagnostics,
+  analyze/reconcile triggers, challenge launcher. See [CONTROL-APP.md](./CONTROL-APP.md).

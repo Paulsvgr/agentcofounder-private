@@ -305,6 +305,16 @@ export async function readRunManifest(runDirectory: string): Promise<RunManifest
   return JSON.parse(raw) as RunManifest;
 }
 
+/** Returns null when run-manifest.json is absent (historical runs). */
+export async function readRunManifestOptional(runDirectory: string): Promise<RunManifest | null> {
+  try {
+    return await readRunManifest(runDirectory);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+    throw error;
+  }
+}
+
 /** Guard against accidental config drift when wiring defaults into the runner. */
 export function assertBaselineConfig(config: HarnessConfig): void {
   const baseline = resolveConfig();

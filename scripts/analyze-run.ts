@@ -1,19 +1,13 @@
-import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildCallLedger } from "../src/v2/normalize.js";
-import { buildStationReport, renderStationHtml } from "../src/v2/station.js";
+import {
+  analyzeExitCode,
+  analyzeRun,
+  formatAnalyzeSummary,
+  resolveRunDirectory,
+} from "../src/v2/analyze-run.js";
 
 const REPOSITORY_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const ANALYSIS_DIRECTORY = path.join(REPOSITORY_ROOT, "artifacts", "analysis");
-
-function resolveRunDirectory(arg: string): string {
-  if (path.isAbsolute(arg)) return arg;
-  if (arg.includes("/") || arg.includes("\\")) {
-    return path.resolve(REPOSITORY_ROOT, arg);
-  }
-  return path.join(REPOSITORY_ROOT, "artifacts", "runs", arg);
-}
 
 function parseArgs(argv: string[]): { runArg: string; compareArg?: string } {
   const positional: string[] = [];
@@ -45,48 +39,22 @@ function parseArgs(argv: string[]): { runArg: string; compareArg?: string } {
 async function main(): Promise<void> {
   const { runArg, compareArg } = parseArgs(process.argv.slice(2));
 
-  const runDirectory = resolveRunDirectory(runArg);
-  const runId = path.basename(runDirectory);
-  const ledger = await buildCallLedger(runDirectory);
+  const runDirectory = resolveRunDirectory(REPOSITORY_ROOT, runArg);
+  const compareRunDirectory = compareArg
+    ? resolveRunDirectory(REPOSITORY_ROOT, compareArg)
+    : undefined;
 
-  let compareLedger;
-  if (compareArg) {
-    compareLedger = await buildCallLedger(resolveRunDirectory(compareArg));
+  const result = await analyzeRun({
+    repositoryRoot: REPOSITORY_ROOT,
+    runDirectory,
+    ...(compareRunDirectory === undefined ? {} : { compareRunDirectory }),
+  });
+
+  for (const line of formatAnalyzeSummary(result)) {
+    console.log(line);
   }
 
-  const report = buildStationReport(ledger, compareLedger);
-  const outputDirectory = path.join(ANALYSIS_DIRECTORY, runId);
-  const ledgerPath = path.join(outputDirectory, "ledger.json");
-  const stationJsonPath = path.join(outputDirectory, "station.json");
-  const stationHtmlPath = path.join(outputDirectory, "station.html");
-
-  await mkdir(outputDirectory, { recursive: true });
-  await Promise.all([
-    writeFile(ledgerPath, `${JSON.stringify(ledger, null, 2)}\n`, "utf8"),
-    writeFile(stationJsonPath, `${JSON.stringify(report, null, 2)}\n`, "utf8"),
-    writeFile(stationHtmlPath, renderStationHtml(report), "utf8"),
-  ]);
-
-  console.log(`run_id: ${report.run_id}`);
-  if (report.compare) {
-    console.log(`compare: ${report.compare.run_id}`);
-  }
-  console.log(`calls: ${report.totals.model_calls}`);
-  console.log(`weighted_total: ${report.totals.weighted_total.toFixed(0)}`);
-  console.log(`reconciliation: ${report.reconciliation_ok ? "OK" : "MISMATCH"}`);
-  if (report.activity_summary.length > 0) {
-    console.log("activity:");
-    for (const bucket of report.activity_summary.slice(0, 6)) {
-      console.log(
-        `  ${bucket.activity.padEnd(8)} calls=${String(bucket.call_count).padStart(2)} weighted=${bucket.weighted_cost.toFixed(0)} share=${(bucket.share_of_total * 100).toFixed(1)}%`,
-      );
-    }
-  }
-  console.log(`wrote: ${ledgerPath}`);
-  console.log(`wrote: ${stationJsonPath}`);
-  console.log(`wrote: ${stationHtmlPath}`);
-
-  process.exit(report.reconciliation_ok ? 0 : 1);
+  process.exit(analyzeExitCode(result));
 }
 
 await main();

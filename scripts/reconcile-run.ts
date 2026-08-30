@@ -1,6 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { reconcileRun } from "../src/v2/reconcile.js";
+import { persistReconcileReport, reconcileRun } from "../src/v2/reconcile.js";
 
 const REPOSITORY_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -37,7 +37,9 @@ async function main(): Promise<void> {
   }
 
   const report = await reconcileRun(resolveRunDirectory(arg));
+  const reconcilePath = await persistReconcileReport(REPOSITORY_ROOT, report);
   printReport(report);
+  console.log(`wrote: ${reconcilePath}`);
   process.exit(report.ok ? 0 : 1);
 }
 

@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import path from "node:path";
 import type { PiUsage } from "../types.js";
 import {
@@ -20,6 +20,8 @@ export interface LedgerTool {
   detail: string;
   is_error: boolean;
   paths: string[];
+  /** Truncated stdout/stderr from tool result, when present. */
+  output: string | null;
 }
 
 export interface CallLedgerEntry {
@@ -54,6 +56,8 @@ export interface CallLedger {
   reconciliation: {
     matched: boolean;
     fields: ReturnType<typeof compareUsage>;
+    /** True when artifacts/runs/<id>/result.json is absent — ledger built from events only. */
+    official_missing?: boolean;
   };
 }
 
@@ -61,6 +65,165 @@ interface ToolExecution {
   name: string;
   args: Record<string, unknown>;
   is_error: boolean;
+  output: string | null;
+}
+
+function stripAnsi(text: string): string {
+  return text.replace(/\u001b\[[0-9;]*m/gu, "");
+}
+
+function truncateText(text: string, maxLength = 800): string {
+  const trimmed = text.trim();
+  if (trimmed.length <= maxLength) return trimmed;
+  return `${trimmed.slice(0, maxLength - 1)}…`;
+}
+
+const ERROR_LINE =
+  /TestingLibraryElementError|AssertionError|VitestError|Expected .+ to|Received:|^\s*Error:/iu;
+const FAILURE_LINE = /\bFAIL\b|\s×\s|Test Files.*failed|\|\s*\d+\s+failed/iu;
+
+function isDomLine(line: string): boolean {
+  const trimmed = line.trim();
+  if (/^<[a-z]/iu.test(trimmed)) return true;
+  if (/^(aria-|class=|id=|value=)/u.test(trimmed)) return true;
+  if (/^\s{4,}\S/u.test(line) && !ERROR_LINE.test(line)) return true;
+  return false;
+}
+
+function isDomDump(text: string): boolean {
+  const trimmed = text.trimStart();
+  return /^<[a-z]+/iu.test(trimmed) && (trimmed.includes("class=") || trimmed.startsWith("<body"));
+}
+
+function extractErrorFocus(text: string): string {
+  const lines = text.split(/\r?\n/u);
+  const start = lines.findIndex((line) => ERROR_LINE.test(line));
+  if (start === -1) return text;
+
+  const chunk: string[] = [];
+  for (let index = start; index < lines.length && chunk.length < 10; index += 1) {
+    const line = lines[index]!;
+    if (chunk.length > 0 && line.trim() === "") break;
+    if (isDomLine(line)) break;
+    chunk.push(line);
+  }
+  return chunk.join("\n").trim() || text;
+}
+
+function truncateToolOutput(text: string, maxLength = 800): string {
+  if (ERROR_LINE.test(text)) {
+    return truncateText(extractErrorFocus(text), maxLength);
+  }
+  const lines = text.split(/\r?\n/u).filter((line) => line.trim().length > 0);
+  const tail = lines.slice(-12).join("\n");
+  return truncateText(tail, maxLength);
+}
+
+function hasFailureSummary(text: string): boolean {
+  return FAILURE_LINE.test(text);
+}
+
+function hasErrorDetail(text: string): boolean {
+  return ERROR_LINE.test(text);
+}
+
+function extractFailTestName(text: string): string | null {
+  const failMatch = text.match(/\bFAIL\b[^\n]*>\s*(.+)/u);
+  if (failMatch?.[1]) return failMatch[1].trim();
+  const crossMatch = text.match(/\s×\s+(.+?)\s+\d+ms/u);
+  return crossMatch?.[1]?.trim() ?? null;
+}
+
+interface ErrorSnippet {
+  callIndex: number;
+  text: string;
+  testName: string | null;
+}
+
+function collectErrorSnippets(calls: CallLedgerEntry[]): ErrorSnippet[] {
+  const snippets: ErrorSnippet[] = [];
+  for (const call of calls) {
+    for (const tool of call.tools) {
+      if (!tool.output || !hasErrorDetail(tool.output)) continue;
+      snippets.push({
+        callIndex: call.index,
+        text: truncateText(extractErrorFocus(tool.output), 600),
+        testName: extractFailTestName(tool.output),
+      });
+    }
+  }
+  return snippets;
+}
+
+function findMatchingError(
+  snippets: ErrorSnippet[],
+  fromCallIndex: number,
+  testName: string | null,
+): string | null {
+  const nearby = snippets.filter(
+    (snippet) => snippet.callIndex >= fromCallIndex && snippet.callIndex <= fromCallIndex + 6,
+  );
+  if (testName) {
+    const normalized = testName.toLowerCase();
+    const exact = nearby.find((snippet) => {
+      if (!snippet.testName) return false;
+      const candidate = snippet.testName.toLowerCase();
+      return candidate.includes(normalized) || normalized.includes(candidate);
+    });
+    if (exact) return exact.text;
+
+    const tokens = normalized.split(/[^a-z0-9]+/u).filter((token) => token.length > 4);
+    const tokenMatch = nearby.find((snippet) =>
+      tokens.some((token) => snippet.text.toLowerCase().includes(token)),
+    );
+    if (tokenMatch) return tokenMatch.text;
+  }
+  return nearby[0]?.text ?? snippets.find((snippet) => snippet.callIndex > fromCallIndex)?.text ?? null;
+}
+
+export function enrichLedgerToolOutputs(calls: CallLedgerEntry[]): CallLedgerEntry[] {
+  const snippets = collectErrorSnippets(calls);
+  if (snippets.length === 0) return calls;
+
+  return calls.map((call) => ({
+    ...call,
+    tools: call.tools.map((tool) => {
+      if (!tool.output) return tool;
+
+      if (hasErrorDetail(tool.output)) {
+        return { ...tool, output: truncateText(extractErrorFocus(tool.output), 800) };
+      }
+
+      if (isDomDump(tool.output)) {
+        const error = findMatchingError(snippets, call.index, extractFailTestName(tool.detail));
+        if (error) return { ...tool, output: error };
+        return { ...tool, output: null };
+      }
+
+      if (tool.name === "bash" && hasFailureSummary(tool.output)) {
+        const error = findMatchingError(snippets, call.index, extractFailTestName(tool.output));
+        if (error) {
+          return { ...tool, output: `${tool.output.trim()}\n\nCause: ${error}` };
+        }
+      }
+
+      return tool;
+    }),
+  }));
+}
+
+function extractToolOutput(result: Record<string, unknown>): string | null {
+  const content = result.content;
+  if (!Array.isArray(content)) return null;
+  const parts: string[] = [];
+  for (const block of content) {
+    if (!isRecord(block)) continue;
+    if (block.type === "text" && typeof block.text === "string" && block.text.trim().length > 0) {
+      parts.push(block.text);
+    }
+  }
+  if (parts.length === 0) return null;
+  return truncateToolOutput(stripAnsi(parts.join("\n").trim()));
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -119,6 +282,7 @@ function toLedgerTool(execution: ToolExecution): LedgerTool {
     detail: toolDetail(execution.name, execution.args),
     is_error: execution.is_error,
     paths: [...new Set(paths)],
+    output: execution.output,
   };
 }
 
@@ -178,7 +342,8 @@ export function buildCallLedgerFromEvents(content: string, runId: string, events
       pendingTools.push({
         name,
         args,
-        is_error: result.isError === true,
+        is_error: event.isError === true || result.isError === true,
+        output: extractToolOutput(result),
       });
     } else if (type === "message_end") {
       const message = event.message;
@@ -291,12 +456,28 @@ export async function buildCallLedger(runDirectory: string): Promise<CallLedger>
   const eventsPath = path.join(runDirectory, "events.jsonl");
   const resultPath = path.join(runDirectory, "result.json");
 
-  const [eventsContent, resultContent] = await Promise.all([
-    readFile(eventsPath, "utf8"),
-    readFile(resultPath, "utf8"),
-  ]);
-
+  const eventsContent = await readFile(eventsPath, "utf8");
   const ledger = buildCallLedgerFromEvents(eventsContent, runId, eventsPath);
+
+  let hasResult = false;
+  try {
+    await access(resultPath);
+    hasResult = true;
+  } catch {
+    hasResult = false;
+  }
+
+  if (!hasResult) {
+    ledger.reconciliation = {
+      matched: false,
+      fields: [],
+      official_missing: true,
+    };
+    ledger.calls = enrichLedgerToolOutputs(ledger.calls);
+    return ledger;
+  }
+
+  const resultContent = await readFile(resultPath, "utf8");
   const official = JSON.parse(resultContent) as RunResult;
   const fromLedger = ledgerTotals(ledger.calls);
   const fields = compareUsage(official, fromLedger);
@@ -304,5 +485,6 @@ export async function buildCallLedger(runDirectory: string): Promise<CallLedger>
     matched: fields.every((field) => field.match),
     fields,
   };
+  ledger.calls = enrichLedgerToolOutputs(ledger.calls);
   return ledger;
 }
