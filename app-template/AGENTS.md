@@ -13,7 +13,7 @@
 
 ## CSS vocabulary (preinstalled)
 
-A complete design-system stylesheet is already in `src/styles.css`. **Do not read `src/styles.css`.** There is no reason to — the vocabulary below is sufficient.
+A complete design-system stylesheet is already installed. **Do not read or edit the theme stylesheet.** The vocabulary below is sufficient.
 
 Use only these class names for layout, typography, forms, buttons, lists, and cards:
 
@@ -45,5 +45,5 @@ Use only these class names for layout, typography, forms, buttons, lists, and ca
 
 - Compose UI from these classes only. Combine modifiers as shown (`className="ui-btn ui-btn-primary"`).
 - **Accept the default appearance. Do not customise merely to make it prettier.**
-- Append custom CSS to `src/styles.css` only when the vocabulary genuinely cannot express a requirement.
 - Do not substitute inline `style={{...}}` for the vocabulary.
+- Do not add class names outside this list.

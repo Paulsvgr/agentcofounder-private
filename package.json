@@ -27,6 +27,7 @@
     "experiment:c": "bash scripts/run-experiment-c.sh",
     "experiment:verify": "bash scripts/run-experiment-verify.sh",
     "experiment:css-vocabulary": "bash scripts/run-experiment-css-vocabulary.sh",
+    "experiment:css-vocabulary-v1.1": "bash scripts/run-experiment-css-vocabulary-v1.1.sh",
     "analyze:cohort-trajectory": "node --import tsx scripts/analyze-cohort-trajectory.ts",
     "test": "vitest run",
     "app:test": "npm --prefix app-template test -- --passWithNoTests",
