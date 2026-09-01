@@ -187,6 +187,12 @@ button.secondary,
   color: #3659c9;
 }
 
+button.secondary.danger,
+.button-link.secondary.danger {
+  color: #b3261e;
+  border-color: #d88;
+}
+
 button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
@@ -1164,9 +1170,12 @@ button:disabled {
 .generated-app-link a {
   font-weight: 600;
 }
-  margin: 0;
-  font-size: 0.82rem;
-  line-height: 1.45;
+
+.generated-app-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.65rem;
 }
 
 .replay-panel {
@@ -1827,6 +1836,48 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
+}
+
+.metadata-rubric-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.metadata-rubric-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: start;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #e3e8f2;
+  border-radius: 0.65rem;
+  background: #fff;
+}
+
+.metadata-rubric-label-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.metadata-rubric-score {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.metadata-rubric-score input {
+  width: 3.5rem;
+}
+
+.metadata-rubric-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.55rem 0.75rem;
+  border-top: 1px solid #e3e8f2;
 }
 
 .metadata-rating-picker {

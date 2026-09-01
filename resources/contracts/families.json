@@ -1,0 +1,32 @@
+{
+  "field-v1": {
+    "props": ["label", "value", "onChange", "error?", "required?", "disabled?"],
+    "members": ["FormField", "SelectField"],
+    "test_rule": "Query by label text (getByLabelText). Assert error via role=alert when present.",
+    "do_not": ["Hand-roll label+input pairs", "Import @/components/ui/*"]
+  },
+  "action-v1": {
+    "props": ["label", "onAction", "variant?", "disabled?", "ariaLabel?", "type?"],
+    "members": ["ActionButton"],
+    "test_rule": "getByRole('button', { name: /label/i }).",
+    "do_not": ["Raw <button> for standard actions", "Import @/components/ui/button"]
+  },
+  "overlay-v1": {
+    "props": ["open", "onOpenChange", "title", "description?", "confirmLabel?", "cancelLabel?", "onConfirm"],
+    "members": ["ConfirmDialog"],
+    "test_rule": "getByRole('dialog'); confirm/cancel by accessible name.",
+    "do_not": ["window.confirm", "Import @/components/ui/dialog"]
+  },
+  "row-v1": {
+    "props": ["id", "title", "description?", "actions?"],
+    "members": ["DataRow", "DataList"],
+    "test_rule": "List via getByRole('list'); rows via text; actions via button name.",
+    "do_not": ["Custom flex row layouts for standard lists"]
+  },
+  "state-v1": {
+    "props": ["title", "description?", "value? (Stat only)", "action? (EmptyState only)"],
+    "members": ["EmptyState", "Stat"],
+    "test_rule": "EmptyState: getByRole('status'). Stat: title + value text.",
+    "do_not": ["Dashed-border placeholder divs"]
+  }
+}

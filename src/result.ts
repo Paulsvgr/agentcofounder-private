@@ -38,15 +38,28 @@ function normalizeTestRun(value: unknown): TestRun | undefined {
   if (typeof value !== "object" || value === null) return undefined;
   const candidate = value as Record<string, unknown>;
   if (
-    typeof candidate.command !== "string" ||
-    typeof candidate.journey !== "string" ||
-    !["passed", "failed"].includes(String(candidate.result))
-  ) return undefined;
-  return {
-    command: candidate.command,
-    journey: candidate.journey,
-    result: candidate.result as TestRun["result"],
-  };
+    typeof candidate.command === "string" &&
+    typeof candidate.journey === "string" &&
+    ["passed", "failed"].includes(String(candidate.result))
+  ) {
+    return {
+      command: candidate.command,
+      journey: candidate.journey,
+      result: candidate.result as TestRun["result"],
+    };
+  }
+  if (
+    typeof candidate.name === "string" &&
+    ["passed", "failed"].includes(String(candidate.status ?? candidate.result))
+  ) {
+    const result = String(candidate.status ?? candidate.result) as TestRun["result"];
+    return {
+      command: "verify",
+      journey: candidate.name,
+      result,
+    };
+  }
+  return undefined;
 }
 
 export function normalizePartialResult(value: unknown): PartialRunResult | undefined {

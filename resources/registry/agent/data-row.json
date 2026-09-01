@@ -1,0 +1,26 @@
+{
+  "id": "data-row",
+  "type": "component",
+  "tier": "agent",
+  "family": "row-v1",
+  "name": "DataRow",
+  "import": "import { DataRow } from \"@/components/agent/data-row\"",
+  "props_contract": ["id", "title", "description?", "actions?"],
+  "adaptation_points": ["title", "description", "actions slot"],
+  "owned_mechanics": ["list item layout", "actions alignment"],
+  "tiny_example": "<DataRow id={item.id} title={item.title} actions={<ActionButton label=\"Edit\" onAction={() => edit(item.id)} variant=\"ghost\" />} />",
+  "use_when": ["single entity row in a list with optional actions"],
+  "constraints": [
+    "Pass stable string id for test targeting.",
+    "Put buttons in actions slot — do not nest custom flex layouts around the row."
+  ],
+  "test_hint": "within listitem, getByText(title); action buttons by accessible name.",
+  "files": [
+    {
+      "source": "resources/files/agent/data-row.tsx",
+      "target": "src/components/agent/data-row.tsx"
+    }
+  ],
+  "npm_dependencies": [],
+  "registry_dependencies": []
+}

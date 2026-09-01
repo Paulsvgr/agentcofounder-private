@@ -1,0 +1,34 @@
+{
+  "schema": "agentcofounder.resource.v1",
+  "id": "label",
+  "type": "component",
+  "name": "Label",
+  "version": "1.0.0",
+  "content_hash": "8d6fd5722b982c0e7da01db59f76d4e9e2c2c64d243fa5efb6049be9678a7aed",
+  "files": [
+    {
+      "source": "resources/files/components/ui/label.tsx",
+      "target": "src/components/ui/label.tsx"
+    }
+  ],
+  "npm_dependencies": [
+    "@radix-ui/react-label",
+    "class-variance-authority"
+  ],
+  "registry_dependencies": [
+    "lib-utils"
+  ],
+  "import": "import { Label } from \"@/components/ui/label\"",
+  "setup": null,
+  "tiny_example": "<Label htmlFor=\"title\">Title</Label><Input id=\"title\" ... />",
+  "use_when": [
+    "form fields",
+    "accessible input pairing"
+  ],
+  "constraints": [
+    "Use htmlFor/id pairs for form controls.",
+    "Do not rely on placeholder text alone."
+  ],
+  "test_hint": "getByLabelText('Title') works when Label htmlFor matches Input id.",
+  "full_docs_reference": "resources/docs/components/label.md"
+}

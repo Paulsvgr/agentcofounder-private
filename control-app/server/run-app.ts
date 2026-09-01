@@ -8,6 +8,14 @@ import type { JobRecord } from "./types.js";
 
 const activeDevServers = new Map<string, { port: number; jobId: string }>();
 
+export interface RunAppStatus {
+  running: boolean;
+  url?: string;
+  port?: number;
+  app_path?: string | null;
+  job_id?: string;
+}
+
 async function pathExists(candidate: string): Promise<boolean> {
   try {
     await access(candidate);
@@ -204,4 +212,33 @@ export async function openRunApp(repoRoot: string, runId: string): Promise<OpenR
     built_from_logs: builtFromLogs,
     job_id: job.id,
   };
+}
+
+export async function getRunAppStatus(repoRoot: string, runId: string): Promise<RunAppStatus> {
+  const existing = activeDevServers.get(runId);
+  if (!existing || !(await isPortInUse(existing.port))) {
+    if (existing) activeDevServers.delete(runId);
+    return { running: false };
+  }
+
+  const appPath = await resolveRunAppDirectory(repoRoot, runId);
+  return {
+    running: true,
+    url: `http://127.0.0.1:${existing.port}`,
+    port: existing.port,
+    app_path: appPath ? path.relative(repoRoot, appPath) : null,
+    job_id: existing.jobId,
+  };
+}
+
+export async function killRunApp(_repoRoot: string, runId: string): Promise<{ stopped: boolean }> {
+  const existing = activeDevServers.get(runId);
+  if (!existing) {
+    return { stopped: false };
+  }
+
+  jobRegistry.killJob(existing.jobId);
+  activeDevServers.delete(runId);
+
+  return { stopped: true };
 }

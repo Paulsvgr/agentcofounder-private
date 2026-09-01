@@ -1,0 +1,40 @@
+{
+  "schema": "agentcofounder.resource.v1",
+  "id": "theme-default",
+  "type": "theme",
+  "name": "Default semantic theme",
+  "version": "1.0.0",
+  "content_hash": "6354f511a1e72813b3d9d3637738cd0be70900c5fc47d0597db96033ce0b23f9",
+  "files": [
+    {
+      "source": "resources/files/themes/theme-default/styles.css",
+      "target": "src/styles.css"
+    },
+    {
+      "source": "resources/files/themes/theme-default/tailwind.config.js",
+      "target": "tailwind.config.js"
+    },
+    {
+      "source": "resources/files/themes/theme-default/postcss.config.js",
+      "target": "postcss.config.js"
+    }
+  ],
+  "npm_dependencies": [
+    "tailwindcss",
+    "postcss",
+    "autoprefixer"
+  ],
+  "registry_dependencies": [],
+  "import": null,
+  "setup": "Tailwind + semantic CSS variables are preconfigured. Use classes like bg-background, text-foreground, border-border, bg-primary, text-muted-foreground.",
+  "tiny_example": "className=\"bg-background text-foreground border-border\"",
+  "use_when": [
+    "any UI using preinstalled components"
+  ],
+  "constraints": [
+    "Do not hardcode hex colours unless necessary.",
+    "Prefer semantic token class names over raw CSS."
+  ],
+  "test_hint": null,
+  "full_docs_reference": "resources/docs/themes/theme-default.md"
+}

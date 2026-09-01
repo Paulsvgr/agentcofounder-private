@@ -1,6 +1,14 @@
 import { mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
+  mergeAppRubric,
+  resolveStoredAppRating,
+  rubricTotal,
+  validateAppRatingTotal,
+  validateAppRubric,
+  type AppRubricScores,
+} from "../shared/app-rubric.js";
+import {
   appendExperimentToOverlayTaxonomy,
   getExperiment,
   validateExperimentId,
@@ -11,6 +19,7 @@ import {
   emptyFlags,
   emptyHuman,
   emptyOverlayEntry,
+  normalizeHuman,
   RUNS_OVERLAY_SCHEMA,
   type RunOverlayEntry,
   type RunOverlayPatch,
@@ -141,18 +150,36 @@ function mergeClassification(
   return merged;
 }
 
-function validateRating(value: unknown): number | null {
-  if (value === null || value === undefined || value === "") return null;
-  const num = typeof value === "number" ? value : Number(value);
-  if (!Number.isFinite(num) || num < 0 || num > 10) {
-    throw new Error("app_rating must be a number from 0 to 10, or null");
+function mergeHuman(
+  current: RunOverlayEntry["human"],
+  patch: RunOverlayPatch["human"],
+): RunOverlayEntry["human"] {
+  const mergedRubric =
+    patch?.app_rubric !== undefined
+      ? mergeAppRubric(current.app_rubric, patch.app_rubric)
+      : current.app_rubric;
+
+  let appRating = current.app_rating;
+  if (patch?.app_rubric !== undefined) {
+    appRating = rubricTotal(mergedRubric);
+  } else if (patch?.app_rating !== undefined) {
+    appRating = validateAppRatingTotal(patch.app_rating);
   }
-  return Math.round(num);
+
+  return {
+    app_rubric: mergedRubric,
+    app_rating: resolveStoredAppRating(appRating, mergedRubric),
+    app_comment: patch?.app_comment !== undefined ? patch.app_comment : current.app_comment,
+    run_comment: patch?.run_comment !== undefined ? patch.run_comment : current.run_comment,
+  };
 }
 
 export function validateOverlayPatch(patch: RunOverlayPatch): void {
+  if (patch.human?.app_rubric !== undefined && patch.human.app_rubric !== null) {
+    validateAppRubric(patch.human.app_rubric);
+  }
   if (patch.human?.app_rating !== undefined) {
-    validateRating(patch.human.app_rating);
+    validateAppRatingTotal(patch.human.app_rating);
   }
   if (patch.author !== undefined && patch.author !== null && patch.author.length > 120) {
     throw new Error("author must be 120 characters or fewer");
@@ -173,7 +200,10 @@ export async function patchRunOverlay(
   validateOverlayPatch(patch);
   const filePath = overlayFilePath(repoRoot);
   const file = await readOverlayFile(repoRoot, true);
-  const current = file.runs[runId] ?? emptyOverlayEntry();
+  const current = {
+    ...file.runs[runId] ?? emptyOverlayEntry(),
+    human: normalizeHuman(file.runs[runId]?.human),
+  };
 
   const author =
     patch.author !== undefined
@@ -184,14 +214,7 @@ export async function patchRunOverlay(
     file.authors.sort((a, b) => a.localeCompare(b));
   }
 
-  const human = {
-    app_rating:
-      patch.human?.app_rating !== undefined
-        ? validateRating(patch.human.app_rating)
-        : current.human.app_rating,
-    app_comment: patch.human?.app_comment !== undefined ? patch.human.app_comment : current.human.app_comment,
-    run_comment: patch.human?.run_comment !== undefined ? patch.human.run_comment : current.human.run_comment,
-  };
+  const human = mergeHuman(current.human, patch.human);
 
   const flags = {
     ...current.flags,
@@ -260,6 +283,7 @@ export interface ClassificationSeedEntry {
     legacy_approach?: string | null;
   };
   human?: {
+    app_rubric?: Partial<AppRubricScores> | null;
     app_rating?: number | null;
     app_comment?: string | null;
     run_comment?: string | null;
@@ -291,11 +315,12 @@ export function overlayEntryFromSeed(runId: string, seed: ClassificationSeedEntr
     git_commit: seed.source?.git_commit ?? null,
     experiment_id: null,
     classification,
-    human: {
+    human: normalizeHuman({
+      app_rubric: seed.human?.app_rubric ? validateAppRubric(seed.human.app_rubric) : null,
       app_rating: seed.human?.app_rating ?? null,
       app_comment: seed.human?.app_comment ?? "",
       run_comment: seed.human?.run_comment ?? "",
-    },
+    }),
     flags: {
       ...emptyFlags(),
       ...(seed.flags ?? {}),

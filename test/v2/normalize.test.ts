@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { buildCallLedger, buildCallLedgerFromEvents, enrichLedgerToolOutputs } from "../../src/v2/normalize.js";
+import { buildCallLedger, buildCallLedgerFromEvents, enrichLedgerToolOutputs, extractVerificationHeader } from "../../src/v2/normalize.js";
 import { reconcileRun } from "../../src/v2/reconcile.js";
 
 const REPOSITORY_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -68,5 +68,27 @@ describe("buildCallLedger", () => {
     const enriched = enrichLedgerToolOutputs(ledger.calls);
     expect(enriched[0]?.tools[0]?.output).toContain("Cause:");
     expect(enriched[0]?.tools[0]?.output).toContain("Unable to find an element with the text: Dune");
+  });
+
+  it("preserves verify exit_code and FAIL summary when truncating error output", () => {
+    const raw =
+      "verify exit_code=1 (FAIL)\n\n> app@0.0.0 test\n> vitest run\n\n❌ FAIL 4/6 tests · 2 failed\n[1/2]\nFAIL src/App.test.tsx\nTYPE TestingLibraryElementError\nAT at App.test.tsx:71:19";
+    expect(extractVerificationHeader(raw)).toBe("verify exit_code=1 (FAIL)\n❌ FAIL 4/6 tests · 2 failed");
+
+    const events = [
+      '{"type":"turn_start"}',
+      `{"type":"tool_execution_end","toolCallId":"v1","toolName":"verify","isError":false,"result":{"content":[{"type":"text","text":${JSON.stringify(raw)}}]}}`,
+      '{"type":"message_end","message":{"role":"assistant","usage":{"input":1,"output":1,"cacheRead":0,"cacheWrite":0,"totalTokens":2}}}',
+    ].join("\n");
+    const ledger = buildCallLedgerFromEvents(events, "test-run", "events.jsonl");
+    const output = ledger.calls[0]?.tools[0]?.output ?? "";
+    expect(output).toContain("verify exit_code=1 (FAIL)");
+    expect(output).toContain("FAIL 4/6");
+    expect(output).toContain("TestingLibraryElementError");
+
+    const enriched = enrichLedgerToolOutputs(ledger.calls);
+    const enrichedOutput = enriched[0]?.tools[0]?.output ?? "";
+    expect(enrichedOutput).toContain("verify exit_code=1 (FAIL)");
+    expect(enrichedOutput).toContain("FAIL 4/6");
   });
 });

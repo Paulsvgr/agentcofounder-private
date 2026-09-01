@@ -47,6 +47,7 @@ describe("publish-run", () => {
                 legacy_approach: "exp3-treatment-2",
               },
               human: {
+                app_rubric: null,
                 app_rating: 7,
                 app_comment: "Good",
                 run_comment: "Notes",
@@ -93,6 +94,7 @@ describe("publish-run", () => {
 
       expect(payload.author).toBe("paul");
       expect(payload.app_rating).toBe(7);
+      expect(payload.app_rubric).toBeNull();
       expect(payload.paste.schema).toBe("agentcofounder.run_export.v2");
       expect(payload.paste.manifest).toBeTruthy();
       expect((payload.paste.meta as { classification?: { experiment?: string } }).classification?.experiment).toBe(
@@ -114,6 +116,7 @@ describe("publish-run", () => {
       author: "paul",
       paste: { schema: "agentcofounder.run_export.v2", meta: { run_id: "x" } },
       overrides: { run_id: "x" },
+      app_rubric: null,
       app_rating: null,
       app_comment: "",
       run_comment: "",

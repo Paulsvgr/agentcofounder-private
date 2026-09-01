@@ -11,9 +11,9 @@ description: Turn a non-technical product idea into a small, tested browser appl
 4. Implement accessible controls, validation, empty states, errors, and responsive layout. Handle duplicate or repeated actions, boundary values, malformed stored data, and recoverable storage or runtime failures where relevant.
 5. Keep components focused, separate concerns, and avoid duplication so another developer or agent can extend the app without a rewrite.
 6. Use only the dependencies already installed from the committed lockfile. Do not add packages or run dependency-install commands.
-7. Test every applicable observable user behavior with the included Vitest, jsdom, and Testing Library setup. Startup and assumptions reporting are runner obligations, not UI test journeys. Every committed test must run and pass; do not leave skipped or todo tests.
-8. Run the tests and production build before reporting success.
-9. Write `report.partial.json` with this exact shape:
+7. Write the smallest sufficient journey suite that covers every applicable observable user behavior. One focused test per requested or clearly implied journey—no duplicate coverage and no speculative edge cases the idea does not require. Prefer `getByRole`, `getByLabelText`, and scoped queries over broad `getByText` or regex that can match multiple elements. Do not assert on exact text-node structure when a role or label suffices. Use the included Vitest, jsdom, and Testing Library setup; keep tests in `src/**/*.test.ts` or `src/**/*.test.tsx`. Startup and assumptions reporting are runner obligations, not UI test journeys. Every committed test must run and pass; do not leave skipped or todo tests.
+8. Run `npm test` and `npm run build`, repairing failures until both pass, then write `report.partial.json` using the shape in step 9 and finish. Do not re-run on unchanged code; after you edit app or test code, verify once and stop.
+9. `report.partial.json` shape:
 
 ```json
 {
@@ -33,5 +33,5 @@ description: Turn a non-technical product idea into a small, tested browser appl
 }
 ```
 
-Use `success` only when `tests_run` contains at least one user journey and every entry passed. Use `partial` when useful functionality remains incomplete or any journey failed or was not run, and `failed` when the app cannot run. Never invent a passing test.
+Use `success`, `partial`, or `failed` per `AGENTS.md`. Never invent a passing test.
 Use only `passed` or `failed` for each test result. Record an unrun check as `failed` and explain why in its journey.

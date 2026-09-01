@@ -43,6 +43,7 @@ function makeRun(overrides: Partial<RunSummary> = {}): RunSummary {
     display_label: "baseline",
     experiment_slug: "baseline",
     app_rating: 7,
+    app_rubric: null,
     app_comment: null,
     run_comment: null,
     git_branch_overlay: null,

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { formatStatNumber } from "../../lib/run-stats.js";
+import { APP_RUBRIC_TOTAL_MAX } from "../../../../shared/app-rubric.js";
 
 export type ScatterPoint = {
   id: string;
@@ -20,7 +21,7 @@ type Props = {
 
 const PAD = { top: 16, right: 20, bottom: 44, left: 44 };
 const Y_MIN = 0;
-const Y_MAX = 10;
+const Y_MAX = APP_RUBRIC_TOTAL_MAX;
 
 export function RatingScatter({ points, xLabel, yLabel }: Props) {
   const navigate = useNavigate();
@@ -58,7 +59,7 @@ export function RatingScatter({ points, xLabel, yLabel }: Props) {
     return PAD.top + innerH - ((y - Y_MIN) / (Y_MAX - Y_MIN)) * innerH;
   }
 
-  const yTicks = [0, 2, 4, 6, 8, 10];
+  const yTicks = [0, 20, 40, 60, 80, 100];
   const xTickCount = 5;
   const xTicks = Array.from({ length: xTickCount }, (_, i) => {
     const t = i / (xTickCount - 1);
@@ -178,7 +179,7 @@ export function RatingScatter({ points, xLabel, yLabel }: Props) {
           <span>{hovered.sublabel}</span>
           <span>
             weighted {formatStatNumber(hovered.x, 0)}
-            {hovered.y !== null ? ` · rating ${hovered.y}/10` : ""}
+            {hovered.y !== null ? ` · rating ${hovered.y}/${APP_RUBRIC_TOTAL_MAX}` : ""}
           </span>
         </div>
       ) : (

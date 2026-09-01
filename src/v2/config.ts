@@ -18,6 +18,7 @@ export interface HarnessConfig {
   template: string;
   execution_strategy: string;
   agent_test_authoring: boolean;
+  harness_owned_verify: boolean;
 }
 
 export interface ConfigIdentity {
@@ -36,7 +37,7 @@ export interface InterventionValidation {
   identical: boolean;
 }
 
-/** Today's harness behaviour — every toggle off except agent test authoring. */
+/** Today's harness behaviour — v2.2 baseline: agent test authoring + harness-owned verify. */
 export const DEFAULT_CONFIG: HarnessConfig = {
   planner: false,
   profiles: false,
@@ -50,6 +51,7 @@ export const DEFAULT_CONFIG: HarnessConfig = {
   template: "baseline",
   execution_strategy: "single_session",
   agent_test_authoring: true,
+  harness_owned_verify: true,
 };
 
 const CONFIG_KEYS = Object.keys(DEFAULT_CONFIG).sort() as Array<keyof HarnessConfig>;
@@ -136,6 +138,7 @@ export function resolveConfig(overrides?: Partial<HarnessConfig>): HarnessConfig
       case "error_memory":
       case "docs_retrieval":
       case "agent_test_authoring":
+      case "harness_owned_verify":
         assertBooleanField(key, value, errors);
         break;
       default: {
@@ -150,6 +153,18 @@ export function resolveConfig(overrides?: Partial<HarnessConfig>): HarnessConfig
   }
 
   return merged;
+}
+
+/** Resolve config with optional env overrides (e.g. HARNESS_OWNED_VERIFY=0 for v2.1 reproduction). */
+export function resolveRunConfigFromEnvironment(): HarnessConfig {
+  const overrides: Partial<HarnessConfig> = {};
+  const raw = process.env.HARNESS_OWNED_VERIFY;
+  if (raw === "0" || raw === "false") {
+    overrides.harness_owned_verify = false;
+  } else if (raw === "1" || raw === "true") {
+    overrides.harness_owned_verify = true;
+  }
+  return resolveConfig(Object.keys(overrides).length > 0 ? overrides : undefined);
 }
 
 export async function loadConfigFile(filePath: string): Promise<HarnessConfig> {

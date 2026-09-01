@@ -1,3 +1,5 @@
+import type { AppRubricScores } from "../shared/app-rubric.js";
+
 export type RunStatus = "success" | "partial" | "failed" | "incomplete";
 
 export interface RunSummary {
@@ -34,6 +36,7 @@ export interface RunSummary {
   display_label: string | null;
   experiment_slug: string | null;
   app_rating: number | null;
+  app_rubric: AppRubricScores | null;
   app_comment: string | null;
   run_comment: string | null;
   git_branch_overlay: string | null;

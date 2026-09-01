@@ -250,7 +250,9 @@ The HTML page includes:
 
 ## 7. Phase F experiments (frozen on `setup/measure`)
 
-Seven cumulative interventions on the public book-lending prompt. Full write-up: [`docs/phase-f-strategy.md`](../phase-f-strategy.md) on `setup/measure`.
+Seven cumulative interventions on the public book-lending prompt. Full write-up: `ac-control/docs/phase-f-strategy.md` (frozen on `setup/measure`).
+
+**V2 resource registry (this repo):** generic JSON registry → assembler → generated `RESOURCES.md`. First prototype after control floor: [resources/](./resources/README.md). Exp5/5b lives in `data-patterns/local-storage-collection`, not baseline.
 
 | Exp | Intervention | Verdict (short) |
 |-----|--------------|-----------------|

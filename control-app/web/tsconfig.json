@@ -14,7 +14,7 @@
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src"],
+  "include": ["src", "../shared/**/*.ts"],
   "exclude": [
     "src/pages/AddRunPage.tsx",
     "src/pages/EditRunPage.tsx",

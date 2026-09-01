@@ -12,6 +12,7 @@ import {
   type ExperimentListEntry,
   type RunSummary,
 } from "../lib/api.js";
+import { formatAppRating } from "../../../shared/app-rubric.js";
 import type { ChartGroupKey } from "../lib/run-stats.js";
 
 type SortKey = keyof RunSummary | "provider_model";
@@ -516,7 +517,7 @@ export function RunsPage() {
                         ) : null}
                       </td>
                       <td>{run.author ?? "—"}</td>
-                      <td className="num">{run.app_rating !== null ? `${run.app_rating}/10` : "—"}</td>
+                      <td className="num">{formatAppRating(run.app_rating, run.app_rubric)}</td>
                       <td className="cohort-cell">
                         <span>{run.experiment_id ?? "—"}</span>
                         {run.arm ? <span className="cohort-arm">{run.arm}</span> : null}

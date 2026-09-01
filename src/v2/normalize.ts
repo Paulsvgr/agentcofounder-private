@@ -95,6 +95,26 @@ function isDomDump(text: string): boolean {
   return /^<[a-z]+/iu.test(trimmed) && (trimmed.includes("class=") || trimmed.startsWith("<body"));
 }
 
+const SUITE_OUTCOME_LINE = /(?:✅|❌)\s*(PASS|FAIL)\s*\d+\/\d+/iu;
+
+/** Lines metrics need to distinguish pass/fail from unknown — preserved before error truncation. */
+export function extractVerificationHeader(text: string): string | null {
+  const headerLines: string[] = [];
+  for (const line of text.split(/\r?\n/u)) {
+    const trimmed = line.trim();
+    if (trimmed.length === 0) continue;
+    if (/verify exit_code=\d+/iu.test(trimmed)) {
+      headerLines.push(trimmed);
+      continue;
+    }
+    if (SUITE_OUTCOME_LINE.test(trimmed) || /FAIL\s*0\/0|SUITE_ERROR|suite did not run/iu.test(trimmed)) {
+      headerLines.push(trimmed);
+    }
+  }
+  if (headerLines.length === 0) return null;
+  return [...new Set(headerLines)].join("\n");
+}
+
 function extractErrorFocus(text: string): string {
   const lines = text.split(/\r?\n/u);
   const start = lines.findIndex((line) => ERROR_LINE.test(line));
@@ -110,13 +130,19 @@ function extractErrorFocus(text: string): string {
   return chunk.join("\n").trim() || text;
 }
 
+function combineVerificationOutput(header: string | null, body: string, maxLength = 800): string {
+  const combined = header ? `${header}\n\n${body}` : body;
+  return truncateText(combined, maxLength);
+}
+
 function truncateToolOutput(text: string, maxLength = 800): string {
+  const header = extractVerificationHeader(text);
   if (ERROR_LINE.test(text)) {
-    return truncateText(extractErrorFocus(text), maxLength);
+    return combineVerificationOutput(header, extractErrorFocus(text), maxLength);
   }
   const lines = text.split(/\r?\n/u).filter((line) => line.trim().length > 0);
   const tail = lines.slice(-12).join("\n");
-  return truncateText(tail, maxLength);
+  return combineVerificationOutput(header, tail, maxLength);
 }
 
 function hasFailureSummary(text: string): boolean {
@@ -191,7 +217,11 @@ export function enrichLedgerToolOutputs(calls: CallLedgerEntry[]): CallLedgerEnt
       if (!tool.output) return tool;
 
       if (hasErrorDetail(tool.output)) {
-        return { ...tool, output: truncateText(extractErrorFocus(tool.output), 800) };
+        const header = extractVerificationHeader(tool.output);
+        return {
+          ...tool,
+          output: combineVerificationOutput(header, extractErrorFocus(tool.output), 800),
+        };
       }
 
       if (isDomDump(tool.output)) {

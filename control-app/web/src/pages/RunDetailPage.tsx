@@ -1,12 +1,15 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { RunMetadataPanel } from "../components/RunMetadataPanel.js";
+import { ratingChipLabel } from "../components/AppRubricForm.js";
 import {
   fetchPublishStatus,
   fetchRunDetail,
+  fetchRunAppStatus,
   formatDuration,
   formatNumber,
   getStoredAccessKey,
+  killRunApp,
   openRunApp,
   publishRunToTeam,
   setStoredAccessKey,
@@ -60,14 +63,23 @@ function statusBadge(status: RunStatus): string {
 function GeneratedAppBlock({
   appPath,
   appUrl,
+  appRunning,
+  appBusy,
+  onStop,
 }: {
   appPath: string | null;
   appUrl: string | null;
+  appRunning: boolean;
+  appBusy: boolean;
+  onStop: () => void;
 }) {
   if (!appPath && !appUrl) return null;
   return (
     <div className="station-card station-card-compact">
-      <h3>Generated app</h3>
+      <div className="station-card-head">
+        <h3>Generated app</h3>
+        {appRunning ? <span className="badge badge-success">Running</span> : null}
+      </div>
       {appUrl ? (
         <p className="generated-app-link">
           <a href={appUrl} target="_blank" rel="noreferrer">
@@ -79,6 +91,13 @@ function GeneratedAppBlock({
         <p className="muted station-caption">
           <code>{appPath}</code>
         </p>
+      ) : null}
+      {appRunning ? (
+        <div className="generated-app-actions">
+          <button type="button" className="secondary danger" disabled={appBusy} onClick={onStop}>
+            {appBusy ? "Stopping…" : "Stop app"}
+          </button>
+        </div>
       ) : null}
     </div>
   );
@@ -881,6 +900,8 @@ export function RunDetailPage() {
   const [jobLines, setJobLines] = useState<string[]>([]);
   const [jobRunning, setJobRunning] = useState(false);
   const [appUrl, setAppUrl] = useState<string | null>(null);
+  const [appRunning, setAppRunning] = useState(false);
+  const [appBusy, setAppBusy] = useState(false);
   const [metadataOpen, setMetadataOpen] = useState(false);
   const [publishStatus, setPublishStatus] = useState<PublishStatus | null>(null);
   const [publishAccessKey, setPublishAccessKey] = useState(getStoredAccessKey);
@@ -901,6 +922,21 @@ export function RunDetailPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const refreshAppStatus = useCallback(async () => {
+    if (!runId) return;
+    try {
+      const status = await fetchRunAppStatus(runId);
+      setAppRunning(status.running);
+      setAppUrl(status.running && status.url ? status.url : null);
+    } catch {
+      /* optional */
+    }
+  }, [runId]);
+
+  useEffect(() => {
+    void refreshAppStatus();
+  }, [refreshAppStatus]);
 
   useEffect(() => {
     let cancelled = false;
@@ -956,6 +992,7 @@ export function RunDetailPage() {
     try {
       const result = await openRunApp(runId);
       setAppUrl(result.url);
+      setAppRunning(true);
       setJobLines([
         result.built_from_logs ? "Rebuilt app from session logs." : "Using saved generated app.",
         `Serving at ${result.url}`,
@@ -967,6 +1004,27 @@ export function RunDetailPage() {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setJobRunning(false);
+    }
+  }
+
+  async function handleStopApp(): Promise<void> {
+    if (!runId) return;
+    setAppBusy(true);
+    setError(null);
+    try {
+      const result = await killRunApp(runId);
+      if (result.stopped) {
+        setAppRunning(false);
+        setAppUrl(null);
+        setJobLines(["Stopped generated app dev server."]);
+      } else {
+        setJobLines(["No dev server was running for this run."]);
+        await refreshAppStatus();
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setAppBusy(false);
     }
   }
 
@@ -1051,10 +1109,12 @@ export function RunDetailPage() {
                 <span className="muted">{summary.author}</span>
               </>
             ) : null}
-            {summary.app_rating !== null ? (
+            {ratingChipLabel(summary.app_rating, summary.app_rubric) ? (
               <>
                 <span className="meta-dot">·</span>
-                <span className="badge badge-analyzed">★ {summary.app_rating}/10</span>
+                <span className="badge badge-analyzed">
+                  {ratingChipLabel(summary.app_rating, summary.app_rubric)}
+                </span>
               </>
             ) : null}
             {summary.provider || summary.model ? (
@@ -1122,13 +1182,25 @@ export function RunDetailPage() {
             disabled={jobRunning || !canOpenApp}
             title={
               canOpenApp
-                ? "Start the generated app in your browser"
+                ? appRunning
+                  ? "Open the running app in a new tab"
+                  : "Start the generated app in your browser"
                 : "No saved app or session logs to rebuild from"
             }
             onClick={() => void handleOpenApp()}
           >
-            {jobRunning ? "Opening app…" : "Open app"}
+            {jobRunning ? "Opening app…" : appRunning ? "Open in browser" : "Open app"}
           </button>
+          {appRunning ? (
+            <button
+              type="button"
+              className="secondary danger"
+              disabled={jobRunning || appBusy}
+              onClick={() => void handleStopApp()}
+            >
+              {appBusy ? "Stopping…" : "Stop app"}
+            </button>
+          ) : null}
           {!summary.has_analysis && summary.has_result ? (
             <button type="button" className="secondary" disabled={jobRunning} onClick={() => void runJob("reconcile")}>
               Reconcile tokens
@@ -1238,6 +1310,7 @@ export function RunDetailPage() {
           summaryLabel={summary.display_label}
           summaryAuthor={summary.author}
           summaryRating={summary.app_rating}
+          summaryRubric={summary.app_rubric}
           onSaved={() => void load()}
         />
       ) : null}
@@ -1277,7 +1350,13 @@ export function RunDetailPage() {
           ) : null}
           <HarnessConfigBlock config={config} />
           <OutcomeBlock outcome={outcome} />
-          <GeneratedAppBlock appPath={generatedAppPath} appUrl={appUrl} />
+          <GeneratedAppBlock
+            appPath={generatedAppPath}
+            appUrl={appUrl}
+            appRunning={appRunning}
+            appBusy={appBusy}
+            onStop={() => void handleStopApp()}
+          />
         </aside>
       </div>
 

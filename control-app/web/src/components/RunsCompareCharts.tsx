@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import type { RunSummary } from "../lib/api.js";
+import { APP_RUBRIC_TOTAL_MAX, effectiveRatingForCompare } from "../../../shared/app-rubric.js";
 import {
   chartPalette,
   experimentKey,
@@ -43,11 +44,11 @@ export function RunsCompareCharts({
         return {
           id: run.run_id,
           x: run.weighted_cost!,
-          y: run.app_rating,
+          y: effectiveRatingForCompare(run.app_rating, run.app_rubric),
           label: experimentKey(run),
           sublabel: run.run_id.replace("T", " ").slice(0, 19),
           color: chartPalette(group),
-          rated: run.app_rating !== null,
+          rated: effectiveRatingForCompare(run.app_rating, run.app_rubric) !== null,
         };
       });
   }, [runs, groupBy]);
@@ -128,7 +129,7 @@ export function RunsCompareCharts({
           <RatingScatter
             points={scatterPoints}
             xLabel="Weighted cost (lower is better)"
-            yLabel="App rating"
+            yLabel="App rating (0–100)"
           />
         </div>
 

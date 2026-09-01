@@ -1,0 +1,30 @@
+{
+  "schema": "agentcofounder.resource.v1",
+  "id": "lib-utils",
+  "type": "component",
+  "name": "UI utilities (cn)",
+  "version": "1.0.0",
+  "content_hash": "cc0f81a4cc09383d2234152e8998362260401b9b700bad39d2891853ea4a5aeb",
+  "files": [
+    {
+      "source": "resources/files/lib/utils.ts",
+      "target": "src/lib/utils.ts"
+    }
+  ],
+  "npm_dependencies": [
+    "clsx",
+    "tailwind-merge"
+  ],
+  "registry_dependencies": [],
+  "import": "import { cn } from \"@/lib/utils\"",
+  "setup": null,
+  "tiny_example": "className={cn('bg-background', className)}",
+  "use_when": [
+    "any component using Tailwind class merging"
+  ],
+  "constraints": [
+    "Do not duplicate cn() in app code."
+  ],
+  "test_hint": null,
+  "full_docs_reference": null
+}

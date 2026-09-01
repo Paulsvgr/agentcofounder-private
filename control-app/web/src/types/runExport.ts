@@ -1,6 +1,8 @@
 import type { RunManifest } from "./runManifest.js";
 
-/** Paste contract from harness: run_export v1 (legacy) or v2 (action-flow). */
+import type { AppRubricScores } from "../../../shared/app-rubric.js";
+
+export type { AppRubricScores };
 
 export const RUN_EXPORT_SCHEMA_V1 = "agentcofounder.run_export.v1" as const;
 export const RUN_EXPORT_SCHEMA_V2 = "agentcofounder.run_export.v2" as const;
@@ -99,6 +101,7 @@ export type RunFlags = {
 };
 
 export type RunHuman = {
+  app_rubric: AppRubricScores | null;
   app_rating: number | null;
   app_comment: string;
   run_comment: string;
@@ -179,6 +182,7 @@ export type PasteKind = "run_export_v2" | "run_export_v1" | "result_json";
 /** Human fields — UI / DB only, never part of paste schema. */
 export type HumanFields = {
   author: string;
+  app_rubric: AppRubricScores | null;
   app_rating: number | null;
   app_comment: string;
   run_comment: string;
@@ -193,6 +197,7 @@ export type HackathonRunData = {
   git_branch: string | null;
   git_commit: string | null;
   approach_kind: string | null;
+  app_rubric: AppRubricScores | null;
   app_rating: number | null;
   app_comment: string;
   run_comment: string;

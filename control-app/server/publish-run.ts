@@ -2,6 +2,7 @@ import {
   buildHackathonRunRecord,
   type HackathonRunRecord,
 } from "./export-run.js";
+import type { AppRubricScores } from "../shared/app-rubric.js";
 import { summarizeRun } from "./runs.js";
 
 const DEFAULT_API_BASE = "https://admin.coretechs.se/hackathon";
@@ -11,6 +12,7 @@ export interface HackathonSeedPayload {
   author: string;
   paste: Record<string, unknown>;
   overrides: Record<string, unknown>;
+  app_rubric: AppRubricScores | null;
   app_rating: number | null;
   app_comment: string;
   run_comment: string;
@@ -65,6 +67,7 @@ export function buildSeedPayload(record: HackathonRunRecord): HackathonSeedPaylo
     author: record.person,
     paste,
     overrides,
+    app_rubric: record.data.app_rubric ?? record.data.human?.app_rubric ?? null,
     app_rating: record.data.app_rating,
     app_comment: record.data.app_comment,
     run_comment: record.data.run_comment,

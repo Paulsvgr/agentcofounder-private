@@ -15,8 +15,9 @@ import {
 } from "../../src/v2/config.js";
 
 describe("DEFAULT_CONFIG", () => {
-  it("keeps every spec toggle off except agent_test_authoring", () => {
+  it("keeps spec toggles off except agent_test_authoring and harness_owned_verify (v2.2 baseline)", () => {
     expect(DEFAULT_CONFIG.agent_test_authoring).toBe(true);
+    expect(DEFAULT_CONFIG.harness_owned_verify).toBe(true);
     expect(DEFAULT_CONFIG.template).toBe("baseline");
     expect(DEFAULT_CONFIG.execution_strategy).toBe("single_session");
 
@@ -50,6 +51,7 @@ describe("configHash", () => {
       deterministic_guards: false,
       error_memory: false,
       docs_retrieval: false,
+      harness_owned_verify: true,
     };
     expect(configHash(reordered)).toBe(configHash(DEFAULT_CONFIG));
   });
@@ -63,6 +65,7 @@ describe("configHash", () => {
     expect(configHash({ ...DEFAULT_CONFIG, agent_test_authoring: false })).not.toBe(
       baselineHash,
     );
+    expect(configHash({ ...DEFAULT_CONFIG, harness_owned_verify: false })).not.toBe(baselineHash);
   });
 });
 

@@ -274,12 +274,14 @@ export function effectiveFlags(run: HackathonRunRecord): RunFlags {
 
 export function effectiveHuman(run: HackathonRunRecord): RunHuman {
   const base: RunHuman = {
+    app_rubric: run.data.app_rubric ?? null,
     app_rating: run.data.app_rating ?? null,
     app_comment: run.data.app_comment || "",
     run_comment: run.data.run_comment || "",
   };
   if (run.data.human) {
     return {
+      app_rubric: run.data.human.app_rubric ?? base.app_rubric,
       app_rating: run.data.human.app_rating ?? base.app_rating,
       app_comment: run.data.human.app_comment || base.app_comment,
       run_comment: run.data.human.run_comment || base.run_comment,
@@ -289,6 +291,7 @@ export function effectiveHuman(run: HackathonRunRecord): RunHuman {
   if (runId && classificationOverlay?.[runId]?.human) {
     const h = classificationOverlay[runId]!.human!;
     return {
+      app_rubric: h.app_rubric ?? base.app_rubric,
       app_rating: h.app_rating ?? base.app_rating,
       app_comment: base.app_comment,
       run_comment: h.run_comment || base.run_comment,

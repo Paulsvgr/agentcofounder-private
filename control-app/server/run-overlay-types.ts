@@ -1,4 +1,8 @@
+import type { AppRubricScores } from "../shared/app-rubric.js";
+
 export const RUNS_OVERLAY_SCHEMA = "agentcofounder.runs_overlay.v1" as const;
+
+export type { AppRubricScores };
 
 export const DEFAULT_AUTHORS = ["paul", "mohammed", "ali sina", "shivam"] as const;
 
@@ -11,6 +15,7 @@ export interface RunOverlayClassification {
 }
 
 export interface RunOverlayHuman {
+  app_rubric: AppRubricScores | null;
   app_rating: number | null;
   app_comment: string;
   run_comment: string;
@@ -88,7 +93,17 @@ export const DEFAULT_TAXONOMY: OverlayTaxonomy = {
 };
 
 export function emptyHuman(): RunOverlayHuman {
-  return { app_rating: null, app_comment: "", run_comment: "" };
+  return { app_rubric: null, app_rating: null, app_comment: "", run_comment: "" };
+}
+
+export function normalizeHuman(human: Partial<RunOverlayHuman> | undefined): RunOverlayHuman {
+  if (!human) return emptyHuman();
+  return {
+    app_rubric: human.app_rubric ?? null,
+    app_rating: human.app_rating ?? null,
+    app_comment: human.app_comment ?? "",
+    run_comment: human.run_comment ?? "",
+  };
 }
 
 export function emptyFlags(): RunOverlayFlags {

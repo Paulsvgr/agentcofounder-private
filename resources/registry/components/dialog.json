@@ -1,0 +1,36 @@
+{
+  "schema": "agentcofounder.resource.v1",
+  "id": "dialog",
+  "type": "component",
+  "name": "Dialog",
+  "version": "1.0.0",
+  "content_hash": "f5153659dc6bda5b1e54a9b7049507769e50553d5092a60320a4e7f839ab692e",
+  "files": [
+    {
+      "source": "resources/files/components/ui/dialog.tsx",
+      "target": "src/components/ui/dialog.tsx"
+    }
+  ],
+  "npm_dependencies": [
+    "@radix-ui/react-dialog"
+  ],
+  "registry_dependencies": [
+    "lib-utils",
+    "button"
+  ],
+  "import": "import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from \"@/components/ui/dialog\"",
+  "setup": null,
+  "tiny_example": "<Dialog><DialogTrigger asChild><Button>Edit</Button></DialogTrigger><DialogContent><DialogHeader><DialogTitle>Edit item</DialogTitle></DialogHeader></DialogContent></Dialog>",
+  "use_when": [
+    "modal forms",
+    "confirmations",
+    "detail views",
+    "lend/return flows"
+  ],
+  "constraints": [
+    "Prefer this over custom modal divs.",
+    "Use asChild on DialogTrigger when wrapping Button."
+  ],
+  "test_hint": "Open with getByRole('button', { name: /edit/i }); assert dialog with getByRole('dialog'). Use unique button names per row.",
+  "full_docs_reference": "resources/docs/components/dialog.md"
+}

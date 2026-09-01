@@ -8,6 +8,13 @@ import {
   type RunOverlayEntry,
   type RunOverlayPatch,
 } from "../lib/api.js";
+import type { AppRubricScores } from "../../../shared/app-rubric.js";
+import { rubricTotal } from "../../../shared/app-rubric.js";
+import {
+  AppRubricForm,
+  ratingChipLabel,
+  rubricFromOverlay,
+} from "./AppRubricForm.js";
 
 interface RunMetadataPanelProps {
   runId: string;
@@ -18,11 +25,11 @@ interface RunMetadataPanelProps {
   summaryLabel?: string | null;
   summaryAuthor?: string | null;
   summaryRating?: number | null;
+  summaryRubric?: AppRubricScores | null;
   onSaved?: () => void;
 }
 
 const EXPERIMENT_ID_PATTERN = /^[a-z0-9][a-z0-9-]{0,79}$/;
-const RATING_OPTIONS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
 
 function buildAutoLabel(experiment: string, runIndex: string): string {
   const parts = [experiment].filter((part) => part && part !== "unknown");
@@ -69,6 +76,7 @@ export function RunMetadataPanel({
   summaryLabel,
   summaryAuthor,
   summaryRating,
+  summaryRubric,
   onSaved,
 }: RunMetadataPanelProps) {
   const [loading, setLoading] = useState(true);
@@ -91,7 +99,7 @@ export function RunMetadataPanel({
   const [displayLabel, setDisplayLabel] = useState("");
   const [displayLabelManual, setDisplayLabelManual] = useState(false);
   const [legacyApproach, setLegacyApproach] = useState("");
-  const [appRating, setAppRating] = useState("");
+  const [appRubric, setAppRubric] = useState<AppRubricScores>(() => rubricFromOverlay(null));
   const [appComment, setAppComment] = useState("");
   const [runComment, setRunComment] = useState("");
   const [excludeFromRanking, setExcludeFromRanking] = useState(false);
@@ -177,11 +185,7 @@ export function RunMetadataPanel({
     setDisplayLabel(overlay?.classification?.display_label ?? "");
     setDisplayLabelManual(Boolean(overlay?.classification?.display_label?.trim()));
     setLegacyApproach(overlay?.classification?.legacy_approach ?? "");
-    setAppRating(
-      overlay?.human.app_rating !== null && overlay?.human.app_rating !== undefined
-        ? String(overlay.human.app_rating)
-        : "",
-    );
+    setAppRubric(rubricFromOverlay(overlay?.human.app_rubric));
     setAppComment(overlay?.human.app_comment ?? "");
     setRunComment(overlay?.human.run_comment ?? "");
     setExcludeFromRanking(overlay?.flags.exclude_from_ranking ?? false);
@@ -204,12 +208,10 @@ export function RunMetadataPanel({
   const resolvedAuthorDisplay =
     author === "__custom__" ? authorCustom.trim() : author.trim();
 
-  const collapsedRating =
-    summaryRating !== null && summaryRating !== undefined
-      ? summaryRating
-      : appRating.trim() !== ""
-        ? Number(appRating)
-        : null;
+  const collapsedRatingLabel = ratingChipLabel(
+    summaryRating ?? overlaySnapshot?.human.app_rating ?? null,
+    summaryRubric ?? overlaySnapshot?.human.app_rubric ?? appRubric,
+  );
 
   function closeModal(): void {
     if (saving) return;
@@ -219,11 +221,13 @@ export function RunMetadataPanel({
   async function onSave(): Promise<void> {
     setError(null);
     setSaved(false);
-    const ratingTrimmed = appRating.trim();
-    const ratingNum = ratingTrimmed === "" ? null : Number(ratingTrimmed);
-    if (ratingNum !== null && (!Number.isFinite(ratingNum) || ratingNum < 0 || ratingNum > 10)) {
-      setError("App rating must be 0–10 or empty.");
-      return;
+
+    for (const score of Object.values(appRubric)) {
+      if (score === null) continue;
+      if (!Number.isFinite(score)) {
+        setError("Each rubric score must be a whole number or empty.");
+        return;
+      }
     }
 
     const resolvedAuthor =
@@ -289,7 +293,8 @@ export function RunMetadataPanel({
           legacy_approach: legacyApproach.trim() || null,
         },
         human: {
-          app_rating: ratingNum,
+          app_rubric: appRubric,
+          app_rating: rubricTotal(appRubric),
           app_comment: appComment.trim(),
           run_comment: runComment.trim(),
         },
@@ -311,7 +316,7 @@ export function RunMetadataPanel({
 
   const hasSummary =
     Boolean(resolvedAuthorDisplay || summaryAuthor || summaryLabel || displayLabel) ||
-    (collapsedRating !== null && Number.isFinite(collapsedRating)) ||
+    collapsedRatingLabel !== null ||
     excludeFromRanking;
 
   const modalLoading = loading || (open && experimentsLoading);
@@ -336,10 +341,8 @@ export function RunMetadataPanel({
                     {summaryLabel || displayLabel}
                   </span>
                 ) : null}
-                {collapsedRating !== null && Number.isFinite(collapsedRating) ? (
-                  <span className="metadata-chip metadata-chip-rating">
-                    ★ {collapsedRating}/10
-                  </span>
+                {collapsedRatingLabel ? (
+                  <span className="metadata-chip metadata-chip-rating">{collapsedRatingLabel}</span>
                 ) : null}
                 {excludeFromRanking ? (
                   <span className="metadata-chip metadata-chip-muted">Excluded</span>
@@ -545,27 +548,13 @@ export function RunMetadataPanel({
                   </div>
 
                   <div className="metadata-rating-block">
-                    <span className="metadata-label">App rating</span>
-                    <div className="metadata-rating-picker" role="group" aria-label="App rating 0 to 10">
-                      <button
-                        type="button"
-                        className={`metadata-rating-option${appRating === "" ? " is-selected" : ""}`}
-                        onClick={() => setAppRating("")}
-                      >
-                        —
-                      </button>
-                      {RATING_OPTIONS.map((value) => (
-                        <button
-                          key={value}
-                          type="button"
-                          className={`metadata-rating-option${appRating === String(value) ? " is-selected" : ""}`}
-                          onClick={() => setAppRating(String(value))}
-                          aria-pressed={appRating === String(value)}
-                        >
-                          {value}
-                        </button>
-                      ))}
-                    </div>
+                    <span className="metadata-label">App rating (100-point rubric)</span>
+                    <AppRubricForm
+                      idPrefix={`meta-rubric-${runId}`}
+                      rubric={appRubric}
+                      disabled={saving}
+                      onChange={setAppRubric}
+                    />
                   </div>
 
                   <label className="metadata-toggle-row">

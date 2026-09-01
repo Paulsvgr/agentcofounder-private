@@ -1,4 +1,5 @@
 import type { HackathonRunRecord } from "../types/runExport.js";
+import type { AppRubricScores } from "../../../shared/app-rubric.js";
 
 export type RunStatus = "success" | "partial" | "failed" | "incomplete";
 
@@ -34,6 +35,7 @@ export interface RunSummary {
   author: string | null;
   display_label: string | null;
   experiment_slug: string | null;
+  app_rubric: AppRubricScores | null;
   app_rating: number | null;
   app_comment: string | null;
   run_comment: string | null;
@@ -119,6 +121,7 @@ export interface RunOverlayClassification {
 }
 
 export interface RunOverlayHuman {
+  app_rubric: AppRubricScores | null;
   app_rating: number | null;
   app_comment: string;
   run_comment: string;
@@ -212,6 +215,14 @@ export interface OpenRunAppResult {
   app_path: string;
   built_from_logs: boolean;
   job_id: string;
+}
+
+export interface RunAppStatus {
+  running: boolean;
+  url?: string;
+  port?: number;
+  app_path?: string | null;
+  job_id?: string;
 }
 
 export interface ActivityBucket {
@@ -434,6 +445,14 @@ export function triggerReplay(
 
 export function openRunApp(runId: string): Promise<OpenRunAppResult> {
   return request(`/api/runs/${encodeURIComponent(runId)}/app/open`, { method: "POST" });
+}
+
+export function fetchRunAppStatus(runId: string): Promise<RunAppStatus> {
+  return request(`/api/runs/${encodeURIComponent(runId)}/app/status`);
+}
+
+export function killRunApp(runId: string): Promise<{ stopped: boolean }> {
+  return request(`/api/runs/${encodeURIComponent(runId)}/app/kill`, { method: "POST" });
 }
 
 export function launchChallenge(body: ChallengeLaunchRequest): Promise<{ job_id: string }> {

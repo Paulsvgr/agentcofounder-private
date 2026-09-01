@@ -1,0 +1,26 @@
+{
+  "id": "data-list",
+  "type": "component",
+  "tier": "agent",
+  "family": "row-v1",
+  "name": "DataList",
+  "import": "import { DataList } from \"@/components/agent/data-list\"",
+  "props_contract": ["label", "children", "empty?", "isEmpty?"],
+  "adaptation_points": ["label", "empty slot", "isEmpty flag"],
+  "owned_mechanics": ["list semantics", "empty fallback"],
+  "tiny_example": "<DataList label=\"Items\" isEmpty={items.length===0} empty={<EmptyState title=\"No items\" />}>{items.map(...)}</DataList>",
+  "use_when": ["vertical list of DataRow children"],
+  "constraints": [
+    "Children should be DataRow elements.",
+    "Use isEmpty + empty for zero-state instead of conditional wrapper divs."
+  ],
+  "test_hint": "getByRole('list', { name: /items/i }) or role=region when empty.",
+  "files": [
+    {
+      "source": "resources/files/agent/data-list.tsx",
+      "target": "src/components/agent/data-list.tsx"
+    }
+  ],
+  "npm_dependencies": [],
+  "registry_dependencies": ["data-row"]
+}

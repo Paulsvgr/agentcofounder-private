@@ -113,7 +113,7 @@ describe("experiments catalog", () => {
               run_index: 1,
               display_label: "legacy · run 1",
             },
-            human: { app_rating: null, app_comment: "", run_comment: "" },
+            human: { app_rubric: null, app_rating: null, app_comment: "", run_comment: "" },
             flags: { exclude_from_ranking: false },
             updated_at: new Date().toISOString(),
           },

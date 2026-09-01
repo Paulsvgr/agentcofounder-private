@@ -9,6 +9,8 @@ import {
   type RunOverlayEntry,
   type RunOverlayClassification,
 } from "./run-overlay.js";
+import { emptyHuman, normalizeHuman } from "./run-overlay-types.js";
+import type { AppRubricScores } from "../shared/app-rubric.js";
 
 type ActivityPhase =
   | "recon"
@@ -190,10 +192,12 @@ export interface HackathonRunRecord {
     git_commit: string | null;
     approach_kind: string | null;
     app_rating: number | null;
+    app_rubric: AppRubricScores | null;
     app_comment: string;
     run_comment: string;
     classification?: NonNullable<RunExportV2["meta"]["classification"]>;
     human?: {
+      app_rubric: AppRubricScores | null;
       app_rating: number | null;
       app_comment: string;
       run_comment: string;
@@ -572,7 +576,7 @@ export async function buildHackathonRunRecord(
     overlay,
   );
   const createdAt = built.manifest?.created_at ?? summary?.created_at ?? runIdToRecordedAt(runId);
-  const human = overlay?.human ?? { app_rating: null, app_comment: "", run_comment: "" };
+  const human = overlay ? normalizeHuman(overlay.human) : emptyHuman();
   const person = overlay?.author?.trim() || "local";
 
   const data: HackathonRunRecord["data"] = {
@@ -580,6 +584,7 @@ export async function buildHackathonRunRecord(
     git_branch: built.export.meta.git_branch,
     git_commit: built.export.meta.git_commit,
     approach_kind: built.export.meta.approach,
+    app_rubric: human.app_rubric,
     app_rating: human.app_rating,
     app_comment: human.app_comment,
     run_comment: human.run_comment,
@@ -592,6 +597,7 @@ export async function buildHackathonRunRecord(
   }
   if (overlay) {
     data.human = {
+      app_rubric: human.app_rubric,
       app_rating: human.app_rating,
       app_comment: human.app_comment,
       run_comment: human.run_comment,

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { spawn, type ChildProcess } from "node:child_process";
 import { EventEmitter } from "node:events";
+import { signalProcessTree, usesDetachedProcessGroup } from "../../src/process-tree.js";
 import type { ChallengeLaunchRequest, JobKind, JobRecord, JobStatus } from "./types.js";
 
 export interface SpawnJobOptions {
@@ -14,6 +15,7 @@ export interface SpawnJobOptions {
 
 class JobRegistry extends EventEmitter {
   private jobs = new Map<string, JobRecord>();
+  private children = new Map<string, ChildProcess>();
   private activeChallengeJobId: string | null = null;
 
   get(jobId: string): JobRecord | undefined {
@@ -24,6 +26,21 @@ class JobRegistry extends EventEmitter {
     if (!this.activeChallengeJobId) return false;
     const job = this.jobs.get(this.activeChallengeJobId);
     return job?.status === "running";
+  }
+
+  killJob(jobId: string): boolean {
+    const job = this.jobs.get(jobId);
+    if (!job || job.status !== "running") return false;
+
+    const child = this.children.get(jobId);
+    if (child) {
+      signalProcessTree(child, "SIGTERM");
+      setTimeout(() => {
+        if (child.pid !== undefined) signalProcessTree(child, "SIGKILL");
+      }, 2_000);
+    }
+
+    return true;
   }
 
   spawnJob(options: SpawnJobOptions): JobRecord {
@@ -53,8 +70,10 @@ class JobRegistry extends EventEmitter {
       env: { ...process.env, ...options.env },
       shell: false,
       stdio: ["ignore", "pipe", "pipe"],
+      detached: usesDetachedProcessGroup(),
     });
 
+    this.children.set(id, child);
     this.attachChild(id, child);
     return record;
   }
@@ -80,6 +99,7 @@ class JobRegistry extends EventEmitter {
     });
 
     child.on("close", (code) => {
+      this.children.delete(jobId);
       const job = this.jobs.get(jobId);
       if (!job) return;
       job.exit_code = code ?? 1;

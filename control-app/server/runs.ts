@@ -11,6 +11,7 @@ import {
   readOverlayFile,
   type RunOverlayEntry,
 } from "./run-overlay.js";
+import { normalizeHuman } from "./run-overlay-types.js";
 
 const RUN_ID_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z$/;
 
@@ -111,6 +112,7 @@ function applyOverlayToSummary(summary: RunSummary, overlay: RunOverlayEntry | n
       display_label: null,
       experiment_slug: null,
       app_rating: null,
+      app_rubric: null,
       app_comment: null,
       run_comment: null,
       git_branch_overlay: null,
@@ -118,14 +120,16 @@ function applyOverlayToSummary(summary: RunSummary, overlay: RunOverlayEntry | n
       exclude_from_ranking: false,
     };
   }
+  const human = normalizeHuman(overlay.human);
   return {
     ...summary,
     author: overlay.author,
     display_label: overlay.classification?.display_label ?? null,
     experiment_slug: overlay.classification?.experiment ?? null,
-    app_rating: overlay.human.app_rating,
-    app_comment: overlay.human.app_comment || null,
-    run_comment: overlay.human.run_comment || null,
+    app_rating: human.app_rating,
+    app_rubric: human.app_rubric,
+    app_comment: human.app_comment || null,
+    run_comment: human.run_comment || null,
     git_branch_overlay: overlay.git_branch,
     has_overlay: true,
     exclude_from_ranking: overlay.flags.exclude_from_ranking,
@@ -236,6 +240,7 @@ export async function summarizeRun(
       display_label: null,
       experiment_slug: experimentId,
       app_rating: null,
+      app_rubric: null,
       app_comment: null,
       run_comment: null,
       git_branch_overlay: null,

@@ -1,0 +1,32 @@
+{
+  "schema": "agentcofounder.resource.v1",
+  "id": "input",
+  "type": "component",
+  "name": "Input",
+  "version": "1.0.0",
+  "content_hash": "74a8ba14356b13f918933a2f77752946b4fbdbddcd698ca612ac07057193e6b0",
+  "files": [
+    {
+      "source": "resources/files/components/ui/input.tsx",
+      "target": "src/components/ui/input.tsx"
+    }
+  ],
+  "npm_dependencies": [],
+  "registry_dependencies": [
+    "lib-utils"
+  ],
+  "import": "import { Input } from \"@/components/ui/input\"",
+  "setup": null,
+  "tiny_example": "<Input aria-label=\"Title\" value={title} onChange={(e) => setTitle(e.target.value)} />",
+  "use_when": [
+    "single-line text fields",
+    "search boxes",
+    "form fields with labels"
+  ],
+  "constraints": [
+    "Pair with Label or aria-label.",
+    "Do not use unlabeled inputs for required fields."
+  ],
+  "test_hint": "Prefer getByRole('textbox', { name: /title/i }) or getByLabelText.",
+  "full_docs_reference": "resources/docs/components/input.md"
+}

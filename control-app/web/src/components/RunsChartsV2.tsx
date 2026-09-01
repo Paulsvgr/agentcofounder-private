@@ -15,6 +15,7 @@ import {
   ZAxis,
 } from "recharts";
 import type { RunSummary } from "../lib/api.js";
+import { APP_RUBRIC_TOTAL_MAX, effectiveRatingForCompare } from "../../../shared/app-rubric.js";
 import {
   experimentKey,
   formatStatNumber,
@@ -69,7 +70,8 @@ export function RunsChartsV2({ runs, groupBy }: Props) {
       .map((run) => {
         const w = run.weighted_cost;
         if (w === null) return null;
-        const rated = run.app_rating !== null;
+        const effectiveRating = effectiveRatingForCompare(run.app_rating, run.app_rubric);
+        const rated = effectiveRating !== null;
         const group = groupKeyForRun(run, groupBy);
         const label = experimentKey(run);
         return {
@@ -78,9 +80,9 @@ export function RunsChartsV2({ runs, groupBy }: Props) {
           approach: group,
           label,
           weighted: w,
-          rating: rated ? run.app_rating! : UNRATED_Y,
+          rating: rated ? effectiveRating! : UNRATED_Y,
           rated,
-          ratingLabel: rated ? String(run.app_rating) : "n/a",
+          ratingLabel: rated ? String(effectiveRating) : "n/a",
           fill: colorFor(group),
         };
       })
@@ -160,8 +162,8 @@ export function RunsChartsV2({ runs, groupBy }: Props) {
                 type="number"
                 dataKey="rating"
                 name="rating"
-                domain={[-1.5, 10]}
-                ticks={[-0.8, 0, 2, 4, 6, 8, 10]}
+                domain={[-1.5, APP_RUBRIC_TOTAL_MAX]}
+                ticks={[-0.8, 0, 20, 40, 60, 80, 100]}
                 tick={{ fill: "#16191d", fontSize: 12, fontWeight: 500 }}
                 stroke="#5b6470"
                 tickFormatter={(v) => (Number(v) < 0 ? "n/a" : String(v))}

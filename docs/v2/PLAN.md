@@ -69,10 +69,10 @@ We are **not** building a dedicated A/B experiment runner.
 | # | Step | Status |
 |---|------|--------|
 | 8 | Analysis Station + runs app use manifest/config/template provenance | **done** |
-| 9 | **Lock the V2 baseline** (5 runs, same template as today) | **in progress** |
+| 9 | **Lock the V2 baseline** (5 runs, control floor — see [control-floor/](./control-floor/README.md)) | **done** (~94k median) |
 | 10 | **V2 Control App** — local run browser, analyze trigger, launch form | **done** |
-| 11 | Template/resources — select components → assemble app before Pi → tell Pi what was added | |
-| 12 | Planner, themes, guards, error memory, … | later |
+| 11 | **Resource registry + slice experiments** — JSON registry, assembler, `RESOURCES.md` (see [resources/](./resources/README.md)) | **in progress** |
+| 12 | Planner, automated resolver, guards, error memory, … | later |
 
 After step 9, template and resource work is in scope. Do not bundle planner +
 components + theme + guards into the first template slice — one intervention at
@@ -106,7 +106,7 @@ and `npm run config:show`.
 | M4 | Harness-owned ground truth | not started |
 | M5 | Task benchmark | not started |
 | M6 | Analysis Station v0 | partial — see below |
-| M7 | Fresh baseline | Phase 2 step 9 |
+| M7 | Fresh baseline | **done** — `phase-f-control-floor` |
 | M8 | Preparation Agent | later |
 | M9 | Resource resolver + assembler | app-template work lives here |
 | M10 | Deterministic guards | later |
@@ -143,16 +143,13 @@ The spec lists M8 (Planner) before M9 (resources/template). We start with
 those slices are the core product direction and manifest provenance lets us track
 exactly what was mounted per run. Planner, themes, and guards follow later.
 
-Template work stays **one slice at a time** when comparing runs:
+Template work stays **one slice at a time** when comparing runs. See [resources/experiments.md](./resources/experiments.md) for the staged A/B/C protocol (UI → data-pattern → combined).
 
 ```text
-template.persistence    (5b: variance yes, mean no)
-template.test_setup
-template.components
-template.styling
+resource-slice-ui-v1      (components + theme)
+resource-slice-data-v1    (local-storage-collection)
+resource-slice-full-v1    (UI + data, vs control and best of A/B)
 ```
-
-Not "new template" as one package. Then we would not know which slice helped.
 
 ---
 

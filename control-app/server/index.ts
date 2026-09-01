@@ -34,7 +34,7 @@ import {
   publishRunToHackathon,
 } from "./publish-run.js";
 import { invalidateRunsCache, listRunSummaries, loadRunDetail } from "./runs.js";
-import { openRunApp } from "./run-app.js";
+import { openRunApp, getRunAppStatus, killRunApp } from "./run-app.js";
 import {
   getRunOverlayFromFile,
   invalidateOverlayCache,
@@ -301,6 +301,20 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
     if (method === "POST" && openAppMatch) {
       const result = await openRunApp(REPO_ROOT, openAppMatch.id!);
       invalidateRunsCache();
+      sendJson(res, 200, result);
+      return;
+    }
+
+    const appStatusMatch = matchRoute(pathname, "/api/runs/:id/app/status");
+    if (method === "GET" && appStatusMatch) {
+      const status = await getRunAppStatus(REPO_ROOT, appStatusMatch.id!);
+      sendJson(res, 200, status);
+      return;
+    }
+
+    const killAppMatch = matchRoute(pathname, "/api/runs/:id/app/kill");
+    if (method === "POST" && killAppMatch) {
+      const result = await killRunApp(REPO_ROOT, killAppMatch.id!);
       sendJson(res, 200, result);
       return;
     }

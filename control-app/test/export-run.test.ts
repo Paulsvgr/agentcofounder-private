@@ -145,6 +145,7 @@ describe("buildRunExportFromArtifacts", () => {
           display_label: null,
           experiment_slug: null,
           app_rating: null,
+          app_rubric: null,
           app_comment: null,
           run_comment: null,
           git_branch_overlay: null,
@@ -208,6 +209,7 @@ describe("buildRunExportFromArtifacts", () => {
                 legacy_approach: "test-policy-treatment-4",
               },
               human: {
+                app_rubric: null,
                 app_rating: 8,
                 app_comment: "Solid app",
                 run_comment: "Port conflict during verify",
@@ -259,6 +261,7 @@ describe("buildRunExportFromArtifacts", () => {
 
       expect(record.person).toBe("paul");
       expect(record.data.app_rating).toBe(8);
+      expect(record.data.app_rubric).toBeNull();
       expect(record.data.app_comment).toBe("Solid app");
       expect(record.data.run_comment).toBe("Port conflict during verify");
       expect(record.data.git_branch).toBe("exp/test-policy");
@@ -270,6 +273,7 @@ describe("buildRunExportFromArtifacts", () => {
       expect(record.data.export.meta.classification?.legacy_approach).toBe("test-policy-treatment-4");
       expect(record.data.classification?.experiment).toBe("exp3-test-treatment");
       expect(record.data.human?.app_rating).toBe(8);
+      expect(record.data.human?.app_rubric).toBeNull();
     } finally {
       await rm(root, { recursive: true });
     }

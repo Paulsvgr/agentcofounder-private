@@ -1,0 +1,26 @@
+{
+  "id": "action-button",
+  "type": "component",
+  "tier": "agent",
+  "family": "action-v1",
+  "name": "ActionButton",
+  "import": "import { ActionButton } from \"@/components/agent/action-button\"",
+  "props_contract": ["label", "onAction", "variant?", "disabled?", "ariaLabel?", "type?"],
+  "adaptation_points": ["label", "variant", "ariaLabel", "type"],
+  "owned_mechanics": ["button semantics", "disabled state", "focus ring"],
+  "tiny_example": "<ActionButton label=\"Save\" onAction={save} variant=\"primary\" />",
+  "use_when": ["primary actions, secondary actions, destructive confirms"],
+  "constraints": [
+    "Do not import @/components/ui/button.",
+    "Use variant=\"danger\" for destructive row actions; pair with ConfirmDialog for irreversible ops."
+  ],
+  "test_hint": "getByRole('button', { name: /save/i }); userEvent.click.",
+  "files": [
+    {
+      "source": "resources/files/agent/action-button.tsx",
+      "target": "src/components/agent/action-button.tsx"
+    }
+  ],
+  "npm_dependencies": ["clsx", "tailwind-merge"],
+  "registry_dependencies": ["lib-utils"]
+}

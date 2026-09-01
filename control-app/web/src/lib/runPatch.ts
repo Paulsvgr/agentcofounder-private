@@ -4,10 +4,12 @@ import type {
   RunClassification,
   RunExport,
   RunHuman,
+  AppRubricScores,
 } from "../types/runExport";
 import { deriveFlags } from "./classification";
 
 export type HumanPatch = {
+  app_rubric: AppRubricScores | null;
   app_rating: number | null;
   app_comment: string;
   run_comment: string;
@@ -18,10 +20,12 @@ export function patchRunHumanFields(
   human: HumanPatch,
 ): HackathonRunData {
   const data = structuredClone(run.data);
+  data.app_rubric = human.app_rubric;
   data.app_rating = human.app_rating;
   data.app_comment = human.app_comment;
   data.run_comment = human.run_comment;
   data.human = {
+    app_rubric: human.app_rubric,
     app_rating: human.app_rating,
     app_comment: human.app_comment,
     run_comment: human.run_comment,
@@ -62,10 +66,12 @@ export function patchRunExportAndHuman(
   data.git_branch = exportDoc.meta.git_branch;
   data.git_commit = exportDoc.meta.git_commit;
   data.approach_kind = exportDoc.meta.approach;
+  data.app_rubric = human.app_rubric;
   data.app_rating = human.app_rating;
   data.app_comment = human.app_comment;
   data.run_comment = human.run_comment;
   data.human = {
+    app_rubric: human.app_rubric,
     app_rating: human.app_rating,
     app_comment: human.app_comment,
     run_comment: human.run_comment,
@@ -76,6 +82,7 @@ export function patchRunExportAndHuman(
 export function humanFromRun(run: HackathonRunRecord): RunHuman {
   const h = run.data.human;
   return {
+    app_rubric: h?.app_rubric ?? run.data.app_rubric ?? null,
     app_rating: h?.app_rating ?? run.data.app_rating ?? null,
     app_comment: h?.app_comment ?? run.data.app_comment ?? "",
     run_comment: h?.run_comment ?? run.data.run_comment ?? "",

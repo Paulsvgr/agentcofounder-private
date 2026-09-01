@@ -25,7 +25,7 @@ describe("run overlay", () => {
     try {
       await expect(
         patchRunOverlay(tempRoot, "2026-08-28T09-43-19-153Z", {
-          human: { app_rating: 99 },
+          human: { app_rating: 150 },
         }),
       ).rejects.toThrow(/app_rating/);
 
@@ -38,14 +38,21 @@ describe("run overlay", () => {
           display_label: "F · exp3 test treatment · run 4",
         },
         human: {
-          app_rating: 8,
+          app_rubric: {
+            usability_ux: 25,
+            data_state_persistence: 15,
+            robustness: 18,
+            api_integration_readiness: 10,
+            maintainability_extensibility: 12,
+          },
           app_comment: "Solid app",
           run_comment: "Port conflict during verify",
         },
       });
 
       expect(overlay.author).toBe("paul");
-      expect(overlay.human.app_rating).toBe(8);
+      expect(overlay.human.app_rating).toBe(80);
+      expect(overlay.human.app_rubric?.usability_ux).toBe(25);
       expect(overlay.classification?.display_label).toContain("exp3 test treatment");
 
       const file = await readOverlayFile(tempRoot, true);

@@ -27,6 +27,7 @@ import {
   writeRunManifest,
 } from "./v2/manifest.js";
 import { ensureExperimentCatalogEntry } from "./v2/experiment-catalog.js";
+import { resolveRunConfigFromEnvironment } from "./v2/config.js";
 
 interface Arguments {
   ideaFile: string;
@@ -213,6 +214,7 @@ export function buildPiArguments(
   publicJourneys: string,
   appContext: string,
   artifactDirectory: string,
+  options: { harnessOwnedVerify?: boolean } = {},
 ): string[] {
   const args = [
     "--mode",
@@ -229,9 +231,17 @@ export function buildPiArguments(
     path.join(artifactDirectory, "sessions"),
     "--extension",
     path.join(REPOSITORY_ROOT, "solution", "extensions", "protected-paths.ts"),
+  ];
+  if (options.harnessOwnedVerify) {
+    args.push(
+      "--extension",
+      path.join(REPOSITORY_ROOT, "solution", "extensions", "harness-owned-verify.ts"),
+    );
+  }
+  args.push(
     "--skill",
     path.join(REPOSITORY_ROOT, "solution", "skills", "mvp-builder"),
-  ];
+  );
   if (process.env.CHALLENGE_PROVIDER) args.push("--provider", process.env.CHALLENGE_PROVIDER);
   if (process.env.CHALLENGE_MODEL) args.push("--model", process.env.CHALLENGE_MODEL);
   args.push("--thinking", process.env.CHALLENGE_THINKING ?? "off");
@@ -280,6 +290,11 @@ async function main(): Promise<void> {
     { writeMarker: false },
   );
 
+  const runConfig = resolveRunConfigFromEnvironment();
+  if (runConfig.harness_owned_verify) {
+    process.env.HARNESS_OWNED_VERIFY = "1";
+  }
+
   const manifest = await buildPreRunManifest({
     runId,
     repositoryRoot: REPOSITORY_ROOT,
@@ -289,6 +304,7 @@ async function main(): Promise<void> {
     systemPrompt,
     publicJourneys,
     agentsMd: appContext,
+    config: runConfig,
   });
   await writeRunManifest(artifactDirectory, manifest);
 
@@ -297,7 +313,9 @@ async function main(): Promise<void> {
   const appPortHadListenerBeforePi = await portHasListener(APP_PORT);
   const piStartedAt = Date.now();
   const pi = await runPi(
-    buildPiArguments(idea, systemPrompt, publicJourneys, appContext, artifactDirectory),
+    buildPiArguments(idea, systemPrompt, publicJourneys, appContext, artifactDirectory, {
+      harnessOwnedVerify: runConfig.harness_owned_verify,
+    }),
     outputDirectory,
     eventFile,
     stderrFile,
