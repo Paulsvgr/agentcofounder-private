@@ -6,6 +6,7 @@ import { earlyVerifyV1EnabledFromEnvironment } from "../../solution/extensions/e
 import { testStructureV1EnabledFromEnvironment } from "../../solution/extensions/test-structure-core.js";
 import { testAuthoringGuardV1EnabledFromEnvironment } from "../../solution/extensions/test-authoring-guard.js";
 import { convergenceInterventionV1EnabledFromEnvironment } from "../../solution/extensions/convergence-intervention-core.js";
+import { scopeSequenceV1EnabledFromEnvironment } from "../../solution/extensions/scope-sequence-core.js";
 import { verifyRepairV1EnabledFromEnvironment } from "../../solution/extensions/verify-failure-format.js";
 import type { HarnessConfig } from "./config.js";
 import { cssVocabularyGuardsEnabled, type TemplateOverlayConfig } from "./template-overlays.js";
@@ -140,6 +141,9 @@ export function resolveChallengeExtensions(
       path.join(repositoryRoot, "solution", "extensions", "convergence-intervention-v1.ts"),
     );
   }
+  if (scopeSequenceV1EnabledFromEnvironment()) {
+    extensions.push(path.join(repositoryRoot, "solution", "extensions", "scope-sequence-v1.ts"));
+  }
   return {
     extensions,
     skill: path.join(repositoryRoot, "solution", "skills", "mvp-builder"),
@@ -170,6 +174,9 @@ export function resolveChallengeRuntimeEnv(
   }
   if (convergenceInterventionV1EnabledFromEnvironment()) {
     runtimeEnv.HARNESS_CONVERGENCE_INTERVENTION_V1 = "1";
+  }
+  if (scopeSequenceV1EnabledFromEnvironment()) {
+    runtimeEnv.HARNESS_SCOPE_SEQUENCE_V1 = "1";
   }
   return runtimeEnv;
 }

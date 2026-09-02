@@ -318,6 +318,12 @@ async function main(): Promise<void> {
   ) {
     process.env.HARNESS_CONVERGENCE_INTERVENTION_V1 = "1";
   }
+  if (
+    process.env.HARNESS_SCOPE_SEQUENCE_V1 === "1" ||
+    process.env.HARNESS_SCOPE_SEQUENCE_V1 === "true"
+  ) {
+    process.env.HARNESS_SCOPE_SEQUENCE_V1 = "1";
+  }
   process.env.TEMPLATE_CSS_VOCABULARY = cssVocabularyGuardsEnabled(overlayConfig) ? "1" : "0";
 
   const manifest = await buildPreRunManifest({
