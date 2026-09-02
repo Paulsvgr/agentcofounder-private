@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AgentCofounder Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg: #0e1116;
+    --panel: #161b22;
+    --panel-2: #1c232c;
+    --rule: #2a323d;
+    --ink: #e8ecf1;
+    --ink-soft: #9aa5b1;
+    --ink-faint: #6b7684;
+    --accent: #6ea8fe;
+    --accent-ink: #0e1116;
+    --ok: #56d4a0;
+    --warn: #f0b849;
+    --bad: #f2777a;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background:
+      radial-gradient(1200px 600px at 50% -10%, #1a2330 0%, transparent 70%),
+      var(--bg);
+    color: var(--ink);
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: clamp(2rem, 6vw, 4.5rem) 1.25rem 5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  header { text-align: center; display: flex; flex-direction: column; gap: 0.6rem; }
+
+  .eyebrow {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  h1 {
+    font-family: "Instrument Serif", ui-serif, Georgia, serif;
+    font-weight: 400;
+    font-size: clamp(2.4rem, 7vw, 3.6rem);
+    line-height: 1.05;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+
+  .sub { color: var(--ink-soft); max-width: 34rem; margin: 0 auto; }
+
+  /* ---------- composer ---------- */
+
+  .composer {
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    padding: 1.15rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    box-shadow: 0 18px 40px -28px rgba(0,0,0,0.9);
+    transition: border-color 0.15s ease;
+  }
+  .composer:focus-within { border-color: var(--accent); }
+
+  textarea {
+    width: 100%;
+    min-height: 8.5rem;
+    resize: vertical;
+    background: transparent;
+    border: 0;
+    color: var(--ink);
+    font: inherit;
+    font-size: 1.05rem;
+    line-height: 1.6;
+    outline: none;
+    padding: 0.2rem;
+  }
+  textarea::placeholder { color: var(--ink-faint); }
+
+  .composer-foot { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+  .hint { font-size: 0.82rem; color: var(--ink-faint); }
+
+  button {
+    font: inherit;
+    font-weight: 600;
+    border: 0;
+    border-radius: 9px;
+    padding: 0.62rem 1.3rem;
+    background: var(--accent);
+    color: var(--accent-ink);
+    cursor: pointer;
+    transition: filter 0.15s ease, opacity 0.15s ease;
+  }
+  button:hover:not(:disabled) { filter: brightness(1.1); }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+  button.ghost { background: transparent; color: var(--accent); border: 1px solid var(--rule); }
+
+  :where(button, textarea, a):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- examples ---------- */
+
+  .examples { display: flex; flex-wrap: wrap; gap: 0.45rem; justify-content: center; }
+  .chip {
+    background: var(--panel-2);
+    border: 1px solid var(--rule);
+    color: var(--ink-soft);
+    border-radius: 999px;
+    padding: 0.34rem 0.8rem;
+    font-size: 0.84rem;
+    cursor: pointer;
+  }
+  .chip:hover { color: var(--ink); border-color: var(--accent); }
+
+  /* ---------- progress ---------- */
+
+  .stage {
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .stage[hidden] { display: none !important; }
+
+  .stage-head {
+    padding: 1rem 1.15rem;
+    border-bottom: 1px solid var(--rule);
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    font-size: 0.92rem;
+  }
+
+  .spinner {
+    width: 14px; height: 14px;
+    border: 2px solid var(--rule);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex: none;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 3s; } }
+
+  .counter {
+    margin-left: auto;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.78rem;
+    color: var(--ink-faint);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .steps { list-style: none; margin: 0; padding: 0.5rem 0; max-height: 15rem; overflow-y: auto; }
+  .steps li {
+    padding: 0.3rem 1.15rem;
+    font-size: 0.9rem;
+    color: var(--ink-soft);
+    display: flex;
+    gap: 0.6rem;
+    align-items: baseline;
+  }
+  .steps li::before { content: "›"; color: var(--ink-faint); }
+  .steps li:last-child { color: var(--ink); }
+
+  /* ---------- result ---------- */
+
+  .result { display: flex; flex-direction: column; gap: 1.1rem; padding: 1.15rem; }
+
+  .verdict { display: flex; align-items: center; gap: 0.6rem; font-size: 1.05rem; font-weight: 600; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .dot.ok { background: var(--ok); }
+  .dot.warn { background: var(--warn); }
+  .dot.bad { background: var(--bad); }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; }
+  .stat { background: var(--panel-2); padding: 0.7rem 0.85rem; display: flex; flex-direction: column; gap: 0.1rem; }
+  .stat b { font-family: "JetBrains Mono", monospace; font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+  .stat span { font-size: 0.74rem; color: var(--ink-faint); }
+
+  .block h3 { margin: 0 0 0.4rem; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-faint); font-weight: 600; }
+  .block ul { margin: 0; padding-left: 1.1rem; color: var(--ink-soft); font-size: 0.92rem; display: flex; flex-direction: column; gap: 0.2rem; }
+
+  .actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+
+  .note { font-size: 0.84rem; color: var(--ink-faint); }
+  .error { color: var(--bad); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">AgentCofounder</p>
+    <h1>Describe an app. Get one.</h1>
+    <p class="sub">Write it the way you'd say it out loud. It plans, writes the code, tests itself, and hands back something that runs.</p>
+  </header>
+
+  <div class="composer">
+    <label class="sr" for="idea" hidden>Your app idea</label>
+    <textarea id="idea" placeholder="I keep forgetting who borrowed my books. I'd like to put in each book, who wrote it, and note down who has it — then see which ones are out."></textarea>
+    <div class="composer-foot">
+      <span class="hint">Vague is fine. It will decide the unclear parts and tell you what it chose.</span>
+      <button id="go">Build it</button>
+    </div>
+  </div>
+
+  <div class="examples" id="examples">
+    <button class="chip" data-idea="Me and my daughter play noughts and crosses on paper all the time. I want it on screen so we can tap the squares, taking turns, and it should say who won or if it's a draw, and keep count of how many each of us has won.">a game</button>
+    <button class="chip" data-idea="I'm trying to study in blocks of twenty five minutes with a five minute break after each one. I want something that counts down, that I can start and pause and reset, and that switches to the break by itself. It'd be good to see how many blocks I've done today.">a timer</button>
+    <button class="chip" data-idea="When we go out for dinner I always work out what everyone owes. I want to type in the bill, how many of us there were, and pick a tip, and have it tell me what each person pays.">a calculator</button>
+    <button class="chip" data-idea="I watch a lot of films and forget which ones I've seen. I want to put in the name, the director, and a score out of five, see them all in one place, and pull up just my favourites.">a tracker</button>
+  </div>
+
+  <section class="stage" id="stage" hidden>
+    <div class="stage-head">
+      <span class="spinner" id="spinner"></span>
+      <span id="phase">Starting</span>
+      <span class="counter" id="counter"></span>
+    </div>
+    <ul class="steps" id="steps"></ul>
+    <div class="result" id="result" hidden></div>
+  </section>
+
+</div>
+
+<script type="module">
+  const $ = (id) => document.getElementById(id);
+  const ideaEl = $("idea"), goEl = $("go"), stageEl = $("stage");
+  const stepsEl = $("steps"), phaseEl = $("phase"), counterEl = $("counter");
+  const spinnerEl = $("spinner"), resultEl = $("result");
+
+  for (const chip of document.querySelectorAll(".chip")) {
+    chip.addEventListener("click", () => {
+      ideaEl.value = chip.dataset.idea;
+      ideaEl.focus();
+    });
+  }
+
+  const fmt = (n) => n.toLocaleString("en-US");
+
+  function addStep(text) {
+    const li = document.createElement("li");
+    li.textContent = text;
+    stepsEl.append(li);
+    stepsEl.scrollTop = stepsEl.scrollHeight;
+  }
+
+  function build() {
+    const idea = ideaEl.value.trim();
+    if (idea.length < 10) {
+      ideaEl.focus();
+      return;
+    }
+
+    goEl.disabled = true;
+    goEl.textContent = "Building…";
+    stageEl.hidden = false;
+    resultEl.hidden = true;
+    resultEl.textContent = "";
+    stepsEl.textContent = "";
+    spinnerEl.style.display = "";
+    phaseEl.textContent = "Reading your idea";
+
+    let calls = 0, input = 0, output = 0;
+    const started = Date.now();
+
+    // /build answers with JSON, not a stream, when it refuses — a build already
+    // running, or an idea too short. Surface that reason instead of letting the
+    // EventSource fail with nothing useful to show.
+    const source = new EventSource(`/build?idea=${encodeURIComponent(idea)}`);
+    let streamed = false;
+
+    source.onmessage = (message) => {
+      streamed = true;
+      const event = JSON.parse(message.data);
+
+      if (event.kind === "step") {
+        phaseEl.textContent = event.text;
+        addStep(event.text);
+      } else if (event.kind === "plan") {
+        addStep(event.text);
+      } else if (event.kind === "tick") {
+        calls += 1;
+        input += event.input;
+        output += event.output;
+        counterEl.textContent = `${calls} steps · ${fmt(input + output * 3)} weighted`;
+      } else if (event.kind === "done") {
+        source.close();
+        finish(event, Math.round((Date.now() - started) / 1000));
+      } else if (event.kind === "failed") {
+        source.close();
+        fail(event.text);
+      }
+    };
+
+    source.onerror = async () => {
+      source.close();
+      if (!resultEl.hidden) return;
+      if (streamed) return fail("Lost contact with the build.");
+      // Nothing streamed, so the request was refused before starting. Ask again
+      // with fetch to read the reason the server gave.
+      try {
+        const response = await fetch(`/build?idea=${encodeURIComponent(idea)}`);
+        const body = await response.json();
+        fail(body.error ?? "The build could not start.");
+      } catch {
+        fail("The build could not start. Is the studio server still running?");
+      }
+    };
+  }
+
+  function fail(text) {
+    spinnerEl.style.display = "none";
+    phaseEl.textContent = "Stopped";
+    goEl.disabled = false;
+    goEl.textContent = "Try again";
+    resultEl.hidden = false;
+    resultEl.innerHTML = `<p class="error">${text}</p>`;
+  }
+
+  function finish(event, seconds) {
+    spinnerEl.style.display = "none";
+    goEl.disabled = false;
+    goEl.textContent = "Build another";
+
+    const good = event.status === "success" && event.checks;
+    phaseEl.textContent = good ? "Done" : "Finished with problems";
+
+    const list = (items) => items.map((i) => `<li>${i}</li>`).join("");
+    resultEl.hidden = false;
+    resultEl.innerHTML = `
+      <div class="verdict">
+        <span class="dot ${good ? "ok" : event.status === "failed" ? "bad" : "warn"}"></span>
+        ${good ? "It works" : event.status === "failed" ? "It could not finish" : "Built, with some checks failing"}
+      </div>
+      <p class="note">${event.summary ?? ""}</p>
+      <div class="stats">
+        <div class="stat"><b>${fmt(event.weighted)}</b><span>tokens</span></div>
+        <div class="stat"><b>${event.calls}</b><span>steps</span></div>
+        <div class="stat"><b>${seconds}s</b><span>elapsed</span></div>
+        <div class="stat"><b>€${event.cost.toFixed(3)}</b><span>cost</span></div>
+      </div>
+      ${event.features.length ? `<div class="block"><h3>What it built</h3><ul>${list(event.features)}</ul></div>` : ""}
+      ${event.assumptions.length ? `<div class="block"><h3>Decisions it made for you</h3><ul>${list(event.assumptions)}</ul></div>` : ""}
+      ${event.journeys.length ? `<div class="block"><h3>Tests it wrote and passed</h3><ul>${list(event.journeys)}</ul></div>` : ""}
+      <div class="actions">
+        <button id="open">Open the app</button>
+      </div>
+      <p class="note" id="openNote"></p>
+    `;
+
+    document.getElementById("open").addEventListener("click", async (e) => {
+      const btn = e.currentTarget;
+      const note = document.getElementById("openNote");
+      btn.disabled = true;
+      btn.textContent = "Starting…";
+      note.textContent = "Installing and starting it — about twenty seconds.";
+      try {
+        const response = await fetch("/serve", { method: "POST" });
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error ?? "Could not start it");
+        setTimeout(() => {
+          note.innerHTML = `Running at <a href="${body.url}" target="_blank">${body.url}</a>`;
+          btn.textContent = "Open the app";
+          btn.disabled = false;
+          window.open(body.url, "_blank");
+        }, 18000);
+      } catch (error) {
+        note.textContent = String(error.message ?? error);
+        btn.disabled = false;
+        btn.textContent = "Open the app";
+      }
+    });
+  }
+
+  goEl.addEventListener("click", build);
+  ideaEl.addEventListener("keydown", (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") build();
+  });
+</script>
+</body>
+</html>
