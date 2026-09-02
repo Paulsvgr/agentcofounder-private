@@ -20,3 +20,4 @@ runs/
 demo/
 overnight.log
 confirm.log
+artifacts/runs/
