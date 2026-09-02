@@ -25,7 +25,7 @@ Then write those files, each in a single complete `write`.
 
 ## Test rules
 
-Cover each observable journey with Testing Library, driving the UI the way a user would — by role, label, and visible text rather than test IDs or implementation details. Startup and assumption reporting are runner obligations, not UI journeys. Every committed test must run and pass; leave nothing skipped or todo, and never record a test as passed unless it ran and passed.
+Cover each observable journey with Testing Library, driving the UI the way a user would. Reach for `getByRole` and `getByLabelText` first, and scope a query to a region when a page has several similar controls. Broad `getByText` and loose regex match more than you intend and fail with "found multiple elements", which costs a repair round. Do not assert on exact text-node structure when a role or label identifies the element. Startup and assumption reporting are runner obligations, not UI journeys. Every committed test must run and pass; leave nothing skipped or todo, and never record a test as passed unless it ran and passed.
 
 One `test` per journey, named for the behaviour a user would recognise, in the idea's own vocabulary rather than generic CRUD wording ("clears the flag on a record", "keeps records after a reload").
 

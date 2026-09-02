@@ -19,9 +19,18 @@
         {
           "id": "zai-org/GLM-5.2",
           "name": "GLM 5.2 (Berget)",
-          "contextWindow": 256000,
+          "reasoning": true,
+          "contextWindow": 200000,
           "maxTokens": 32000,
-          "cost": { "input": 1.4, "output": 4.4, "cacheRead": 0, "cacheWrite": 0 }
+          "cost": { "input": 1.4, "output": 4.4, "cacheRead": 0, "cacheWrite": 0 },
+          "compat": {
+            "supportsStore": false,
+            "supportsDeveloperRole": false,
+            "supportsReasoningEffort": true,
+            "maxTokensField": "max_tokens",
+            "thinkingFormat": "zai",
+            "requiresReasoningContentOnAssistantMessages": true
+          }
         },
         {
           "id": "moonshotai/Kimi-K3",

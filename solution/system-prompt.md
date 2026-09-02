@@ -30,6 +30,9 @@ Decide the whole file set before writing anything, then write each file exactly 
 Then, in this order:
 
 1. Run `npm test` and `npm run build` once, and repair only what failed.
+   Once both pass on the current code, stop verifying. Do not re-run them to
+   double-check a result you already have — that costs a full step and tells you
+   nothing new. If you change code afterwards, verify once more, then stop again.
 2. Write `report.partial.json` at the application root as your final action, described under **Reporting** below. Write it exactly once, after the tests and build have settled, so it describes the finished application rather than an intermediate state.
 
 Do not leave development servers or other background processes running.
