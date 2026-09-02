@@ -1,8 +1,9 @@
 import { spawn } from "node:child_process";
 import { createWriteStream } from "node:fs";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { cp, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { classifyIdea, guidanceFor, type IdeaNeeds } from "../solution/classify-idea.js";
 import { prepareOutput } from "./prepare-output.js";
 import { auditAppPortAfterPi } from "./port-owner.js";
 import { signalProcessTree, terminateProcessTree, usesDetachedProcessGroup } from "./process-tree.js";
@@ -199,6 +200,11 @@ export function buildPiArguments(
   publicJourneys: string,
   appContext: string,
   artifactDirectory: string,
+  /**
+   * Guidance selected for this idea. Blocks that cannot apply are left out
+   * rather than argued against, because every one is re-sent on every turn.
+   */
+  conditionalGuidance = "",
 ): string[] {
   const args = [
     "--mode",
@@ -210,7 +216,9 @@ export function buildPiArguments(
     "--no-themes",
     "--no-context-files",
     "--append-system-prompt",
-    `${systemPrompt.trim()}\n\n${publicJourneys.trim()}\n\n${appContext.trim()}`,
+    [systemPrompt.trim(), publicJourneys.trim(), appContext.trim(), conditionalGuidance.trim()]
+      .filter((section) => section !== "")
+      .join("\n\n"),
     "--session-dir",
     path.join(artifactDirectory, "sessions"),
     "--extension",
@@ -234,11 +242,40 @@ function timeoutFromEnvironment(): number {
   return value;
 }
 
+/**
+ * Fit the seed to the idea before the model sees it.
+ *
+ * The stylesheet whose vocabulary suits the shape is installed as
+ * `src/styles.css`, so a game gets a board layout and a countdown gets a large
+ * readout without the model writing any CSS. Nothing else in the seed changes,
+ * and `main.tsx` still imports the same path.
+ */
+async function installStylesheet(outputDirectory: string, needs: IdeaNeeds): Promise<void> {
+  const chosen = path.join(outputDirectory, "src", "styles", `${needs.stylesheet}.css`);
+  try {
+    await cp(chosen, path.join(outputDirectory, "src", "styles.css"));
+  } catch (error) {
+    // The default stylesheet is already in place, so a missing variant costs
+    // presentation, not the run.
+    console.warn(`Keeping the default stylesheet: ${String(error)}`);
+  }
+}
+
 async function main(): Promise<void> {
   const args = parseArguments(process.argv.slice(2));
   const idea = await readFile(args.ideaFile, "utf8");
   const outputDirectory = await prepareOutput(REPOSITORY_ROOT, args.outputDirectory);
   console.log(`Prepared clean application workspace: ${outputDirectory}`);
+
+  const needs = classifyIdea(idea);
+  await installStylesheet(outputDirectory, needs);
+  const applicable = Object.entries(needs)
+    .filter(([key, value]) => value === true && key !== "uncertain")
+    .map(([key]) => key);
+  console.log(
+    `Idea needs: ${applicable.join(", ") || "none matched"}` +
+      ` | stylesheet: ${needs.stylesheet}${needs.uncertain ? " (nothing matched; including everything)" : ""}`,
+  );
 
   if (!args.skipAppInstall) {
     const installCode = await runInherited(
@@ -265,7 +302,7 @@ async function main(): Promise<void> {
   const stderrFile = path.join(artifactDirectory, "pi.stderr.log");
   const appPortHadListenerBeforePi = await portHasListener(APP_PORT);
   const pi = await runPi(
-    buildPiArguments(idea, systemPrompt, publicJourneys, appContext, artifactDirectory),
+    buildPiArguments(idea, systemPrompt, publicJourneys, appContext, artifactDirectory, guidanceFor(needs)),
     outputDirectory,
     eventFile,
     stderrFile,
