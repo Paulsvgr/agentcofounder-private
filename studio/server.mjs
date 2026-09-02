@@ -128,32 +128,94 @@ function startBuild(idea, res) {
   });
 }
 
-/** Install the newest generated app into demo/ and serve it on port 3000. */
-function serveApp(res) {
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Stop whatever is serving and wait for it to let go of the directory. */
+async function stopServing() {
+  if (!serving) return;
+  const child = serving;
+  serving = null;
+  const exited = new Promise((resolve) => child.once("exit", resolve));
+  child.kill();
+  // Windows keeps handles open briefly after exit, so give it a moment.
+  await Promise.race([exited, wait(4000)]);
+  await wait(600);
+}
+
+/**
+ * Free port 3000 of whatever holds it.
+ *
+ * A dev server started by an earlier studio process is not ours to kill
+ * through a child handle, and vite runs with strictPort, so the port has to be
+ * cleared by pid. Failures are ignored: the bind below reports the real problem.
+ */
+async function freeAppPort() {
+  await new Promise((resolve) => {
+    const finder = spawn("cmd", ["/c", `for /f "tokens=5" %a in ('netstat -ano ^| findstr :${APP_PORT} ^| findstr LISTENING') do taskkill /f /pid %a`], {
+      windowsHide: true,
+    });
+    finder.on("error", resolve);
+    finder.on("close", resolve);
+  });
+  await wait(800);
+}
+
+/**
+ * Install the newest generated app and serve it on port 3000.
+ *
+ * Each app gets its own directory. Deleting a directory a dev server is still
+ * holding fails with EBUSY on Windows — and the holder is often a process from
+ * an earlier studio run, which cannot be killed through a child handle. Writing
+ * somewhere new sidesteps the problem entirely; old directories are tidied on a
+ * best-effort basis.
+ */
+async function serveApp(res) {
   const runDir = newestRun();
   if (!runDir) return send(res, 404, { error: "No generated app yet." });
 
-  const demo = path.join(REPO_ROOT, "demo");
+  const root = path.join(REPO_ROOT, "studio-apps");
+  const demo = path.join(root, path.basename(runDir));
   try {
-    if (serving) {
-      serving.kill();
-      serving = null;
+    await stopServing();
+    await freeAppPort();
+    mkdirSync(root, { recursive: true });
+
+    if (!existsSync(path.join(demo, "package.json"))) {
+      mkdirSync(demo, { recursive: true });
+      cpSync(path.join(runDir, "output", "app"), demo, { recursive: true });
+      for (const file of ["vite.config.ts", "vitest.config.ts", "tsconfig.json", ".npmrc", "package-lock.json"]) {
+        const from = path.join(REPO_ROOT, "app-template", file);
+        if (existsSync(from)) cpSync(from, path.join(demo, file));
+      }
     }
-    rmSync(demo, { recursive: true, force: true });
-    mkdirSync(demo, { recursive: true });
-    cpSync(path.join(runDir, "output", "app"), demo, { recursive: true });
-    for (const file of ["vite.config.ts", "vitest.config.ts", "tsconfig.json", ".npmrc", "package-lock.json"]) {
-      const from = path.join(REPO_ROOT, "app-template", file);
-      if (existsSync(from)) cpSync(from, path.join(demo, file));
+
+    // Keep the three most recent; ignore any still held by a live server.
+    const staged = readdirSync(root).sort().slice(0, -3);
+    for (const old of staged) {
+      try {
+        rmSync(path.join(root, old), { recursive: true, force: true });
+      } catch {
+        // Held by something still running. It will be cleaned next time.
+      }
     }
   } catch (error) {
     return send(res, 500, { error: `Could not stage the app: ${String(error)}` });
   }
 
-  const npm = "C:\\Users\\moham\\tools\\node22\\npm.cmd";
-  const install = spawn(npm, ["ci", "--ignore-scripts", "--prefer-offline"], { cwd: demo, shell: false });
+  // npm is a .cmd shim on Windows and Node refuses to spawn those with
+  // shell:false — an unhandled 'error' event took this whole server down the
+  // first time. Run npm's own JS entry point through node instead, and keep
+  // any spawn failure from killing the process.
+  const npmCli = path.join(path.dirname(process.execPath), "node_modules", "npm", "bin", "npm-cli.js");
+  const runNpm = (args) => {
+    const child = spawn(process.execPath, [npmCli, ...args], { cwd: demo, shell: false });
+    child.on("error", (error) => console.error(`npm ${args[0]} failed: ${String(error)}`));
+    return child;
+  };
+
+  const install = runNpm(["ci", "--ignore-scripts", "--prefer-offline"]);
   install.on("close", () => {
-    serving = spawn(npm, ["run", "dev"], { cwd: demo, shell: false });
+    serving = runNpm(["run", "dev"]);
   });
   send(res, 200, { url: `http://localhost:${APP_PORT}` });
 }
@@ -174,10 +236,17 @@ const server = http.createServer((req, res) => {
     return startBuild(idea, res);
   }
 
-  if (req.method === "POST" && url.pathname === "/serve") return serveApp(res);
+  if (req.method === "POST" && url.pathname === "/serve") {
+    return serveApp(res).catch((error) => send(res, 500, { error: String(error) }));
+  }
 
   send(res, 404, { error: "Not found" });
 });
+
+// A crash here strands the page mid-build with nothing but "failed to fetch",
+// so log and carry on rather than exiting.
+process.on("uncaughtException", (error) => console.error("studio error:", error));
+process.on("unhandledRejection", (error) => console.error("studio rejection:", error));
 
 server.listen(PORT, () => {
   console.log(`Studio on http://localhost:${PORT}`);
