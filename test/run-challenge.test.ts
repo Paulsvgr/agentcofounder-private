@@ -6,8 +6,6 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   PI_DOCUMENTATION_HEADING,
   stripPiDocumentationBlock,
-  isThemeStylesheetPath,
-  THEME_STYLESHEET_RELATIVE,
 } from "../solution/extensions/protected-paths.js";
 import { buildPiArguments, parseArguments, runPi, runRequiresFailureExit } from "../src/run-challenge.js";
 
@@ -82,7 +80,9 @@ describe("Pi launch", () => {
       expect(suppliedSystemPrompt).toContain(contractItem);
     }
     expect(suppliedSystemPrompt).toContain("omit it instead of inventing an equivalent feature");
-    expect(suppliedSystemPrompt).toContain("Never omit an implied journey merely to simplify");
+    expect(suppliedSystemPrompt).toContain(
+      "never drop an implied behavior merely to simplify the application",
+    );
     expect(suppliedSystemPrompt.match(/^# Generated application contract$/gmu)).toHaveLength(1);
     expect(suppliedSystemPrompt).not.toMatch(/^## Generated application contract$/mu);
   });
@@ -115,15 +115,6 @@ describe("Pi launch", () => {
     expect(stripped).not.toContain("Pi documentation");
     expect(stripped).not.toContain("node_modules/pi/docs");
     expect(stripPiDocumentationBlock("No Pi documentation block")).toBe("No Pi documentation block");
-  });
-
-  it("recognizes the theme stylesheet path for read/write blocking", () => {
-    const appRoot = "/challenge/output/app";
-    expect(THEME_STYLESHEET_RELATIVE).toBe("src/styles.css");
-    expect(isThemeStylesheetPath(appRoot, "src/styles.css")).toBe(true);
-    expect(isThemeStylesheetPath(appRoot, "./src/styles.css")).toBe(true);
-    expect(isThemeStylesheetPath(appRoot, "src/App.tsx")).toBe(false);
-    expect(isThemeStylesheetPath(appRoot, "../styles.css")).toBe(false);
   });
 
   it("pins the Pi documentation heading used by the prompt filter", async () => {

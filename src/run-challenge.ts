@@ -28,6 +28,17 @@ import {
 } from "./v2/manifest.js";
 import { ensureExperimentCatalogEntry } from "./v2/experiment-catalog.js";
 import { resolveRunConfigFromEnvironment } from "./v2/config.js";
+import {
+  buildAppendSystemPrompt,
+  buildPiArgumentsFromBundle,
+  buildProductIdeaUserMessage,
+  type ChallengePromptBundle,
+} from "./v2/challenge-prompt.js";
+import {
+  cssVocabularyGuardsEnabled,
+  resolveTemplateOverlayConfigFromEnvironment,
+  toTemplateOverlaysManifestBlock,
+} from "./v2/template-overlays.js";
 
 interface Arguments {
   ideaFile: string;
@@ -71,7 +82,9 @@ Environment:
   CHALLENGE_CONTEXT_WINDOW   Optional model context window (recorded in run manifest)
   CHALLENGE_TIMEOUT_MS       Wall-clock limit for Pi (default: 900000)
   RUN_EXPERIMENT / RUN_ARM / RUN_REP / RUN_INTERVENTION  Optional experiment metadata
-  RUN_COHORT                                           Legacy alias for RUN_EXPERIMENT
+  TEMPLATE_CSS_VOCABULARY     Enable CSS vocabulary overlay (0/1, default 0)
+  TEMPLATE_PERSISTENCE        Enable persistence primitive overlay (0/1, default 0)
+  TEMPLATE_TEST_ISOLATION     Enable test isolation overlay (0/1, default 0)
 `);
 }
 
@@ -216,37 +229,21 @@ export function buildPiArguments(
   artifactDirectory: string,
   options: { harnessOwnedVerify?: boolean } = {},
 ): string[] {
-  const args = [
-    "--mode",
-    "json",
-    "--offline",
-    "--no-extensions",
-    "--no-skills",
-    "--no-prompt-templates",
-    "--no-themes",
-    "--no-context-files",
-    "--append-system-prompt",
-    `${systemPrompt.trim()}\n\n${publicJourneys.trim()}\n\n${appContext.trim()}`,
-    "--session-dir",
-    path.join(artifactDirectory, "sessions"),
-    "--extension",
-    path.join(REPOSITORY_ROOT, "solution", "extensions", "protected-paths.ts"),
-  ];
-  if (options.harnessOwnedVerify) {
-    args.push(
-      "--extension",
-      path.join(REPOSITORY_ROOT, "solution", "extensions", "harness-owned-verify.ts"),
-    );
+  const harnessConfig = resolveRunConfigFromEnvironment();
+  if (options.harnessOwnedVerify !== undefined) {
+    harnessConfig.harness_owned_verify = options.harnessOwnedVerify;
   }
-  args.push(
-    "--skill",
-    path.join(REPOSITORY_ROOT, "solution", "skills", "mvp-builder"),
-  );
-  if (process.env.CHALLENGE_PROVIDER) args.push("--provider", process.env.CHALLENGE_PROVIDER);
-  if (process.env.CHALLENGE_MODEL) args.push("--model", process.env.CHALLENGE_MODEL);
-  args.push("--thinking", process.env.CHALLENGE_THINKING ?? "off");
-  args.push(`## Product idea\n\n${idea.trim()}\n`);
-  return args;
+  const rawAppend = buildAppendSystemPrompt(systemPrompt, publicJourneys, appContext);
+  const bundle: ChallengePromptBundle = {
+    idea: idea.trim(),
+    sources: { systemPrompt, publicJourneys, agentsMd: appContext },
+    raw_append_system_prompt: rawAppend,
+    effective_append_system_prompt: rawAppend,
+    effective_full_system_prompt: rawAppend,
+    pi_builtin_system_prompt: "",
+    user_message: buildProductIdeaUserMessage(idea),
+  };
+  return buildPiArgumentsFromBundle(bundle, artifactDirectory, REPOSITORY_ROOT, harnessConfig);
 }
 
 function timeoutFromEnvironment(): number {
@@ -261,7 +258,9 @@ function timeoutFromEnvironment(): number {
 async function main(): Promise<void> {
   const args = parseArguments(process.argv.slice(2));
   const idea = await readFile(args.ideaFile, "utf8");
-  const outputDirectory = await prepareOutput(REPOSITORY_ROOT, args.outputDirectory);
+  const overlayConfig = resolveTemplateOverlayConfigFromEnvironment();
+  const { outputDirectory, assemblyRecord } = await prepareOutput(REPOSITORY_ROOT, args.outputDirectory);
+  const templateOverlays = toTemplateOverlaysManifestBlock(assemblyRecord);
   console.log(`Prepared clean application workspace: ${outputDirectory}`);
 
   if (!args.skipAppInstall) {
@@ -283,9 +282,10 @@ async function main(): Promise<void> {
   const runId = new Date().toISOString().replaceAll(":", "-").replaceAll(".", "-");
   const artifactDirectory = path.join(REPOSITORY_ROOT, "artifacts", "runs", runId);
   await mkdir(path.join(artifactDirectory, "sessions"), { recursive: true });
+  process.env.CHALLENGE_RUN_ARTIFACT_DIR = artifactDirectory;
   await writeFile(path.join(artifactDirectory, "idea.txt"), idea, "utf8");
   await copyAppTemplateTree(
-    path.join(REPOSITORY_ROOT, "app-template"),
+    outputDirectory,
     path.join(artifactDirectory, "app-template"),
     { writeMarker: false },
   );
@@ -294,6 +294,31 @@ async function main(): Promise<void> {
   if (runConfig.harness_owned_verify) {
     process.env.HARNESS_OWNED_VERIFY = "1";
   }
+  if (process.env.HARNESS_VERIFY_REPAIR_V1 === "1" || process.env.HARNESS_VERIFY_REPAIR_V1 === "true") {
+    process.env.HARNESS_VERIFY_REPAIR_V1 = "1";
+  }
+  if (
+    process.env.HARNESS_TEST_AUTHORING_GUARD_V1 === "1" ||
+    process.env.HARNESS_TEST_AUTHORING_GUARD_V1 === "true"
+  ) {
+    process.env.HARNESS_TEST_AUTHORING_GUARD_V1 = "1";
+  }
+  if (process.env.HARNESS_EARLY_VERIFY_V1 === "1" || process.env.HARNESS_EARLY_VERIFY_V1 === "true") {
+    process.env.HARNESS_EARLY_VERIFY_V1 = "1";
+  }
+  if (
+    process.env.HARNESS_OWNED_TEST_STRUCTURE_V1 === "1" ||
+    process.env.HARNESS_OWNED_TEST_STRUCTURE_V1 === "true"
+  ) {
+    process.env.HARNESS_OWNED_TEST_STRUCTURE_V1 = "1";
+  }
+  if (
+    process.env.HARNESS_CONVERGENCE_INTERVENTION_V1 === "1" ||
+    process.env.HARNESS_CONVERGENCE_INTERVENTION_V1 === "true"
+  ) {
+    process.env.HARNESS_CONVERGENCE_INTERVENTION_V1 = "1";
+  }
+  process.env.TEMPLATE_CSS_VOCABULARY = cssVocabularyGuardsEnabled(overlayConfig) ? "1" : "0";
 
   const manifest = await buildPreRunManifest({
     runId,
@@ -301,6 +326,7 @@ async function main(): Promise<void> {
     ideaFile: args.ideaFile,
     ideaText: idea,
     templateSnapshotDirectory: path.join(artifactDirectory, "app-template"),
+    templateOverlays,
     systemPrompt,
     publicJourneys,
     agentsMd: appContext,

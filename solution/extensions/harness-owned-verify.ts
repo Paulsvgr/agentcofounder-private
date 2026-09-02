@@ -4,42 +4,29 @@
  * When HARNESS_OWNED_VERIFY=1:
  * - Registers a `verify` tool that runs `npm test` with a real exit code (no pipes).
  * - Blocks Pi bash commands that run piped or direct npm test / vitest.
+ *
+ * When HARNESS_VERIFY_REPAIR_V1=1 (verify-repair-v1 extension loaded):
+ * - FAIL output includes structured failure_class / file / hint (PASS semantics unchanged).
+ *
+ * When HARNESS_TEST_AUTHORING_GUARD_V1=1 (test-authoring-guard-v1 extension loaded):
+ * - Blocks verify until F1–F5 scan passes (compact guard_result: BLOCKED feedback).
  */
 
-import { execSync } from "node:child_process";
 import { defineTool, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { runCanonicalVerify } from "./canonical-verify.js";
+import {
+  evaluateHarnessOwnedVerifyBashBlock,
+  isTestCommand,
+} from "./verify-command-policy.js";
+import { evaluateTestAuthoringGuardBlock } from "./test-authoring-guard.js";
+import { processCanonicalVerifyForConvergence } from "./convergence-intervention-core.js";
+import { formatVerifyToolOutput, verifyRepairV1EnabledFromEnvironment } from "./verify-failure-format.js";
 
 const ENABLED =
   process.env.HARNESS_OWNED_VERIFY === "1" || process.env.HARNESS_OWNED_VERIFY === "true";
 
-function isTestCommand(command: string): boolean {
-  if (/\bnpm\s+(?:run\s+)?test\b/i.test(command)) return true;
-  return /(?:^|[;&|]\s*|\/)\.?\/?vitest(?:\s|$)/i.test(command) || /\bnpx\s+vitest\b/i.test(command);
-}
-
-function isPiped(command: string): boolean {
-  return /\|\s*(?:tail|grep|head|awk|sed|tee)\b/i.test(command);
-}
-
 function runVerify(): { exitCode: number; output: string } {
-  try {
-    const output = execSync("npm test", {
-      cwd: process.cwd(),
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "pipe"],
-      maxBuffer: 4 * 1024 * 1024,
-    });
-    return { exitCode: 0, output: output.trim() };
-  } catch (error) {
-    const err = error as { status?: number; stdout?: string; stderr?: string };
-    const stdout = typeof err.stdout === "string" ? err.stdout : "";
-    const stderr = typeof err.stderr === "string" ? err.stderr : "";
-    const combined = `${stdout}\n${stderr}`.trim();
-    return {
-      exitCode: typeof err.status === "number" ? err.status : 1,
-      output: combined || String(error),
-    };
-  }
+  return runCanonicalVerify(process.cwd());
 }
 
 const verifyTool = defineTool({
@@ -54,9 +41,26 @@ const verifyTool = defineTool({
   },
 
   async execute(_toolCallId, _params, _signal, _onUpdate, _ctx) {
+    const guardBlock = evaluateTestAuthoringGuardBlock(process.cwd());
+    if (guardBlock) {
+      return {
+        content: [{ type: "text", text: guardBlock.reason }],
+        details: {
+          guard_blocked: true,
+          guard_violation: guardBlock.violation.patternId,
+          file: guardBlock.violation.file,
+          line: guardBlock.violation.line,
+        },
+      };
+    }
+
     const { exitCode, output } = runVerify();
-    const status = exitCode === 0 ? "PASS" : "FAIL";
-    const text = [`verify exit_code=${exitCode} (${status})`, "", output].join("\n");
+    const formatted = formatVerifyToolOutput(
+      exitCode,
+      output,
+      verifyRepairV1EnabledFromEnvironment(),
+    );
+    const text = processCanonicalVerifyForConvergence(formatted, exitCode);
     return {
       content: [{ type: "text", text }],
       details: { exit_code: exitCode, status },
@@ -84,19 +88,6 @@ export default function harnessOwnedVerify(pi: ExtensionAPI) {
     if (event.toolName !== "bash") return undefined;
     const command = String((event.input as Record<string, unknown>).command ?? "");
     if (!isTestCommand(command)) return undefined;
-
-    if (isPiped(command)) {
-      return {
-        block: true,
-        reason:
-          "Piped test commands are blocked. Use the `verify` tool — it runs npm test with a real exit code and full compact reporter output.",
-      };
-    }
-
-    return {
-      block: true,
-      reason:
-        "Direct test bash is blocked when harness-owned VERIFY is active. Use the `verify` tool instead of npm test / vitest bash.",
-    };
+    return evaluateHarnessOwnedVerifyBashBlock(command);
   });
 }
