@@ -1,0 +1,26 @@
+{
+  "id": "confirm-dialog",
+  "type": "component",
+  "tier": "agent",
+  "family": "overlay-v1",
+  "name": "ConfirmDialog",
+  "import": "import { ConfirmDialog } from \"@/components/agent/confirm-dialog\"",
+  "props_contract": ["open", "onOpenChange", "title", "description?", "confirmLabel?", "cancelLabel?", "onConfirm"],
+  "adaptation_points": ["title", "description", "confirmLabel", "cancelLabel"],
+  "owned_mechanics": ["modal overlay", "focus trap (basic)", "confirm/cancel flow"],
+  "tiny_example": "<ConfirmDialog open={open} onOpenChange={setOpen} title=\"Delete?\" onConfirm={onDelete} />",
+  "use_when": ["destructive or irreversible confirmation"],
+  "constraints": [
+    "Do not import @/components/ui/dialog.",
+    "Control open state from parent; do not embed business logic inside the dialog."
+  ],
+  "test_hint": "getByRole('dialog'); getByRole('button', { name: /confirm/i }).",
+  "files": [
+    {
+      "source": "resources/files/agent/confirm-dialog.tsx",
+      "target": "src/components/agent/confirm-dialog.tsx"
+    }
+  ],
+  "npm_dependencies": ["clsx", "tailwind-merge"],
+  "registry_dependencies": ["lib-utils", "action-button"]
+}

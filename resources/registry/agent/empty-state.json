@@ -1,0 +1,26 @@
+{
+  "id": "empty-state",
+  "type": "component",
+  "tier": "agent",
+  "family": "state-v1",
+  "name": "EmptyState",
+  "import": "import { EmptyState } from \"@/components/agent/empty-state\"",
+  "props_contract": ["title", "description?", "action?"],
+  "adaptation_points": ["title", "description", "action slot"],
+  "owned_mechanics": ["status region", "centered empty layout"],
+  "tiny_example": "<EmptyState title=\"Nothing here\" description=\"Add your first item.\" action={<ActionButton label=\"Add\" onAction={openForm} />} />",
+  "use_when": ["zero-data placeholder inside a page or list"],
+  "constraints": [
+    "Do not hand-roll dashed-border empty boxes.",
+    "Optional action should be ActionButton, not raw <button>."
+  ],
+  "test_hint": "getByRole('status'); assert title text.",
+  "files": [
+    {
+      "source": "resources/files/agent/empty-state.tsx",
+      "target": "src/components/agent/empty-state.tsx"
+    }
+  ],
+  "npm_dependencies": [],
+  "registry_dependencies": []
+}

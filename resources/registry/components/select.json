@@ -1,0 +1,33 @@
+{
+  "schema": "agentcofounder.resource.v1",
+  "id": "select",
+  "type": "component",
+  "name": "Select",
+  "version": "1.0.0",
+  "content_hash": "a867a27f1734933e5307853dcea1245eba069df84c4626bbdb1822777c3fff60",
+  "files": [
+    {
+      "source": "resources/files/components/ui/select.tsx",
+      "target": "src/components/ui/select.tsx"
+    }
+  ],
+  "npm_dependencies": [
+    "@radix-ui/react-select"
+  ],
+  "registry_dependencies": [
+    "lib-utils"
+  ],
+  "import": "import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from \"@/components/ui/select\"",
+  "setup": null,
+  "tiny_example": "<Select value={category} onValueChange={setCategory}><SelectTrigger aria-label=\"Category\"><SelectValue /></SelectTrigger><SelectContent><SelectItem value=\"Novel\">Novel</SelectItem></SelectContent></Select>",
+  "use_when": [
+    "fixed category/kind pickers",
+    "filters with few options"
+  ],
+  "constraints": [
+    "Use SelectItem value strings consistently.",
+    "Give SelectTrigger aria-label for tests."
+  ],
+  "test_hint": "Click trigger then option; or use getByRole('combobox', { name: /category/i }).",
+  "full_docs_reference": "resources/docs/components/select.md"
+}

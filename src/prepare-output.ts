@@ -1,7 +1,33 @@
 import { cp, lstat, mkdir, readFile, rm, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-const MARKER = ".agent-cofounder-output";
+export const APP_OUTPUT_MARKER = ".agent-cofounder-output";
+export const APP_OUTPUT_MARKER_CONTENT = "managed by agent-cofounder-starter\n";
+
+const MARKER = APP_OUTPUT_MARKER;
+
+/** node_modules and dist are rebuilt per run, so they never travel with the seed. */
+export function appTemplateCopyFilter(source: string): boolean {
+  return !source.split(path.sep).includes("node_modules") && !source.endsWith(`${path.sep}dist`);
+}
+
+/**
+ * Copy the application seed into a destination directory.
+ *
+ * Extracted so tooling can materialise the seed without going through the full
+ * reset that `prepareOutput` performs.
+ */
+export async function copyAppTemplateTree(
+  sourceDirectory: string,
+  destinationDirectory: string,
+  options?: { writeMarker?: boolean },
+): Promise<void> {
+  await mkdir(destinationDirectory, { recursive: true });
+  await cp(sourceDirectory, destinationDirectory, { recursive: true, filter: appTemplateCopyFilter });
+  if (options?.writeMarker ?? true) {
+    await writeFile(path.join(destinationDirectory, MARKER), APP_OUTPUT_MARKER_CONTENT, "utf8");
+  }
+}
 
 function isInside(parent: string, candidate: string): boolean {
   const relative = path.relative(parent, candidate);

@@ -1,0 +1,32 @@
+{
+  "schema": "agentcofounder.resource.v1",
+  "id": "card",
+  "type": "component",
+  "name": "Card",
+  "version": "1.0.0",
+  "content_hash": "3d9d7e738de27af20c02e0d1257d796b0471808c9ec183e809a5eb55061adfa6",
+  "files": [
+    {
+      "source": "resources/files/components/ui/card.tsx",
+      "target": "src/components/ui/card.tsx"
+    }
+  ],
+  "npm_dependencies": [],
+  "registry_dependencies": [
+    "lib-utils"
+  ],
+  "import": "import { Card, CardHeader, CardTitle, CardContent } from \"@/components/ui/card\"",
+  "setup": null,
+  "tiny_example": "<Card><CardHeader><CardTitle>My books</CardTitle></CardHeader><CardContent>...</CardContent></Card>",
+  "use_when": [
+    "grouped sections",
+    "forms",
+    "lists with visual hierarchy"
+  ],
+  "constraints": [
+    "Use semantic tokens (bg-card, border-border).",
+    "Do not rebuild card layout with raw divs."
+  ],
+  "test_hint": null,
+  "full_docs_reference": "resources/docs/components/card.md"
+}

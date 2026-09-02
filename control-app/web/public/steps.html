@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AgentCofounder — step-by-step plan</title>
+  <style>
+    :root {
+      --ink: #1a1714;
+      --muted: #5c564e;
+      --paper: #f4efe6;
+      --card: #fffdf8;
+      --line: #ddd4c6;
+      --accent: #c45c26;
+      --accent-dark: #9a3f12;
+      --done: #2f6b4f;
+      --code-bg: #1f1c18;
+      --code-fg: #f0e6d6;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 500px at 10% -10%, #ffe8d2 0%, transparent 55%),
+        var(--paper);
+      font-family: "Segoe UI", "Iowan Old Style", Georgia, serif;
+      line-height: 1.5;
+    }
+
+    header {
+      padding: 2.5rem 1.25rem 1.5rem;
+      max-width: 880px;
+      margin: 0 auto;
+    }
+
+    .kicker {
+      font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+      font-size: 0.75rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin: 0 0 0.6rem;
+    }
+
+    h1 {
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      line-height: 1.15;
+      margin: 0 0 0.75rem;
+      font-weight: 700;
+    }
+
+    .lede {
+      margin: 0 0 1.25rem;
+      color: var(--muted);
+      font-size: 1.05rem;
+      max-width: 46rem;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .chip, a.chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.7rem;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--card);
+      color: var(--ink);
+      text-decoration: none;
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 0.78rem;
+    }
+
+    .chip.deadline {
+      border-color: var(--accent);
+      color: var(--accent-dark);
+    }
+
+    .progress-wrap {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: color-mix(in srgb, var(--paper) 88%, white);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .progress-inner {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 0.7rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .bar {
+      flex: 1;
+      height: 8px;
+      background: var(--line);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .bar > span {
+      display: block;
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      transition: width 0.2s ease;
+    }
+
+    .count {
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 0.8rem;
+      min-width: 4.5rem;
+    }
+
+    button.reset {
+      border: 1px solid var(--line);
+      background: var(--card);
+      color: var(--muted);
+      border-radius: 6px;
+      padding: 0.25rem 0.55rem;
+      cursor: pointer;
+      font: inherit;
+      font-size: 0.8rem;
+    }
+
+    nav.toc {
+      max-width: 880px;
+      margin: 1.25rem auto 0;
+      padding: 0 1.25rem 1.5rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.5rem;
+    }
+
+    nav.toc a {
+      text-decoration: none;
+      color: var(--ink);
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0.55rem 0.7rem;
+      font-size: 0.9rem;
+    }
+
+    nav.toc a:hover { border-color: var(--accent); }
+
+    main {
+      max-width: 880px;
+      margin: 0 auto 4rem;
+      padding: 0 1.25rem;
+    }
+
+    section.phase {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 1.2rem 1.2rem 0.6rem;
+      margin: 0 0 1.1rem;
+    }
+
+    section.phase h2 {
+      margin: 0 0 0.35rem;
+      font-size: 1.25rem;
+    }
+
+    .phase-note {
+      margin: 0 0 1rem;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.65rem 0.8rem;
+      padding: 0.85rem 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .step:first-of-type { border-top: 0; }
+
+    .step.done h3,
+    .step.done p,
+    .step.done li { color: var(--muted); }
+
+    .step input[type="checkbox"] {
+      width: 1.15rem;
+      height: 1.15rem;
+      margin-top: 0.25rem;
+      accent-color: var(--done);
+    }
+
+    .step h3 {
+      margin: 0 0 0.35rem;
+      font-size: 1.02rem;
+    }
+
+    .step p { margin: 0 0 0.5rem; }
+
+    .step ul, .step ol {
+      margin: 0 0 0.5rem;
+      padding-left: 1.2rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+      margin: 0.4rem 0 0.7rem;
+    }
+
+    th, td {
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+      padding: 0.4rem 0.45rem;
+      vertical-align: top;
+    }
+
+    th { color: var(--muted); font-weight: 600; }
+
+    pre {
+      background: var(--code-bg);
+      color: var(--code-fg);
+      padding: 0.85rem 1rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 0.82rem;
+      line-height: 1.45;
+      margin: 0.4rem 0 0.7rem;
+    }
+
+    code {
+      font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+      font-size: 0.88em;
+    }
+
+    p code, li code, td code {
+      background: #efe6d8;
+      padding: 0.05rem 0.3rem;
+      border-radius: 4px;
+    }
+
+    pre code { background: none; padding: 0; color: inherit; }
+
+    a { color: var(--accent-dark); }
+
+    .formula {
+      font-family: ui-monospace, Consolas, monospace;
+      background: #efe6d8;
+      padding: 0.7rem 0.9rem;
+      border-radius: 8px;
+      margin: 0.5rem 0 0;
+    }
+
+    footer {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 0 1.25rem 3rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    @media print {
+      .progress-wrap, button.reset { display: none; }
+      body { background: white; }
+      section.phase { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <p class="kicker">Stockholm AI · Hackathon 2026</p>
+    <h1>AgentCofounder step-by-step plan</h1>
+    <p class="lede">
+      You are building an autonomous coding harness, not a book app.
+      A raw English idea in, a runnable POC at <code>http://localhost:3000</code> out,
+      with tests, persistence, and <code>result.json</code>. Judging uses a hidden idea — do not overfit to books.
+    </p>
+    <div class="meta">
+      <span class="chip deadline">Submit 4 Sep 2026, midnight CET</span>
+      <span class="chip">Finalists 6 Sep</span>
+      <span class="chip">Pitch 10 Sep</span>
+      <a class="chip" href="https://agentcofounder.stockholm.ai/#spec">Event spec</a>
+      <a class="chip" href="https://github.com/Stockholm-AI/agentcofounder">Starter repo</a>
+      <a class="chip" href="STEPS.md">Markdown copy</a>
+      <a class="chip" href="#i">Export run JSON</a>
+      <a class="chip" href="https://github.com/Paulsvgr/agentcofounder-hackathon">Runs app (GitHub)</a>
+    </div>
+    <p class="formula">Efficiency = input + (output × 3) + (cache_read × 0.1)</p>
+
+    <section class="phase" id="env" style="margin-top:1.25rem">
+      <h2>Environment — read this first</h2>
+      <p class="phase-note">
+        Everything runs in <strong>WSL Ubuntu</strong>, not Windows. The starter spawns
+        <code>pi.cmd</code> / <code>npm.cmd</code> with <code>shell: false</code>, which Node blocks on
+        Windows (<code>spawn EINVAL</code>). On native Windows, Pi never launches and the build /
+        dev-server checks always fail. Judges run Linux containers anyway.
+      </p>
+      <table>
+        <thead><tr><th>Where</th><th>Path</th></tr></thead>
+        <tbody>
+          <tr><td>Repo (run commands here)</td><td><code>~/hackathon/agentcofounder</code> in Ubuntu</td></tr>
+          <tr><td>Same folder from Cursor</td><td><code>\\wsl.localhost\Ubuntu-22.04\home\codemaster\hackathon\agentcofounder</code></td></tr>
+          <tr><td>Node 22.19.0</td><td><code>~/.local/toolchain/node-v22.19.0-linux-x64</code></td></tr>
+          <tr><td>These notes</td><td>Desktop, deliberately outside the repo</td></tr>
+        </tbody>
+      </table>
+      <ul>
+        <li>Use an <strong>Ubuntu</strong> terminal, never PowerShell, for anything <code>npm</code>.</li>
+        <li>Never run <code>npm</code> against the repo from Windows — mixed installs leave Linux symlinks Windows cannot execute.</li>
+        <li>Keep the repo on Ubuntu's disk. <code>/mnt/c/...</code> works but is slow.</li>
+      </ul>
+      <p><strong>Status:</strong> Steps 1–5 done (<code>npm run check</code> green on the fork). Next: Step 6, then credentials — the only real blocker to a first run. Fork: <a href="https://github.com/Paulsvgr/agentcofounder">Paulsvgr/agentcofounder</a>.</p>
+    </section>
+  </header>
+
+  <div class="progress-wrap">
+    <div class="progress-inner">
+      <div class="bar" aria-hidden="true"><span id="bar"></span></div>
+      <span class="count" id="count">0 / 37</span>
+      <button class="reset" type="button" id="reset">Clear checks</button>
+    </div>
+  </div>
+
+  <nav class="toc" aria-label="Phases">
+    <a href="#a">A. Get the repo</a>
+    <a href="#b">B. Toolchain</a>
+    <a href="#c">C. Model access</a>
+    <a href="#d">D. What to change</a>
+    <a href="#e">E. First run</a>
+    <a href="#f">F. Improve harness</a>
+    <a href="#g">G. Quality score</a>
+    <a href="#i">I. Export &amp; compare</a>
+    <a href="#h">H. Submit</a>
+  </nav>
+
+  <main>
+    <section class="phase" id="a">
+      <h2>Phase A — Get a copy of the repo</h2>
+      <p class="phase-note">Work on your fork, not the official Stockholm AI repository.</p>
+
+      <article class="step">
+        <input type="checkbox" id="s1" data-step="1">
+        <div>
+          <h3>Step 1. Fork the starter</h3>
+          <p>Fork <a href="https://github.com/Stockholm-AI/agentcofounder">Stockholm-AI/agentcofounder</a> (or Use this template).</p>
+        </div>
+      </article>
+
+      <article class="step">
+        <input type="checkbox" id="s2" data-step="2">
+        <div>
+          <h3>Step 2. Clone your fork — inside Ubuntu</h3>
+<pre><code>mkdir -p ~/hackathon &amp;&amp; cd ~/hackathon
+git clone https://github.com/Paulsvgr/agentcofounder.git
+cd agentcofounder</code></pre>
+          <p>Then in Cursor: File → Open Folder → <code>\\wsl.localhost\Ubuntu-22.04\home\codemaster\hackathon\agentcofounder</code></p>
+        </div>
+      </article>
+    </section>
+
+    <section class="phase" id="b">
+      <h2>Phase B — Install the exact toolchain</h2>
+      <p class="phase-note">Node 22.19.x is required. Other majors fail.</p>
+
+      <article class="step">
+        <input type="checkbox" id="s3" data-step="3">
+        <div>
+          <h3>Step 3. Install Node 22.19.0 (in Ubuntu)</h3>
+          <p><code>nvm-windows</code> is not the answer; the Node that matters is the Linux one. If Ubuntu has <code>nvm</code>, use <code>nvm install 22.19.0 &amp;&amp; nvm use</code>. Otherwise install it locally:</p>
+<pre><code>mkdir -p ~/.local/toolchain &amp;&amp; cd ~/.local/toolchain
+curl -fsSL https://nodejs.org/dist/v22.19.0/node-v22.19.0-linux-x64.tar.xz | tar -xJ
+export PATH="$HOME/.local/toolchain/node-v22.19.0-linux-x64/bin:$PATH"
+node -v   # must be 22.19.0
+npm -v    # 10.9.3</code></pre>
+        </div>
+      </article>
+
+      <article class="step">
+        <input type="checkbox" id="s4" data-step="4">
+        <div>
+          <h3>Step 4. Install dependencies</h3>
+          <p>Do not regenerate lockfiles.</p>
+<pre><code>npm ci --ignore-scripts
+npm --prefix app-template ci --ignore-scripts</code></pre>
+        </div>
+      </article>
+
+      <article class="step">
+        <input type="checkbox" id="s5" data-step="5">
+        <div>
+          <h3>Step 5. Confirm the starter is healthy</h3>
+<pre><code>npm run check</code></pre>
+        </div>
+      </article>
+
+      <article class="step">
+        <input type="checkbox" id="s6" data-step="6">
+        <div>
+          <h3>Step 6. Reset the workspace without calling a model</h3>
+<pre><code>npm run challenge -- --prepare-only</code></pre>
+          <p>You should get a fresh <code>output/app/</code> copied from <code>app-template/</code>.</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="phase" id="c">
+      <h2>Phase C — Get model access</h2>
+      <p class="phase-note">The runner does not load <code>.env</code> files. Never commit keys.</p>
+
+      <article class="step">
+        <input type="checkbox" id="s7" data-step="7">
+        <div>
+          <h3>Step 7. Get provider / model keys</h3>
+          <p>From the kickoff, Svenska AI Fabriken / Mimer, or <a href="https://berget.ai/en">Berget AI</a>. The event site says code <code>hackathon2026</code> — confirm before the team signs up.</p>
+          <p>The model is not ours to choose at judging time: organizers pin <code>CHALLENGE_PROVIDER</code> / <code>CHALLENGE_MODEL</code> (the site points at Qwen). Keep prompts model-agnostic; never hardcode a model.</p>
+        </div>
+      </article>
+
+      <article class="step">
+        <input type="checkbox" id="s8" data-step="8">
+        <div>
+          <h3>Step 8. Export credentials in the shell</h3>
+<pre><code>export CHALLENGE_PROVIDER="provider-name"
+export CHALLENGE_MODEL="model-id"
+export CHALLENGE_THINKING="off"</code></pre>
+          <p>Keep thinking <code>off</code> unless extra reasoning is worth the extra output tokens.</p>
+        </div>
+      </article>
+
+      <article class="step">
+        <input type="checkbox" id="s9" data-step="9">
+        <div>
+          <h3>Step 9. Pin Pi — do not update it</h3>
+          <p>Stay on <code>@earendil-works/pi-coding-agent@0.84.1</code>. Do not run <code>pi update</code>.</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="phase" id="d">
+      <h2>Phase D — Understand what you may change</h2>
+      <p class="phase-note"><code>solution/</code> is the contest entry. Do not bake book-lending into reusable code.</p>
+
+      <article class="step">
+        <input type="checkbox" id="s10" data-step="10">
+        <div>
+          <h3>Step 10. Read these files in order</h3>
+          <ol>
+            <li><code>solution/system-prompt.md</code></li>
+            <li><code>solution/skills/mvp-builder/SKILL.md</code></li>
+            <li><code>contract-public/journeys.md</code></li>
+            <li><code>app-template/AGENTS.md</code></li>
+            <li><code>contract-public/development-idea.txt</code></li>
+            <li><code>README.md</code></li>
+          </ol>
+        </div>
+      </article>
+
+      <article class="step">
+        <input type="checkbox" id="s11" data-step="11">
+        <div>
+          <h3>Step 11. Know the folder roles</h3>
+          <table>
+            <thead>
+              <tr><th>Path</th><th>Role</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>solution/</code></td><td>Your contest entry</td></tr>
+              <tr><td><code>app-template/</code></td><td>Also yours. Code here costs <strong>zero model tokens</strong></td></tr>
+              <tr><td><code>contract-public/</code></td><td>Leave alone — swapped in via <code>--idea-file</code>, mounted read-only</td></tr>
+              <tr><td><code>src/</code></td><td>Starter runner. Yours at your commit, read-only at judge runtime</td></tr>
+              <tr><td><code>output/app/</code></td><td>Disposable generated app, reset every run</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+
+    <section class="phase" id="e">
+      <h2>Phase E — First real run</h2>
+      <p class="phase-note">The public development idea is the book lending tracker. You need <code>status: "success"</code> before ranking.</p>
+
+      <article class="step">
+        <input type="checkbox" id="s12" data-step="12">
+        <div>
+          <h3>Step 12. Free port 3000</h3>
+          <p>Must be free on both IPv4 and IPv6 loopback, or verification fails before it starts. The agent must not leave a dev server running either.</p>
+<pre><code>ss -tlnp | grep 3000 || echo "port 3000 free"</code></pre>
+        </div>
+      </article>
+
+      <article class="step">
+        <input type="checkbox" id="s13" data-step="13">
+        <div>
+          <h3>Step 13. Run the public challenge</h3>
+<pre><code>npm run challenge</code></pre>
+          <p>Default timeout is 15 minutes (<code>CHALLENGE_TIMEOUT_MS=900000</code>).</p>
+        </div>
+      </article>
+
+      <article class="step">
+        <input type="checkbox" id="s14" data-step="14">
+        <div>
+          <h3>Step 14. Inspect the outputs</h3>
+          <ul>
+            <li><code>output/app/</code> — generated app</li>
+            <li><code>result.json</code> and <code>output/app/result.json</code></li>
+            <li><code>artifacts/runs/</code> — Pi events, sessions, stderr</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="step">
+        <input type="checkbox" id="s15" data-step="15">
+        <div>
+          <h3>Step 15. Start the app</h3>
+          <p>Must be exactly <code>http://localhost:3000</code>.</p>
+<pre><code>cd output/app
+npm run dev</code></pre>
+        </div>
+      </article>
+
+      <article class="step">
+        <input type="checkbox" id="s16" data-step="16">
+        <div>
+          <h3>Step 16. Validate the result file</h3>
+<pre><code>npm run validate:result -- output/app/result.json</code></pre>
+        </div>
+      </article>
+
+      <article class="step">
+        <input type="checkbox" id="s17" data-step="17">
+        <div>
+          <h3>Step 17. Walk the book app by hand</h3>
+          <ul>
+            <li>Add a book (title, author, category)</li>
+            <li>Edit and delete</li>
+            <li>Lend / return</li>
+            <li>Filter currently lent out</li>
+            <li>See a count of books out</li>
+            <li>Refresh — data still there</li>
+            <li>Try empty / invalid / duplicate actions</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="step">
+        <input type="checkbox" id="s18" data-step="18">
+        <div>
+          <h3>Step 18. Record token totals</h3>
+          <p>From <code>result.json</code>: <code>status</code>, <code>input_tokens</code>, <code>output_tokens</code>, <code>cache_read_tokens</code>.</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="phase" id="f">
+      <h2>Phase F — Improve the harness</h2>
+      <p class="phase-note">This is the actual contest. Repeat until runs are reliable and cheaper.</p>
+
+      <article class="step">
+        <input type="checkbox" id="s19" data-step="19">
+        <div>
+          <h3>Step 19. Work in <code>solution/</code> and <code>app-template/</code></h3>
+          <p>Prompt, skill, extensions — plus domain-neutral primitives in <code>app-template/</code>, which the model never has to generate. Optional later: replace <code>src/</code> if you bring your own runner, but keep the same <code>result.json</code> contract.</p>
+          <p>More than one Pi call per run means you must sum usage across every event stream into <code>result.json</code>. Judges recompute from Pi sessions and gateway records and treat disagreement as a failed audit.</p>
+        </div>
+      </article>
+
+      <article class="step">
+        <input type="checkbox" id="s20" data-step="20">
+        <div>
+          <h3>Step 20. Re-run</h3>
+<pre><code>npm run challenge</code></pre>
+        </div>
+      </article>
+
+      <article class="step">
+        <input type="checkbox" id="s21" data-step="21">
+        <div>
+          <h3>Step 21. Check in this order</h3>
+          <ol>
+            <li>Did Pi finish (<code>pi_exit_code</code> 0)?</li>
+            <li>Did Vitest pass with at least one real test (no skip/todo)?</li>
+            <li>Did <code>npm run build</code> pass?</li>
+            <li>Did <code>http://localhost:3000</code> come up?</li>
+            <li>Did <code>result.json</code> validate?</li>
+            <li>Did token totals go down?</li>
+          </ol>
+        </div>
+      </article>
+
+      <article class="step">
+        <input type="checkbox" id="s22" data-step="22">
+        <div>
+          <h3>Step 22. Prioritize upgrades in this order</h3>
+          <ol>
+            <li>Reliability on unseen ideas (test → repair → retest)</li>
+            <li>Cover implied journeys without dropping them</li>
+            <li>Record ambiguity in <code>assumptions</code></li>
+            <li>Move generated code into <code>app-template/</code> — output tokens are weighted heaviest</li>
+            <li>Fewer turns, not just fewer bytes; each turn re-sends the conversation</li>
+            <li>Cache-stable prompts (keep the prefix byte-identical)</li>
+            <li>Domain-neutral CRUD primitives — never book-specific vocabulary</li>
+          </ol>
+          <ul>
+            <li>The <code>mvp-builder</code> skill is injected as name + description + <strong>path</strong> only. The model spends a <code>read</code> call to load it, and may skip it. Inlining removes a round trip.</li>
+            <li><code>--system-prompt</code> replaces Pi's default instead of appending, but the default is only ~1.5&nbsp;KB and its docs block is already stripped. Minor lever.</li>
+            <li>Do not let the model read engine source; document the config shape in <code>AGENTS.md</code>. Reads stay in context for every later turn.</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="step">
+        <input type="checkbox" id="s23" data-step="23">
+        <div>
+          <h3>Step 23. Constraint checklist</h3>
+          <ul>
+            <li>No new npm packages in the generated app</li>
+            <li>No leftover <code>npm run dev</code> process</li>
+            <li>Do not write <code>result.json</code> from the agent</li>
+            <li>Agent writes <code>report.partial.json</code> only</li>
+            <li>Single-user local POC unless the idea requires more</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="step">
+        <input type="checkbox" id="s24" data-step="24">
+        <div>
+          <h3>Step 24. Test a second homemade idea</h3>
+          <p>Not books. Official judging uses a hidden prompt.</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="phase" id="g">
+      <h2>Phase G — Quality score (100 points)</h2>
+      <p class="phase-note">A rubric to re-score the app your harness produces for each new idea, not one-time checkboxes. Hidden judging drives a real browser on port 3000 from a separate container, so jsdom passing is not enough — accessible names and real <code>localStorage</code> behavior get graded.</p>
+
+      <article class="step">
+        <input type="checkbox" id="s25" data-step="25">
+        <div>
+          <h3>Step 25. Usability — 30 pts</h3>
+          <p>Clear navigation, responsive layout, validation, error messages.</p>
+        </div>
+      </article>
+
+      <article class="step">
+        <input type="checkbox" id="s26" data-step="26">
+        <div>
+          <h3>Step 26. Persistence — 20 pts</h3>
+          <p>Survives refresh, clean data shape.</p>
+        </div>
+      </article>
+
+      <article class="step">
+        <input type="checkbox" id="s27" data-step="27">
+        <div>
+          <h3>Step 27. Robustness — 20 pts</h3>
+          <p>Invalid input, duplicates, bad stored data, recovery.</p>
+        </div>
+      </article>
+
+      <article class="step">
+        <input type="checkbox" id="s28" data-step="28">
+        <div>
+          <h3>Step 28. Integration-ready — 15 pts</h3>
+          <p>UI / domain / storage separated. No fake backend unless needed.</p>
+        </div>
+      </article>
+
+      <article class="step">
+        <input type="checkbox" id="s29" data-step="29">
+        <div>
+          <h3>Step 29. Maintainability — 15 pts</h3>
+          <p>Small files, readable, another agent could extend it.</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="phase" id="i">
+      <h2>Phase I — Export run JSON &amp; compare</h2>
+      <p class="phase-note">
+        Log runs in the team <strong>runs app</strong> so you can compare approaches.
+        Export tooling lives on <code>setup/measure</code> — not thin <code>main</code>/<code>base</code>
+        (those are stock + pi-agent only, no <code>export:run</code>).
+        App: <a href="https://github.com/Paulsvgr/agentcofounder-hackathon">Paulsvgr/agentcofounder-hackathon</a>
+        (live at <code>admin.coretechs.se</code> — open <strong>How to export</strong> or <strong>Cohort</strong> in the UI).
+      </p>
+
+      <article class="step">
+        <input type="checkbox" id="s33" data-step="33">
+        <div>
+          <h3>Step 33. Switch to the measure branch</h3>
+          <p>Use this branch for analyze, export JSON, experiments, and publish-to-DB.</p>
+<pre><code>git checkout setup/measure
+npm ci --ignore-scripts   # if first time on this branch</code></pre>
+          <table>
+            <thead>
+              <tr><th>Branch</th><th>Use for</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>setup/measure</code></td><td>Analyze, export, experiment cohorts, publish to runs DB</td></tr>
+              <tr><td><code>main</code> / <code>base</code></td><td>Run challenges (pi-agent setup); no export tooling</td></tr>
+              <tr><td><code>original</code></td><td>Stock organizer repo only</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </article>
+
+      <article class="step">
+        <input type="checkbox" id="s34" data-step="34">
+        <div>
+          <h3>Step 34. Challenge → analyze → export</h3>
+          <p>Export is <strong>manual</strong> after each challenge (unless you use experiment publish — Step 36).</p>
+<pre><code>npm run challenge
+# …wait until finished…
+ls -1dt artifacts/runs/*/ | head -1    # note the run-id folder name
+npm run analyze -- &lt;run-id&gt;
+npm run export:run -- &lt;run-id&gt; --approach A-baseline-1</code></pre>
+          <ul>
+            <li>Export file: <code>artifacts/exports/&lt;run-id&gt;.json</code></li>
+            <li>Schema: <code>agentcofounder.run_export.v2</code> (preferred — includes <code>efficiency.action_flow[]</code>) or legacy v1</li>
+            <li>
+              <code>--approach</code> = experiment arm label — structured names for Line / Experiment filters, e.g.
+              <code>A-baseline-1</code>, <code>A-autoverify-owned-2</code>, <code>rtl-control-3</code>, <code>rtl-cleanup-2</code>.
+              Avoid generic <code>base</code>. Optional env: <code>RUN_APPROACH=…</code>
+            </li>
+            <li>
+              Up-to-date export tooling adds <code>meta.classification</code> (line, experiment, display label).
+              Ratings, comments, and exclude flags are entered in the runs app or seed script — not in the export file
+            </li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="step">
+        <input type="checkbox" id="s35" data-step="35">
+        <div>
+          <h3>Step 35. Add to the runs app (paste or auto-publish)</h3>
+          <p><strong>Option A — manual paste</strong> (one run at a time):</p>
+          <ol>
+            <li>Open the runs app → <strong>Add run</strong></li>
+            <li>Pick who you are (paul / mohammed / ali sina / shivam)</li>
+            <li>Paste the export JSON → Validate</li>
+            <li>Add app rating (0–10), app comment, run comment</li>
+            <li>Enter the shared access key → Save</li>
+          </ol>
+          <p><strong>Option B — bulk publish from WSL</strong> (re-export + seed prod DB):</p>
+<pre><code>export HACKATHON_ACCESS_CODE='…'   # team key — never commit
+export HACKATHON_AUTHOR=paul
+
+# One run: export JSON + POST upsert by run_id
+npm run publish:run -- 2026-08-22T11-17-34-089Z --approach rtl-control-1
+
+# Whole experiment arm(s): re-export reps from manifest → sync manifest → seed → backfill
+npm run publish:runs -- --exp1-rtl</code></pre>
+          <p>
+            <code>publish:runs</code> calls GreenCastle <code>seed_runs_from_artifacts.py</code> then
+            <code>backfill_classification.py</code>. Re-running is safe (upsert by <code>run_id</code>).
+            Set <code>RUNS_APP_ROOT</code> if the frontend repo is not at the default Windows mount path.
+            After publish, scripts print a <strong>view:</strong> link per run (
+            <code>agentcofounder-hackathon.vercel.app/runs/&lt;uuid&gt;</code>).
+            Lookup: <code>python3 scripts/print-run-frontend-links.py &lt;run-id&gt;</code> (harness) or
+            <code>npm run links:runs -- &lt;run-id&gt;</code> (runs app). Optional <code>FRONTEND_BASE</code>.
+          </p>
+          <p>
+            Compare on <strong>Runs</strong> (filter by line / experiment / branch) or
+            <strong>Cohort</strong> (<code>?preset=exp1-rtl</code> for Experiment 1 rtl-control vs rtl-cleanup).
+          </p>
+        </div>
+      </article>
+
+      <article class="step">
+        <input type="checkbox" id="s36" data-step="36">
+        <div>
+          <h3>Step 36. Run a matched experiment cohort</h3>
+          <p>For A/B arms (e.g. Phase F), use the experiment runner — manifest tracks reps under <code>artifacts/experiments/&lt;arm&gt;/</code>.</p>
+<pre><code># Example: Experiment 1 — RTL cleanup vs control
+npm run experiment:run -- --arm rtl-control --reps 5 --provider zai
+npm run experiment:run -- --arm rtl-cleanup --reps 5 --provider zai
+npm run experiment:report -- rtl-control rtl-cleanup
+
+# Publish all reps to the runs app when done
+npm run publish:runs -- --exp1-rtl</code></pre>
+          <ul>
+            <li>Hold constant: provider, model, idea file, timeout, settings — <strong>one change only</strong> per experiment</li>
+            <li>Approach labels: <code>rtl-control-1</code> … <code>rtl-cleanup-5</code> (Line <strong>F</strong>, experiments <code>exp1-rtl-control</code> / <code>exp1-rtl-cleanup</code>)</li>
+            <li>Export-only (no DB): <code>./scripts/publish-experiment-runs.sh --exp1-rtl</code> without <code>--seed</code></li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="step">
+        <input type="checkbox" id="s37" data-step="37">
+        <div>
+          <h3>Step 37. Read results in the runs app</h3>
+          <ul>
+            <li><strong>Runs</strong> — table + charts; filter Line / Experiment; click a row for run detail</li>
+            <li><strong>Run detail</strong> — v2 action-flow bar, weighted cost, repair-loop / verify counters, RTL failure stats</li>
+            <li><strong>Cohort</strong> — side-by-side action-flow presets (<code>study</code> = 7-run baseline set; <code>exp1-rtl</code> = Experiment 1)</li>
+            <li>Official efficiency: input + (output × 3) + (cache_read × 0.1) — lower is better when outcomes match</li>
+          </ul>
+          <p>Full checklist lives here (<code>/steps.html</code>) and in the app under <strong>Steps plan</strong>.</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="phase" id="h">
+      <h2>Phase H — Submit</h2>
+      <p class="phase-note">Deadline is 4 September 2026, midnight CET.</p>
+
+      <article class="step">
+        <input type="checkbox" id="s30" data-step="30">
+        <div>
+          <h3>Step 30. Freeze the repo</h3>
+          <p>One command (<code>npm run challenge</code>), no secrets committed, Pi still pinned at <code>0.84.1</code>, lockfiles untouched, <code>--idea-file</code> still working so judges can pass the hidden idea. Keep these notes out of the repo.</p>
+        </div>
+      </article>
+
+      <article class="step">
+        <input type="checkbox" id="s31" data-step="31">
+        <div>
+          <h3>Step 31. Submit</h3>
+          <p>Send the public GitHub URL via the <a href="https://agentcofounder.stockholm.ai/">submission page</a>.</p>
+        </div>
+      </article>
+
+      <article class="step">
+        <input type="checkbox" id="s32" data-step="32">
+        <div>
+          <h3>Step 32. Keep the calendar</h3>
+          <p>Finalists 6 Sep. Live pitch 10 Sep at Nordic Tech Week.</p>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <footer>
+    Event site vs starter repo: follow the repo. It uses <code>development-idea.txt</code> and <code>result.json</code>, not <code>idea.json</code> / <code>trace.jsonl</code>.
+    Checks are stored in this browser only.
+  </footer>
+
+  <script>
+    const KEY = "agentcofounder-steps-v1";
+    const boxes = [...document.querySelectorAll("input[data-step]")];
+    const bar = document.getElementById("bar");
+    const count = document.getElementById("count");
+
+    function load() {
+      try {
+        return JSON.parse(localStorage.getItem(KEY) || "{}");
+      } catch {
+        return {};
+      }
+    }
+
+    function save(state) {
+      localStorage.setItem(KEY, JSON.stringify(state));
+    }
+
+    function render() {
+      const state = load();
+      let done = 0;
+      boxes.forEach((box) => {
+        const on = Boolean(state[box.id]);
+        box.checked = on;
+        box.closest(".step").classList.toggle("done", on);
+        if (on) done += 1;
+      });
+      bar.style.width = `${(done / boxes.length) * 100}%`;
+      count.textContent = `${done} / ${boxes.length}`;
+    }
+
+    boxes.forEach((box) => {
+      box.addEventListener("change", () => {
+        const state = load();
+        state[box.id] = box.checked;
+        save(state);
+        render();
+      });
+    });
+
+    document.getElementById("reset").addEventListener("click", () => {
+      localStorage.removeItem(KEY);
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>

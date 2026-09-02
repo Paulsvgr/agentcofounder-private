@@ -1,0 +1,35 @@
+{
+  "schema": "agentcofounder.resource.v1",
+  "id": "button",
+  "type": "component",
+  "name": "Button",
+  "version": "1.0.0",
+  "content_hash": "9ded3555765375fa2deaa38354429ad42dffa5f5fdb84c712e9d961010aee6ea",
+  "files": [
+    {
+      "source": "resources/files/components/ui/button.tsx",
+      "target": "src/components/ui/button.tsx"
+    }
+  ],
+  "npm_dependencies": [
+    "@radix-ui/react-slot",
+    "class-variance-authority"
+  ],
+  "registry_dependencies": [
+    "lib-utils"
+  ],
+  "import": "import { Button } from \"@/components/ui/button\"",
+  "setup": null,
+  "tiny_example": "<Button type=\"submit\">Save</Button>",
+  "use_when": [
+    "primary actions",
+    "form submit",
+    "navigation triggers"
+  ],
+  "constraints": [
+    "Use semantic button types (button/submit).",
+    "Do not rebuild a custom button component."
+  ],
+  "test_hint": "Prefer getByRole('button', { name: /save/i }). For row actions use aria-label on the button (e.g. aria-label={`Edit ${title}`}) or scope with within(listitem).",
+  "full_docs_reference": "resources/docs/components/button.md"
+}

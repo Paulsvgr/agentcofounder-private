@@ -1,0 +1,26 @@
+{
+  "id": "stat",
+  "type": "component",
+  "tier": "agent",
+  "family": "state-v1",
+  "name": "Stat",
+  "import": "import { Stat } from \"@/components/agent/stat\"",
+  "props_contract": ["title", "value", "description?"],
+  "adaptation_points": ["title", "value", "description"],
+  "owned_mechanics": ["metric card layout"],
+  "tiny_example": "<Stat title=\"Total\" value={count} description=\"All items\" />",
+  "use_when": ["dashboard metric or summary number"],
+  "constraints": [
+    "Do not build custom stat cards.",
+    "value is display-only — compute upstream."
+  ],
+  "test_hint": "getByText(title); getByText(String(value)).",
+  "files": [
+    {
+      "source": "resources/files/agent/stat.tsx",
+      "target": "src/components/agent/stat.tsx"
+    }
+  ],
+  "npm_dependencies": [],
+  "registry_dependencies": []
+}

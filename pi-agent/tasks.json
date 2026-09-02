@@ -1,0 +1,113 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Ubuntu: open repo shell",
+      "type": "shell",
+      "command": "echo \"Ubuntu ready. node=$(node -v)\"; exec bash",
+      "windows": {
+        "command": "wsl.exe -d Ubuntu-22.04 --cd \"${workspaceFolder}\" -e bash -lc 'echo \"Ubuntu ready. node=$(node -v)\"; exec bash'"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "new",
+        "showReuseMessage": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Challenge: prepare-only",
+      "type": "shell",
+      "command": "node -v && npm run challenge -- --prepare-only",
+      "windows": {
+        "command": "wsl.exe -d Ubuntu-22.04 --cd \"${workspaceFolder}\" -e bash -lc 'node -v && npm run challenge -- --prepare-only'"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "Challenge: run (GLM 5.2)",
+      "type": "shell",
+      "command": ". \"$HOME/.pi/agent/challenge-env.sh\" && echo \"provider=$CHALLENGE_PROVIDER model=$CHALLENGE_MODEL\" && npm run challenge",
+      "windows": {
+        "command": "wsl.exe -d Ubuntu-22.04 --cd \"${workspaceFolder}\" -e bash -lc '. \"$HOME/.pi/agent/challenge-env.sh\" && echo \"provider=$CHALLENGE_PROVIDER model=$CHALLENGE_MODEL\" && npm run challenge'"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated",
+        "showReuseMessage": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "App: start dev server (localhost:3000)",
+      "type": "shell",
+      "command": "npm run dev",
+      "windows": {
+        "command": "wsl.exe -d Ubuntu-22.04 --cd \"${workspaceFolder}/output/app\" -e bash -lc 'npm run dev'"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}/output/app"
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated",
+        "showReuseMessage": false
+      },
+      "isBackground": true,
+      "problemMatcher": [
+        {
+          "pattern": { "regexp": "^$" },
+          "background": {
+            "activeOnStart": true,
+            "beginsPattern": "VITE",
+            "endsPattern": "Local:.*localhost:3000"
+          }
+        }
+      ]
+    },
+    {
+      "label": "Challenge: run (Qwen 3.8)",
+      "type": "shell",
+      "command": ". \"$HOME/.pi/agent/challenge-env-qwen.sh\" && echo \"provider=$CHALLENGE_PROVIDER model=$CHALLENGE_MODEL\" && npm run challenge",
+      "windows": {
+        "command": "wsl.exe -d Ubuntu-22.04 --cd \"${workspaceFolder}\" -e bash -lc '. \"$HOME/.pi/agent/challenge-env-qwen.sh\" && echo \"provider=$CHALLENGE_PROVIDER model=$CHALLENGE_MODEL\" && npm run challenge'"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated",
+        "showReuseMessage": false
+      },
+      "problemMatcher": []
+    }
+  ]
+}

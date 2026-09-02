@@ -1,0 +1,30 @@
+{
+  "id": "form-field",
+  "type": "component",
+  "tier": "agent",
+  "family": "field-v1",
+  "name": "FormField",
+  "import": "import { FormField } from \"@/components/agent/form-field\"",
+  "props_contract": ["label", "value", "onChange", "error?", "required?", "disabled?", "placeholder?", "type?"],
+  "adaptation_points": ["label", "placeholder", "type", "required"],
+  "owned_mechanics": ["input wiring", "error display", "aria-invalid", "focus ring"],
+  "tiny_example": "<FormField label=\"Title\" value={title} onChange={setTitle} error={errors.title} required />",
+  "use_when": ["text input with label and validation message"],
+  "constraints": [
+    "Do not import @/components/ui/* — use agent components only.",
+    "Do not build raw <label>+<input> pairs for standard fields."
+  ],
+  "test_hint": "getByLabelText(/title/i) on the label text; assert value and error role=alert.",
+  "files": [
+    {
+      "source": "resources/files/agent/form-field.tsx",
+      "target": "src/components/agent/form-field.tsx"
+    },
+    {
+      "source": "resources/files/agent/contracts.ts",
+      "target": "src/components/agent/contracts.ts"
+    }
+  ],
+  "npm_dependencies": ["clsx", "tailwind-merge"],
+  "registry_dependencies": ["lib-utils"]
+}

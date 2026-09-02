@@ -1,0 +1,43 @@
+{
+  "schema": "agentcofounder.resource.v1",
+  "id": "local-storage-collection",
+  "type": "data-pattern",
+  "name": "Local collection persistence",
+  "version": "1.0.0-exp5b",
+  "content_hash": "pending-compute-on-import",
+  "files": [
+    {
+      "source": "resources/files/data-patterns/local-storage-collection/src/lib/collectionStore.ts",
+      "target": "src/lib/collectionStore.ts"
+    },
+    {
+      "source": "resources/files/data-patterns/local-storage-collection/src/lib/useCollection.ts",
+      "target": "src/lib/useCollection.ts"
+    },
+    {
+      "source": "resources/files/data-patterns/local-storage-collection/src/lib/text.ts",
+      "target": "src/lib/text.ts"
+    },
+    {
+      "source": "resources/files/data-patterns/local-storage-collection/src/test/memoryStorage.ts",
+      "target": "src/test/memoryStorage.ts"
+    }
+  ],
+  "npm_dependencies": [],
+  "registry_dependencies": [],
+  "import": "import { createCollectionStore } from \"@/lib/collectionStore\";\nimport { useCollection } from \"@/lib/useCollection\";\nimport { createMemoryStorage } from \"@/test/memoryStorage\";",
+  "setup": "Define entity type + parse(raw) => T | null for one array item. createCollectionStore({ key, parse }) for persistence; useCollection(store) in React.",
+  "tiny_example": "const store = createCollectionStore<Book>({ key: \"books\", parse: parseBook });\nconst { items, add, update, remove } = useCollection(store);",
+  "use_when": [
+    "single-user browser app",
+    "data must survive refresh",
+    "simple CRUD over a flat list keyed by id"
+  ],
+  "constraints": [
+    "Use this as the persistence boundary.",
+    "Do not add repository/service wrapper layers unless the domain is not a flat collection.",
+    "Storage resolves lazily (Exp5b); pass createMemoryStorage() in tests."
+  ],
+  "test_hint": "In tests: createCollectionStore({ key: \"test\", parse, storage: createMemoryStorage() }). Do not mock localStorage by hand.",
+  "full_docs_reference": "resources/docs/data-patterns/local-storage-collection.md"
+}

@@ -1,0 +1,26 @@
+{
+  "id": "select-field",
+  "type": "component",
+  "tier": "agent",
+  "family": "field-v1",
+  "name": "SelectField",
+  "import": "import { SelectField } from \"@/components/agent/select-field\"",
+  "props_contract": ["label", "value", "onChange", "options", "error?", "required?", "disabled?", "placeholder?"],
+  "adaptation_points": ["label", "options", "placeholder", "required"],
+  "owned_mechanics": ["native select wiring", "error display", "aria-invalid"],
+  "tiny_example": "<SelectField label=\"Category\" value={cat} onChange={setCat} options={[\"A\",\"B\"]} />",
+  "use_when": ["dropdown choice from a fixed string list"],
+  "constraints": [
+    "Do not import @/components/ui/* or Radix Select.",
+    "Pass options as string[] — do not hand-roll <select> for standard fields."
+  ],
+  "test_hint": "getByLabelText(/category/i); userEvent.selectOptions or fireEvent.change.",
+  "files": [
+    {
+      "source": "resources/files/agent/select-field.tsx",
+      "target": "src/components/agent/select-field.tsx"
+    }
+  ],
+  "npm_dependencies": ["clsx", "tailwind-merge"],
+  "registry_dependencies": ["lib-utils", "form-field"]
+}
