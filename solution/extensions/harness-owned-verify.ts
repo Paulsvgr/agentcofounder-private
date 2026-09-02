@@ -25,8 +25,28 @@ import { formatVerifyToolOutput, verifyRepairV1EnabledFromEnvironment } from "./
 const ENABLED =
   process.env.HARNESS_OWNED_VERIFY === "1" || process.env.HARNESS_OWNED_VERIFY === "true";
 
-function runVerify(): { exitCode: number; output: string } {
-  return runCanonicalVerify(process.cwd());
+function runVerifyAt(appRoot: string): { exitCode: number; output: string } {
+  return runCanonicalVerify(appRoot);
+}
+
+export interface HarnessOwnedVerifyExecution {
+  text: string;
+  exitCode: number;
+  status: "PASS" | "FAIL";
+  guardBlocked: boolean;
+}
+
+/** Shared VERIFY execution path used by the Pi tool and harness parity tests. */
+export function runHarnessOwnedVerifyAt(appRoot: string): HarnessOwnedVerifyExecution {
+  const { exitCode, output } = runVerifyAt(appRoot);
+  const status: "PASS" | "FAIL" = exitCode === 0 ? "PASS" : "FAIL";
+  const formatted = formatVerifyToolOutput(
+    exitCode,
+    output,
+    verifyRepairV1EnabledFromEnvironment(),
+  );
+  const text = processCanonicalVerifyForConvergence(formatted, exitCode);
+  return { text, exitCode, status, guardBlocked: false };
 }
 
 const verifyTool = defineTool({
@@ -54,16 +74,10 @@ const verifyTool = defineTool({
       };
     }
 
-    const { exitCode, output } = runVerify();
-    const formatted = formatVerifyToolOutput(
-      exitCode,
-      output,
-      verifyRepairV1EnabledFromEnvironment(),
-    );
-    const text = processCanonicalVerifyForConvergence(formatted, exitCode);
+    const result = runHarnessOwnedVerifyAt(process.cwd());
     return {
-      content: [{ type: "text", text }],
-      details: { exit_code: exitCode, status },
+      content: [{ type: "text", text: result.text }],
+      details: { exit_code: result.exitCode, status: result.status },
     };
   },
 });

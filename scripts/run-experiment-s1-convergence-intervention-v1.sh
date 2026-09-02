@@ -4,6 +4,8 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
+LOG_DIR="$REPO_ROOT/artifacts/experiments/s1-convergence-intervention-v1"
+mkdir -p "$LOG_DIR"
 
 if [ -f "$HOME/.pi/agent/challenge-env-zai.sh" ]; then
   # shellcheck disable=SC1091
@@ -30,8 +32,6 @@ export TEMPLATE_PERSISTENCE="${TEMPLATE_PERSISTENCE:-0}"
 export TEMPLATE_TEST_ISOLATION="${TEMPLATE_TEST_ISOLATION:-0}"
 
 REPS="${1:-5}"
-LOG_DIR="$REPO_ROOT/artifacts/experiments/s1-convergence-intervention-v1"
-mkdir -p "$LOG_DIR"
 STAMP="$(date -u +%Y-%m-%dT%H-%M-%SZ)"
 LOG_FILE="$LOG_DIR/${STAMP}.log"
 FAILURES=0

@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -20,6 +20,7 @@ import {
   processCanonicalVerifyForConvergence,
   resetConvergenceSession,
 } from "../solution/extensions/convergence-intervention-core.js";
+import { runHarnessOwnedVerifyAt } from "../solution/extensions/harness-owned-verify.js";
 import { resolveChallengeExtensions, resolveChallengeRuntimeEnv } from "../src/v2/challenge-prompt.js";
 import { DEFAULT_CONFIG } from "../src/v2/config.js";
 import { DEFAULT_TEMPLATE_OVERLAY_CONFIG } from "../src/v2/template-overlays.js";
@@ -245,6 +246,78 @@ describe("convergence-intervention verify piggyback", () => {
     expect(appendInterventionTier(base, 0)).toBe(base);
     expect(appendInterventionTier(base, 1)).toBe(`${base}\n\n${TIER1_MESSAGE}`);
   });
+});
+
+describe("S1-enabled harness-owned VERIFY e2e", () => {
+  const repoRoot = path.resolve(".");
+  let fixtureRoot = "";
+  const previousConvergence = process.env.HARNESS_CONVERGENCE_INTERVENTION_V1;
+  const previousOwnedVerify = process.env.HARNESS_OWNED_VERIFY;
+  const previousRepair = process.env.HARNESS_VERIFY_REPAIR_V1;
+  const previousGuard = process.env.HARNESS_TEST_AUTHORING_GUARD_V1;
+
+  afterEach(() => {
+    if (fixtureRoot) rmSync(fixtureRoot, { recursive: true, force: true });
+    fixtureRoot = "";
+    if (previousConvergence === undefined) delete process.env.HARNESS_CONVERGENCE_INTERVENTION_V1;
+    else process.env.HARNESS_CONVERGENCE_INTERVENTION_V1 = previousConvergence;
+    if (previousOwnedVerify === undefined) delete process.env.HARNESS_OWNED_VERIFY;
+    else process.env.HARNESS_OWNED_VERIFY = previousOwnedVerify;
+    if (previousRepair === undefined) delete process.env.HARNESS_VERIFY_REPAIR_V1;
+    else process.env.HARNESS_VERIFY_REPAIR_V1 = previousRepair;
+    if (previousGuard === undefined) delete process.env.HARNESS_TEST_AUTHORING_GUARD_V1;
+    else process.env.HARNESS_TEST_AUTHORING_GUARD_V1 = previousGuard;
+  });
+
+  function prepareFixture(testFileContent: string): string {
+    fixtureRoot = mkdtempSync(path.join(tmpdir(), "s1-verify-e2e-"));
+    cpSync(path.join(repoRoot, "app-template-base"), fixtureRoot, { recursive: true });
+    mkdirSync(path.join(fixtureRoot, "src"), { recursive: true });
+    writeFileSync(path.join(fixtureRoot, "src/App.test.tsx"), testFileContent, "utf8");
+    return fixtureRoot;
+  }
+
+  function enableS1VerifyPath(): void {
+    process.env.HARNESS_OWNED_VERIFY = "1";
+    process.env.HARNESS_CONVERGENCE_INTERVENTION_V1 = "1";
+    delete process.env.HARNESS_VERIFY_REPAIR_V1;
+    delete process.env.HARNESS_TEST_AUTHORING_GUARD_V1;
+    resetConvergenceSession();
+  }
+
+  it(
+    "runs real npm test through S1 VERIFY path and returns PASS with status details",
+    () => {
+      enableS1VerifyPath();
+      const appRoot = prepareFixture(
+        "import { it, expect } from 'vitest';\nit('passes', () => { expect(1).toBe(1); });\n",
+      );
+      const result = runHarnessOwnedVerifyAt(appRoot);
+      expect(result.exitCode).toBe(0);
+      expect(result.status).toBe("PASS");
+      expect(result.text).toContain("verify exit_code=0 (PASS)");
+      expect(result.text).not.toContain("status is not defined");
+      expect(result.text).not.toContain("ReferenceError");
+    },
+    120_000,
+  );
+
+  it(
+    "runs real npm test through S1 VERIFY path and returns FAIL without throwing",
+    () => {
+      enableS1VerifyPath();
+      const appRoot = prepareFixture(
+        "import { it, expect } from 'vitest';\nit('fails', () => { expect(1).toBe(2); });\n",
+      );
+      const result = runHarnessOwnedVerifyAt(appRoot);
+      expect(result.exitCode).not.toBe(0);
+      expect(result.status).toBe("FAIL");
+      expect(result.text).toContain("verify exit_code=1 (FAIL)");
+      expect(result.text).not.toContain("status is not defined");
+      expect(result.text).not.toContain("ReferenceError");
+    },
+    120_000,
+  );
 });
 
 describe("convergence-intervention OFF parity", () => {
