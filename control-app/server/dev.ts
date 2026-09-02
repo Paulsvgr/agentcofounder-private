@@ -21,7 +21,12 @@ function run(command: string, args: string[], label: string): ReturnType<typeof 
 }
 
 const server = run("node", ["--import", "tsx", "server/index.ts"], "server");
-const web = run("npx", ["vite", "--config", "web/vite.config.ts"], "web");
+
+// Spawning "npx" with shell:false cannot work on Windows: npx is a .cmd shim,
+// which Node refuses to launch that way. Run Vite's own entry point through
+// node instead — identical behaviour, and it works on every platform.
+const VITE_ENTRY = path.join(CONTROL_APP_ROOT, "node_modules", "vite", "bin", "vite.js");
+const web = run("node", [VITE_ENTRY, "--config", "web/vite.config.ts"], "web");
 
 function shutdown(): void {
   server.kill("SIGTERM");
