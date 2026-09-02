@@ -2,14 +2,8 @@
  * Durable, single-user collection storage.
  *
  * Domain-neutral on purpose: the collection knows nothing about what it holds
- * beyond the `revive` function handed to it, so any record shape can use it,
- * and nothing about where the records live beyond the backend handed to it.
+ * beyond the `revive` function handed to it, so any record shape can use it.
  */
-
-import { browserBackend, type CollectionBackend } from "./backend.js";
-
-export { resolveStorage, browserBackend, memoryBackend } from "./backend.js";
-export type { CollectionBackend, BackendFailure } from "./backend.js";
 
 export type StorageFailure =
   /** No usable Storage: private browsing, disabled cookies, no window. */
@@ -26,14 +20,6 @@ export interface CollectionOptions<T> {
   revive: (value: unknown) => T | undefined;
   /** Defaults to window.localStorage when one is reachable. */
   storage?: Storage | null;
-  /**
-   * Where records live. Defaults to browser storage.
-   *
-   * Supplying one is how the application moves off the browser: write an
-   * adapter with `read` and `write`, pass it here, and no component changes.
-   * See `backend.ts`.
-   */
-  backend?: CollectionBackend | null;
   /** Called for every degraded outcome so the UI can surface it. */
   onFailure?: (failure: StorageFailure, detail: string) => void;
 }
@@ -48,35 +34,46 @@ export interface Collection<T> {
 }
 
 /**
+ * Resolve a Storage safely.
+ *
+ * Browsers throw on `window.localStorage` itself under some privacy settings,
+ * so access is probed rather than assumed. Returns null when unusable.
+ */
+export function resolveStorage(candidate?: Storage | null): Storage | null {
+  if (candidate !== undefined) return candidate;
+  try {
+    const storage = globalThis.localStorage;
+    if (!storage) return null;
+    // A disabled store can expose the API and still reject every write.
+    const probe = "__probe__";
+    storage.setItem(probe, probe);
+    storage.removeItem(probe);
+    return storage;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Read persisted items, salvaging whatever survives.
  *
  * A single unusable entry never discards the rest: bad entries are dropped and
  * reported as `partial`, so one malformed record cannot wipe a collection.
  */
-function isBackend(source: CollectionBackend | Storage): source is CollectionBackend {
-  return typeof (source as CollectionBackend).read === "function";
-}
-
 export function readItems<T>(
   key: string,
-  source: CollectionBackend | Storage | null,
+  storage: Storage | null,
   revive: (value: unknown) => T | undefined,
   onFailure?: (failure: StorageFailure, detail: string) => void,
 ): T[] {
-  if (!source) {
+  if (!storage) {
     onFailure?.("unavailable", "Storage is unavailable; changes last for this session only.");
     return [];
   }
-  // Accept a raw Storage as well as a backend, so existing callers keep working.
-  // `in` cannot discriminate here: Storage carries an index signature, so it is
-  // assignable to anything with string keys. Test the method itself instead.
-  const backend: CollectionBackend = isBackend(source)
-    ? source
-    : { read: (k) => source.getItem(k), write: (k, v) => source.setItem(k, v) };
 
   let raw: string | null;
   try {
-    raw = backend.read(key);
+    raw = storage.getItem(key);
   } catch (error) {
     onFailure?.("unavailable", `Could not read saved data: ${String(error)}`);
     return [];
@@ -116,19 +113,17 @@ export function readItems<T>(
  * the quota is exhausted.
  */
 export function createCollection<T>(key: string, options: CollectionOptions<T>): Collection<T> {
-  // An explicit backend wins; otherwise fall back to browser storage.
-  const backend =
-    options.backend !== undefined ? options.backend : browserBackend(options.storage);
-  let items: readonly T[] = readItems(key, backend, options.revive, options.onFailure);
+  const storage = resolveStorage(options.storage);
+  let items: readonly T[] = readItems(key, storage, options.revive, options.onFailure);
   const listeners = new Set<() => void>();
 
   return {
     list: () => items,
     replace: (next) => {
       items = [...next];
-      if (backend) {
+      if (storage) {
         try {
-          backend.write(key, JSON.stringify(items));
+          storage.setItem(key, JSON.stringify(items));
         } catch (error) {
           options.onFailure?.(
             "write-failed",

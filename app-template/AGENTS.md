@@ -57,13 +57,6 @@ from it directly; do not mirror it into separate state. `onFailure` reports
 unavailable storage, corrupt data, dropped entries, and rejected writes, so
 render that message in an element with `role="alert"` when one arrives.
 
-Records reach storage through a backend seam in `src/lib/backend.ts` — a
-`read`/`write` pair. Browser storage is the default; passing a `backend` to
-`useCollection` is all it takes to put a hosted database or API behind the same
-components. Keep that seam intact: never call `localStorage` from a component,
-and never add a network client, since the application must run with no external
-service. Building on the seam is what makes the app integration-ready.
-
 `src/styles.css` already styles semantic elements — headings, `section`, `form`,
 `label`, `input`, `select`, `button`, `ul`/`li`, `table`, and `[role="alert"]` —
 responsively, with focus rings and a dark scheme. Write accessible markup and it
