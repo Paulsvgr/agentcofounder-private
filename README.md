@@ -122,6 +122,16 @@ npm run analyze:run -- <run-id> --compare <other-run-id>
 
 Open `artifacts/analysis/<run-id>/station.html` in a browser.
 
+## Recursive harness self-improvement (optional)
+
+See [TEAM-GUIDE §17](docs/v2/TEAM-GUIDE.md#17-recursive-harness-self-improvement-rhi). This loop is **not** part of `npm run challenge`. It writes inspectable harness JSON under `harness_history/` and only then can production load `RHI_HARNESS`.
+
+```bash
+npm run rhi -- --dump-baseline
+npm run rhi -- --from-run artifacts/runs/<run-id> --max-iterations 3
+export RHI_HARNESS=harness_history/<stamp>/optimized_harness.json
+```
+
 ## V2 Control App (local browser + launcher)
 
 Browse runs, compare experiments, edit metadata, inspect per-call token shape, trigger

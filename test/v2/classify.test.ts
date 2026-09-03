@@ -80,6 +80,20 @@ describe("summarizeActivities", () => {
     });
     expect(buckets[0]?.input_share).toBeCloseTo(60 / 150);
     expect(buckets[0]?.cache_read_share).toBeCloseTo(70 / 150);
+  });
+});
+
+describe("isNpmTestCommand", () => {
+  it("matches real test invocations, not path mentions", () => {
     expect(isNpmTestCommand("npm test")).toBe(true);
+    expect(isNpmTestCommand("npx vitest run")).toBe(true);
+    expect(isNpmTestCommand("vitest run --reporter=json")).toBe(true);
+    expect(isNpmTestCommand("./node_modules/.bin/vitest run")).toBe(true);
+    expect(isNpmTestCommand("ls node_modules/.bin/vitest")).toBe(false);
+    expect(
+      isNpmTestCommand(
+        "cd output/app && ls -la node_modules/.bin/vitest 2>/dev/null && find artifacts | head -50",
+      ),
+    ).toBe(false);
   });
 });

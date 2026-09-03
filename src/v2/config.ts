@@ -37,7 +37,7 @@ export interface InterventionValidation {
   identical: boolean;
 }
 
-/** Today's harness behaviour — v2.2 baseline: agent test authoring + harness-owned verify. */
+/** Today's harness behaviour — agent tests, harness-owned verify, milestone-RALPH slices. */
 export const DEFAULT_CONFIG: HarnessConfig = {
   planner: false,
   profiles: false,
@@ -49,7 +49,7 @@ export const DEFAULT_CONFIG: HarnessConfig = {
   error_memory: false,
   docs_retrieval: false,
   template: "baseline",
-  execution_strategy: "single_session",
+  execution_strategy: "milestone_ralph",
   agent_test_authoring: true,
   harness_owned_verify: true,
 };
@@ -164,7 +164,15 @@ export function resolveRunConfigFromEnvironment(): HarnessConfig {
   } else if (raw === "1" || raw === "true") {
     overrides.harness_owned_verify = true;
   }
+  const strategy = process.env.EXECUTION_STRATEGY?.trim();
+  if (strategy) {
+    overrides.execution_strategy = strategy;
+  }
   return resolveConfig(Object.keys(overrides).length > 0 ? overrides : undefined);
+}
+
+export function isMilestoneRalphStrategy(strategy: string): boolean {
+  return strategy.trim() === "milestone_ralph";
 }
 
 export async function loadConfigFile(filePath: string): Promise<HarnessConfig> {

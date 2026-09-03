@@ -3,19 +3,15 @@
  *
  * When HARNESS_OWNED_VERIFY=1:
  * - Registers a `verify` tool that runs `npm test` with a real exit code (no pipes).
- * - Blocks Pi bash commands that run piped or direct npm test / vitest.
+ * - Blocks Pi bash commands that actually invoke npm test / vitest (not path listings).
  */
 
 import { execSync } from "node:child_process";
 import { defineTool, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { isBashTestInvocation } from "./test-invocation.js";
 
 const ENABLED =
   process.env.HARNESS_OWNED_VERIFY === "1" || process.env.HARNESS_OWNED_VERIFY === "true";
-
-function isTestCommand(command: string): boolean {
-  if (/\bnpm\s+(?:run\s+)?test\b/i.test(command)) return true;
-  return /(?:^|[;&|]\s*|\/)\.?\/?vitest(?:\s|$)/i.test(command) || /\bnpx\s+vitest\b/i.test(command);
-}
 
 function isPiped(command: string): boolean {
   return /\|\s*(?:tail|grep|head|awk|sed|tee)\b/i.test(command);
@@ -83,7 +79,7 @@ export default function harnessOwnedVerify(pi: ExtensionAPI) {
   pi.on("tool_call", async (event) => {
     if (event.toolName !== "bash") return undefined;
     const command = String((event.input as Record<string, unknown>).command ?? "");
-    if (!isTestCommand(command)) return undefined;
+    if (!isBashTestInvocation(command)) return undefined;
 
     if (isPiped(command)) {
       return {
