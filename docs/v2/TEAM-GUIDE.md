@@ -53,7 +53,10 @@ export CHALLENGE_MODEL="glm-5.2"
 export CHALLENGE_THINKING="off"    # default — lower output token cost
 export CHALLENGE_MAX_TOKENS="8192"          # recorded in run manifest (optional)
 export CHALLENGE_CONTEXT_WINDOW="128000"    # recorded in run manifest (optional)
-export CHALLENGE_TIMEOUT_MS="900000"        # default 15 minutes
+export CHALLENGE_TIMEOUT_MS="9000000"        # whole-run wall clock (default 15 minutes)
+export EXECUTION_STRATEGY="milestone_ralph" # or single_session for the old one-shot Pi run
+export MILESTONE_TIMEOUT_MS="1800000"        # per-slice Pi limit
+export MILESTONE_MAX_SLICES="3"
 
 # Optional experiment metadata (written into run-manifest.json)
 export RUN_EXPERIMENT="v2-baseline-lock"
@@ -349,8 +352,9 @@ Comparison identity is the pair **`config_schema_version` + `config_hash`** (not
 the hash alone). See `src/v2/config.ts`.
 
 **Baseline today** (`DEFAULT_CONFIG`): all boolean toggles `false` except
-`agent_test_authoring: true`; `template: "baseline"`;
-`execution_strategy: "single_session"`.
+`agent_test_authoring: true` and `harness_owned_verify: true`; `template: "baseline"`;
+`execution_strategy: "milestone_ralph"`. Use `EXECUTION_STRATEGY=single_session` to
+reproduce the old one-Pi-process runner.
 
 ```bash
 npm run config:show                              # baseline config + identity
@@ -362,11 +366,30 @@ npm run config:show -- path/to/treatment.json   # resolve a treatment file
 (e.g. turning on `component_assembly` and `docs_retrieval` together can still be
 one intervention if both are declared).
 
-**Important:** Config is **recorded in the manifest** but **not yet read by the
-runtime harness** — `npm run challenge` behaviour is unchanged until a toggle is
-deliberately wired in for an experiment.
+**Runtime-wired today:** `harness_owned_verify` and `execution_strategy`. Other
+toggles are still recorded in the manifest only.
 
-**Does not modify:** `result.json` or Pi behaviour (today).
+**Milestone-RALPH** (`execution_strategy: "milestone_ralph"`): the runner is an
+orchestrator, not a 15-minute chat. Each slice is a fresh Pi session. After the
+worker exits, the harness runs cheap L0 (`src/verify-app.ts`: Vitest, then
+production build only if tests pass; HTTP is skipped). Pass seals a green
+checkpoint. Fail keeps the current tree (seed is never restored over in-progress
+work). If a later slice breaks a sealed green tree, that green checkpoint is
+restored. If L0 failed because there are still no product tests, the next slice is
+implementer again — repair only runs when tests already exist. Default budget is
+3 slices so a 15-minute wall clock can finish. Official tests+build+HTTP still
+run once at the end when tests actually passed; if tests already failed, that
+last slice L0 is reused so the runner does not rebuild. The orchestrator chooses
+the next slice from observed files + L0, not from a prewritten waterfall.
+Each slice is a normal Pi session (full tools, mvp-builder skill, harness-owned
+verify). The first `implement_core` slice (no product tests yet) uses most of the
+remaining wall clock and reserves three minutes for a later continue/repair
+slice when the wall is long enough. `MILESTONE_TIMEOUT_MS` still caps those later
+slices. After official tests+build+HTTP pass, a missing `report.partial.json` does
+not fail the run: `tests_run` is filled from the Vitest JSON report, and a wall-
+clock SIGTERM after a green L0 is not treated as product failure. Per-slice
+artifacts live under `artifacts/runs/<id>/slices/mNN/` plus `milestone-state.json`
+and `checkpoints/`.
 
 ---
 
@@ -527,6 +550,33 @@ Full reference: [CONTROL-APP.md](./CONTROL-APP.md).
 
 ---
 
+## 17. Recursive Harness Self-Improvement (RHI)
+
+**Problem:** Prompt rewrites guess. We want evidence-driven edits to workflow, contracts, and termination — not a longer system prompt.
+
+**Solution:** A **separate** optimizer (`npm run rhi`) that is not on the production challenge path.
+
+1. The current milestone-RALPH runner is represented as `harness_v0` (`src/v2/rhi/baseline.ts`): agents, hops, control rules, and global rule owners.
+2. Run the existing agent once (or reuse `--from-run artifacts/runs/<id>`).
+3. A separate evaluator compares previous vs current **outputs** (objective signals first: tests, build, HTTP, journeys, tokens; optional LLM pairwise notes). It does not rewrite the harness.
+4. History lives in `harness_history/iteration_N/` (`harness.json`, `output/`, `trace.json`, `evaluation.json`).
+5. The optimizer may change at most three components, preferring contracts / hops / termination / recovery over role rewrites.
+6. A regression gate accepts the candidate only if quality improved (or a true quality-tie with a large cost drop). Ties and losses keep the previous harness.
+7. Stop on consecutive non-wins, repeated root causes, or `--max-iterations`.
+
+Production keeps working with the coded v0 harness. To use an optimized document later:
+
+```bash
+npm run rhi -- --dump-baseline
+npm run rhi -- --from-run artifacts/runs/<id> --max-iterations 3
+export RHI_HARNESS=harness_history/<stamp>/optimized_harness.json
+npm run challenge
+```
+
+Do not set `RHI_HARNESS` during official judging unless that file is the intended submission harness. The evaluator and optimizer never run inside `npm run challenge`.
+
+---
+
 ## Quick command reference
 
 ```bash
@@ -540,6 +590,8 @@ npm run reconcile:run -- <run-id>  # audit one run's token math
 npm run reconcile:all              # audit all complete runs
 npm run normalize:run -- <run-id>  # build analysis ledger
 npm run analyze:run -- <run-id>    # ledger + HTML analysis station
+npm run rhi -- --dump-baseline     # print inspectable harness v0 (no model)
+npm run rhi -- --from-run <id>     # optimize harness from an existing run (costs tokens)
 npm run check                      # typecheck + unit tests + app template
 
 # V2 Control App (local UI — see CONTROL-APP.md)

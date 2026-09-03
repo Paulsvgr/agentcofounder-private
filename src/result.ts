@@ -93,6 +93,31 @@ export async function readPartialResult(appDirectory: string): Promise<PartialRu
   }
 }
 
+export function isMissingAgentReport(partial: PartialRunResult): boolean {
+  return partial.status === "failed" && partial.tests_run.length === 0 && partial.summary === FALLBACK_PARTIAL.summary;
+}
+
+/** When the agent skipped report.partial.json, use harness Vitest journeys if official verify passed. */
+export function salvageAgentReport(
+  partial: PartialRunResult,
+  verification: AppVerification,
+  harnessJourneys: TestRun[] = [],
+): PartialRunResult {
+  const tests = partial.tests_run.length > 0 ? partial.tests_run : harnessJourneys;
+  if (!isMissingAgentReport(partial) || !verification.passed || tests.length === 0) {
+    return tests === partial.tests_run ? partial : { ...partial, tests_run: tests };
+  }
+  const allPassed = tests.every((test) => test.result === "passed");
+  return {
+    ...partial,
+    status: allPassed ? "success" : "partial",
+    summary: "Generated application passed harness verification.",
+    implemented_features:
+      partial.implemented_features.length > 0 ? partial.implemented_features : tests.map((test) => test.journey),
+    tests_run: tests,
+  };
+}
+
 export function composeResult(
   partial: PartialRunResult,
   usage: UsageSummary,
@@ -100,20 +125,32 @@ export function composeResult(
   verification: AppVerification,
   portReclamation: PortReclamationAudit,
   startCommand: string,
+  harnessJourneys: TestRun[] = [],
 ): RunResult {
-  const runFailed = piExitCode !== 0 || usage.model_calls === 0 || partial.status === "failed";
+  const report = salvageAgentReport(partial, verification, harnessJourneys);
+  const timeoutAfterGreenVerify = piExitCode === 124 && verification.passed;
+  const runFailed =
+    usage.model_calls === 0 ||
+    (piExitCode !== 0 && !timeoutAfterGreenVerify) ||
+    (report.status === "failed" && !verification.passed);
   const productJourneysPassed =
-    partial.tests_run.length > 0 && partial.tests_run.every((test) => test.result === "passed");
-  const status = runFailed ? "failed" : verification.passed && productJourneysPassed ? partial.status : "partial";
+    report.tests_run.length > 0 && report.tests_run.every((test) => test.result === "passed");
+  const status = runFailed
+    ? "failed"
+    : verification.passed && productJourneysPassed
+      ? report.status === "failed"
+        ? "success"
+        : report.status
+      : "partial";
   return {
-    ...partial,
+    ...report,
     status,
     app_url: "http://localhost:3000",
     start_command: startCommand,
-    tests_run: partial.tests_run,
+    tests_run: report.tests_run,
     harness_checks: verification.checks,
     ...usage,
-    pi_exit_code: piExitCode,
+    pi_exit_code: timeoutAfterGreenVerify && status !== "failed" ? 0 : piExitCode,
     telemetry_source: "pi-json-event-stream",
     port_reclamation: portReclamation,
   };

@@ -10,6 +10,7 @@ control-app/dist/
 
 artifacts/*
 !artifacts/.gitkeep
+harness_history/
 output/*
 !output/.gitkeep
 

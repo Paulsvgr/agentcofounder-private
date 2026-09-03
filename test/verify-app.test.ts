@@ -4,7 +4,13 @@ import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { portHasListener, verifyGeneratedApp } from "../src/verify-app.js";
+import { access } from "node:fs/promises";
+import {
+  journeysFromVitestReport,
+  portHasListener,
+  shouldReuseSliceVerification,
+  verifyGeneratedApp,
+} from "../src/verify-app.js";
 
 const temporaryDirectories: string[] = [];
 const defaultPortOccupied = await portHasListener(3000);
@@ -93,6 +99,32 @@ afterEach(async () => {
 });
 
 describe("app verification", () => {
+  it("maps Vitest JSON assertions into tests_run journeys", async () => {
+    const directory = await mkdtemp(path.join(os.tmpdir(), "agent-cofounder-vitest-journeys-"));
+    temporaryDirectories.push(directory);
+    const reportPath = path.join(directory, "app-test-results.json");
+    await writeFile(
+      reportPath,
+      `${JSON.stringify({
+        success: true,
+        testResults: [
+          {
+            assertionResults: [
+              { fullName: "Home library lets me add a book", status: "passed" },
+              { fullName: "Home library pending", status: "pending" },
+              { title: "failed case", status: "failed" },
+            ],
+          },
+        ],
+      })}\n`,
+      "utf8",
+    );
+    expect(await journeysFromVitestReport(reportPath)).toEqual([
+      { command: "vitest", journey: "Home library lets me add a book", result: "passed" },
+      { command: "vitest", journey: "failed case", result: "failed" },
+    ]);
+  });
+
   it("detects a listener bound to the wildcard address", async () => {
     const server = net.createServer((socket) => socket.end());
     await new Promise<void>((resolve, reject) => {
@@ -141,6 +173,44 @@ describe("app verification", () => {
 
     expect(result.passed).toBe(false);
     expect(result.checks.map((entry) => entry.result)).toEqual(["failed", "passed", "passed"]);
+  }, 45_000);
+
+  it("fail-fast skips production build and HTTP after tests fail", async () => {
+    const artifactDirectory = await mkdtemp(path.join(os.tmpdir(), "agent-cofounder-failfast-"));
+    temporaryDirectories.push(artifactDirectory);
+
+    const result = await verifyGeneratedApp(path.resolve("app-template"), artifactDirectory, {
+      commandTimeoutMs: 30_000,
+      serverTimeoutMs: 10_000,
+      failFast: true,
+      runHttp: false,
+      port: await getFreePort(),
+    });
+
+    expect(result.passed).toBe(false);
+    expect(result.checks.map((entry) => entry.result)).toEqual(["failed", "failed", "failed"]);
+    expect(result.checks[1]?.journey).toContain("was not run");
+    expect(result.checks[2]?.journey).toContain("was not run");
+    await expect(access(path.join(artifactDirectory, "app-build.log"))).rejects.toThrow();
+    await expect(access(path.join(artifactDirectory, "app-dev.log"))).rejects.toThrow();
+    expect(shouldReuseSliceVerification(result)).toBe(true);
+  }, 45_000);
+
+  it("skips HTTP when requested while still running tests and build", async () => {
+    const { appDirectory, artifactDirectory } = await createTestApp();
+
+    const result = await verifyGeneratedApp(appDirectory, artifactDirectory, {
+      commandTimeoutMs: 30_000,
+      displayRoot: path.dirname(appDirectory),
+      serverTimeoutMs: 10_000,
+      runHttp: false,
+      port: await getFreePort(),
+    });
+
+    expect(result.checks.map((entry) => entry.result)).toEqual(["passed", "passed", "failed"]);
+    expect(result.checks[2]?.journey).toContain("deferred to official final verify");
+    await expect(access(path.join(artifactDirectory, "app-dev.log"))).rejects.toThrow();
+    expect(shouldReuseSliceVerification(result)).toBe(false);
   }, 45_000);
 
   it("never accepts HTTP from a server that already owned the configured port", async () => {

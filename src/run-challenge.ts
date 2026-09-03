@@ -15,9 +15,15 @@ import {
   writeResult,
 } from "./result.js";
 import { collectUsageFromJsonLines } from "./usage.js";
-import type { RunResult } from "./types.js";
+import type { AppVerification, RunResult } from "./types.js";
 import { validateResultObject } from "./validate-result.js";
-import { portHasListener, unavailableAppVerification, verifyGeneratedApp } from "./verify-app.js";
+import {
+  portHasListener,
+  journeysFromVitestReport,
+  shouldReuseSliceVerification,
+  unavailableAppVerification,
+  verifyGeneratedApp,
+} from "./verify-app.js";
 import { analyzeRun, formatAnalyzeSummary } from "./v2/analyze-run.js";
 import {
   buildPreRunManifest,
@@ -27,7 +33,14 @@ import {
   writeRunManifest,
 } from "./v2/manifest.js";
 import { ensureExperimentCatalogEntry } from "./v2/experiment-catalog.js";
-import { resolveRunConfigFromEnvironment } from "./v2/config.js";
+import { resolveRunConfigFromEnvironment, isMilestoneRalphStrategy } from "./v2/config.js";
+import {
+  DEFAULT_MAX_SLICES,
+  DEFAULT_SLICE_TIMEOUT_MS,
+  runMilestoneRalph,
+} from "./v2/milestone-ralph/run.js";
+import { loadHarnessFromEnvironment } from "./v2/rhi/apply.js";
+import { materializeRuntimeAdditions } from "./v2/rhi/materialize.js";
 
 interface Arguments {
   ideaFile: string;
@@ -50,7 +63,8 @@ export function runRequiresFailureExit(
   resultStatus: RunResult["status"],
   missingResultPaths: string[],
 ): boolean {
-  return missingResultPaths.length > 0 || piExitCode !== 0 || resultStatus !== "success";
+  if (missingResultPaths.length > 0 || resultStatus !== "success") return true;
+  return piExitCode !== 0 && piExitCode !== 124;
 }
 
 function printHelp(): void {
@@ -69,7 +83,11 @@ Environment:
   CHALLENGE_THINKING         Optional Pi thinking level (default: off)
   CHALLENGE_MAX_TOKENS       Optional max output tokens (recorded in run manifest)
   CHALLENGE_CONTEXT_WINDOW   Optional model context window (recorded in run manifest)
-  CHALLENGE_TIMEOUT_MS       Wall-clock limit for Pi (default: 900000)
+  CHALLENGE_TIMEOUT_MS       Wall-clock limit for the whole run (default: 9000000)
+  EXECUTION_STRATEGY         milestone_ralph (default) or single_session
+  MILESTONE_TIMEOUT_MS       Per-slice Pi limit for milestone_ralph (default: 1800000)
+  MILESTONE_MAX_SLICES       Max worker slices for milestone_ralph (default: 3)
+  RHI_HARNESS                Optional path to an optimized harness.json (production loads this only)
   RUN_EXPERIMENT / RUN_ARM / RUN_REP / RUN_INTERVENTION  Optional experiment metadata
   RUN_COHORT                                           Legacy alias for RUN_EXPERIMENT
 `);
@@ -208,14 +226,28 @@ export async function runPi(
   }
 }
 
+export function composeAppendedSystemPrompt(
+  systemPrompt: string,
+  publicJourneys: string,
+  appContext: string,
+): string {
+  return `${systemPrompt.trim()}\n\n${publicJourneys.trim()}\n\n${appContext.trim()}`;
+}
+
 export function buildPiArguments(
   idea: string,
   systemPrompt: string,
   publicJourneys: string,
   appContext: string,
   artifactDirectory: string,
-  options: { harnessOwnedVerify?: boolean } = {},
+  options: {
+    harnessOwnedVerify?: boolean;
+    sessionDir?: string;
+    userPrompt?: string;
+  } = {},
 ): string[] {
+  const sessionDir = options.sessionDir ?? path.join(artifactDirectory, "sessions");
+  const userPrompt = options.userPrompt ?? `## Product idea\n\n${idea.trim()}\n`;
   const args = [
     "--mode",
     "json",
@@ -226,9 +258,9 @@ export function buildPiArguments(
     "--no-themes",
     "--no-context-files",
     "--append-system-prompt",
-    `${systemPrompt.trim()}\n\n${publicJourneys.trim()}\n\n${appContext.trim()}`,
+    composeAppendedSystemPrompt(systemPrompt, publicJourneys, appContext),
     "--session-dir",
-    path.join(artifactDirectory, "sessions"),
+    sessionDir,
     "--extension",
     path.join(REPOSITORY_ROOT, "solution", "extensions", "protected-paths.ts"),
   ];
@@ -238,14 +270,11 @@ export function buildPiArguments(
       path.join(REPOSITORY_ROOT, "solution", "extensions", "harness-owned-verify.ts"),
     );
   }
-  args.push(
-    "--skill",
-    path.join(REPOSITORY_ROOT, "solution", "skills", "mvp-builder"),
-  );
+  args.push("--skill", path.join(REPOSITORY_ROOT, "solution", "skills", "mvp-builder"));
   if (process.env.CHALLENGE_PROVIDER) args.push("--provider", process.env.CHALLENGE_PROVIDER);
   if (process.env.CHALLENGE_MODEL) args.push("--model", process.env.CHALLENGE_MODEL);
   args.push("--thinking", process.env.CHALLENGE_THINKING ?? "off");
-  args.push(`## Product idea\n\n${idea.trim()}\n`);
+  args.push(userPrompt);
   return args;
 }
 
@@ -254,6 +283,16 @@ function timeoutFromEnvironment(): number {
   const value = Number(raw);
   if (!Number.isSafeInteger(value) || value < 1_000) {
     throw new Error("CHALLENGE_TIMEOUT_MS must be an integer of at least 1000");
+  }
+  return value;
+}
+
+function optionalPositiveIntFromEnvironment(name: string, fallback: number): number {
+  const raw = process.env[name];
+  if (raw === undefined || raw.trim() === "") return fallback;
+  const value = Number(raw);
+  if (!Number.isSafeInteger(value) || value < 1) {
+    throw new Error(`${name} must be a positive integer`);
   }
   return value;
 }
@@ -274,15 +313,26 @@ async function main(): Promise<void> {
   }
   if (args.prepareOnly) return;
 
-  const [systemPrompt, publicJourneys, appContext] = await Promise.all([
+  const [loadedSystemPrompt, publicJourneys, appContext] = await Promise.all([
     readFile(path.join(REPOSITORY_ROOT, "solution", "system-prompt.md"), "utf8"),
     readFile(path.join(REPOSITORY_ROOT, "contract-public", "journeys.md"), "utf8"),
     readFile(path.join(outputDirectory, "AGENTS.md"), "utf8"),
   ]);
+  const rhiHarness = await loadHarnessFromEnvironment();
+  const runtimeAdditions = rhiHarness ? materializeRuntimeAdditions(rhiHarness) : "";
+  const systemPrompt =
+    runtimeAdditions === "" ? loadedSystemPrompt : `${loadedSystemPrompt.trim()}\n\n${runtimeAdditions}`;
 
   const runId = new Date().toISOString().replaceAll(":", "-").replaceAll(".", "-");
   const artifactDirectory = path.join(REPOSITORY_ROOT, "artifacts", "runs", runId);
   await mkdir(path.join(artifactDirectory, "sessions"), { recursive: true });
+  if (process.env.RHI_RUN_POINTER) {
+    await writeFile(process.env.RHI_RUN_POINTER, artifactDirectory, "utf8");
+  }
+  if (rhiHarness) {
+    await writeFile(path.join(artifactDirectory, "rhi-harness.json"), `${JSON.stringify(rhiHarness, null, 2)}\n`, "utf8");
+    console.log(`Loaded RHI harness ${rhiHarness.id} from ${process.env.RHI_HARNESS}`);
+  }
   await writeFile(path.join(artifactDirectory, "idea.txt"), idea, "utf8");
   await copyAppTemplateTree(
     path.join(REPOSITORY_ROOT, "app-template"),
@@ -312,15 +362,43 @@ async function main(): Promise<void> {
   const stderrFile = path.join(artifactDirectory, "pi.stderr.log");
   const appPortHadListenerBeforePi = await portHasListener(APP_PORT);
   const piStartedAt = Date.now();
-  const pi = await runPi(
-    buildPiArguments(idea, systemPrompt, publicJourneys, appContext, artifactDirectory, {
+  const overallTimeoutMs = timeoutFromEnvironment();
+  const useRalph = isMilestoneRalphStrategy(runConfig.execution_strategy);
+  if (useRalph) {
+    console.log("Execution strategy: milestone_ralph (fresh Pi session + L0 gate per slice)");
+  }
+  let pi: CommandResult;
+  let ralphLastVerification: AppVerification | null = null;
+  if (useRalph) {
+    const ralph = await runMilestoneRalph({
+      idea,
+      systemPrompt,
+      publicJourneys,
+      appContext,
+      outputDirectory,
+      artifactDirectory,
+      repositoryRoot: REPOSITORY_ROOT,
       harnessOwnedVerify: runConfig.harness_owned_verify,
-    }),
-    outputDirectory,
-    eventFile,
-    stderrFile,
-    timeoutFromEnvironment(),
-  );
+      overallTimeoutMs,
+      sliceTimeoutMs: optionalPositiveIntFromEnvironment("MILESTONE_TIMEOUT_MS", DEFAULT_SLICE_TIMEOUT_MS),
+      maxSlices: optionalPositiveIntFromEnvironment("MILESTONE_MAX_SLICES", DEFAULT_MAX_SLICES),
+      ...(rhiHarness ? { harness: rhiHarness } : {}),
+      runPi,
+      buildPiArguments,
+    });
+    pi = { exitCode: ralph.exitCode, timedOut: ralph.timedOut };
+    ralphLastVerification = ralph.lastVerification;
+  } else {
+    pi = await runPi(
+      buildPiArguments(idea, systemPrompt, publicJourneys, appContext, artifactDirectory, {
+        harnessOwnedVerify: runConfig.harness_owned_verify,
+      }),
+      outputDirectory,
+      eventFile,
+      stderrFile,
+      overallTimeoutMs,
+    );
+  }
   const wallMs = Date.now() - piStartedAt;
   const portReclamation = await auditAppPortAfterPi(APP_PORT, outputDirectory, appPortHadListenerBeforePi);
   if (portReclamation.listener_after_pi) {
@@ -329,9 +407,9 @@ async function main(): Promise<void> {
     else console.warn(message);
   }
 
-  const usage = collectUsageFromJsonLines(await readFile(eventFile, "utf8"));
+  const usage = collectUsageFromJsonLines(await readFile(eventFile, "utf8").catch(() => ""));
   const partial = await readPartialResult(outputDirectory);
-  const canVerifyApp = pi.exitCode === 0 && usage.model_calls > 0;
+  const canVerifyApp = usage.model_calls > 0 && (useRalph || pi.exitCode === 0);
   const startCommand = rootStartCommand(REPOSITORY_ROOT, outputDirectory);
   let verification = unavailableAppVerification(
     canVerifyApp ? "app verification had not completed" : "Pi did not complete with audited model usage",
@@ -347,8 +425,25 @@ async function main(): Promise<void> {
     [rootResultPath, artifactResultPath],
   );
   if (canVerifyApp) {
-    verification = await verifyGeneratedApp(outputDirectory, artifactDirectory, { displayRoot: REPOSITORY_ROOT });
-    result = composeResult(partial, usage, pi.exitCode, verification, portReclamation, startCommand);
+    if (ralphLastVerification && shouldReuseSliceVerification(ralphLastVerification)) {
+      verification = ralphLastVerification;
+      console.log("Official app verify reused last slice L0 (skipped duplicate tests/build/HTTP)");
+    } else {
+      verification = await verifyGeneratedApp(outputDirectory, artifactDirectory, { displayRoot: REPOSITORY_ROOT });
+    }
+    const harnessJourneys =
+      partial.tests_run.length === 0
+        ? await journeysFromVitestReport(path.join(artifactDirectory, "app-test-results.json"))
+        : [];
+    result = composeResult(
+      partial,
+      usage,
+      pi.exitCode,
+      verification,
+      portReclamation,
+      startCommand,
+      harnessJourneys,
+    );
     resultPaths = await writeResult(outputDirectory, result, [rootResultPath, artifactResultPath]);
   }
   const missingResultPaths = missingRequiredResultPaths(resultPaths, requiredResultPaths);
@@ -397,7 +492,13 @@ async function main(): Promise<void> {
   for (const missingResultPath of missingResultPaths) {
     console.error(`Required result destination was not written: ${missingResultPath}`);
   }
-  if (pi.timedOut) console.error("Pi exceeded CHALLENGE_TIMEOUT_MS and was terminated.");
+  if (pi.timedOut) {
+    console.error(
+      useRalph
+        ? "A milestone-RALPH slice was stopped by its timeout (MILESTONE_TIMEOUT_MS or the remaining wall clock)."
+        : "Pi exceeded CHALLENGE_TIMEOUT_MS and was terminated.",
+    );
+  }
   if (runRequiresFailureExit(pi.exitCode, result.status, missingResultPaths)) process.exitCode = 1;
 }
 

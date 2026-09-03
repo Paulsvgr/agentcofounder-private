@@ -1,3 +1,4 @@
+import { isBashTestInvocation } from "../../solution/extensions/test-invocation.js";
 import type { LedgerTool } from "./normalize.js";
 import { isCssPath, isReportWrite, isSourceFilePath, isTestFilePath } from "./source-paths.js";
 
@@ -16,8 +17,7 @@ export type ActivityPhase =
 export const ACTIVITY_CLASSIFIER_VERSION = "v2-activity-paths" as const;
 
 export function isNpmTestCommand(detail: string): boolean {
-  if (/\bnpm\s+(?:run\s+)?test\b/i.test(detail)) return true;
-  return /(?:^|[;&|]\s*|\/)\.?\/?vitest(?:\s|$)/i.test(detail) || /\bnpx\s+vitest\b/i.test(detail);
+  return isBashTestInvocation(detail);
 }
 
 export function isBuildCommand(detail: string): boolean {

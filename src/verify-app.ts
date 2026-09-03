@@ -28,7 +28,19 @@ export interface VerificationOptions {
   npmCommand?: string;
   vitestCommand?: string;
   port?: number;
+  /** Stop after the first failing check instead of still running build and HTTP. */
+  failFast?: boolean;
+  /** Run `npm run build`. Defaults to true. */
+  runBuild?: boolean;
+  /** Start the app and probe HTTP. Defaults to true. */
+  runHttp?: boolean;
 }
+
+/** Cheap per-slice L0: fail fast, skip HTTP; official verify still runs the full trio. */
+export const MILESTONE_L0_OPTIONS: Pick<VerificationOptions, "failFast" | "runHttp"> = {
+  failFast: true,
+  runHttp: false,
+};
 
 interface CapturedOutput {
   chunks: Buffer[];
@@ -344,6 +356,36 @@ async function hasPassingVitestReport(reportPath: string): Promise<boolean> {
   }
 }
 
+/** Map the official Vitest JSON report into result.json `tests_run` rows. */
+export async function journeysFromVitestReport(reportPath: string): Promise<TestRun[]> {
+  try {
+    const report = JSON.parse(await readFile(reportPath, "utf8")) as {
+      testResults?: Array<{
+        assertionResults?: Array<{
+          fullName?: string;
+          title?: string;
+          status?: string;
+        }>;
+      }>;
+    };
+    const journeys: TestRun[] = [];
+    for (const suite of report.testResults ?? []) {
+      for (const assertion of suite.assertionResults ?? []) {
+        const journey = (assertion.fullName ?? assertion.title ?? "").trim();
+        if (!journey) continue;
+        if (assertion.status === "passed") {
+          journeys.push({ command: "vitest", journey, result: "passed" });
+        } else if (assertion.status === "failed") {
+          journeys.push({ command: "vitest", journey, result: "failed" });
+        }
+      }
+    }
+    return journeys;
+  } catch {
+    return [];
+  }
+}
+
 export function unavailableAppVerification(reason: string): AppVerification {
   return {
     passed: false,
@@ -353,6 +395,26 @@ export function unavailableAppVerification(reason: string): AppVerification {
       testRun("npm run dev", `HTTP startup probe was not run: ${reason}`, "failed"),
     ],
   };
+}
+
+export function isDeferredVerificationCheck(check: TestRun): boolean {
+  return check.result === "failed" && /was not run/i.test(check.journey);
+}
+
+/**
+ * True when a slice L0 already has a complete official `harness_checks` record,
+ * so the runner should not spend another tests+build+HTTP cycle.
+ */
+export function shouldReuseSliceVerification(verification: AppVerification | null): boolean {
+  if (!verification || verification.checks.length < 3) return false;
+  if (verification.passed) return true;
+  const testsPassed = verification.checks[0]?.result === "passed";
+  if (!testsPassed) return true;
+  const buildPassed = verification.checks[1]?.result === "passed";
+  if (!buildPassed) return true;
+  const httpCheck = verification.checks[2];
+  if (!httpCheck) return false;
+  return !isDeferredVerificationCheck(httpCheck);
 }
 
 export async function verifyGeneratedApp(
@@ -368,6 +430,9 @@ export async function verifyGeneratedApp(
   const vitestCommand =
     options.vitestCommand ??
     path.join(appDirectory, "node_modules", ".bin", process.platform === "win32" ? "vitest.cmd" : "vitest");
+  const failFast = options.failFast === true;
+  const runBuild = options.runBuild !== false;
+  const runHttp = options.runHttp !== false;
   const commands = verificationCommands(appDirectory, artifactDirectory, displayRoot, npmCommand, vitestCommand, port);
   const testReportPath = path.join(artifactDirectory, "app-test-results.json");
 
@@ -380,38 +445,57 @@ export async function verifyGeneratedApp(
       commandTimeoutMs,
     );
     const testsPassed = test.exitCode === 0 && (await hasPassingVitestReport(testReportPath));
-    const build = await runLoggedCommand(
-      npmCommand,
-      ["run", "build"],
-      appDirectory,
-      path.join(artifactDirectory, "app-build.log"),
-      commandTimeoutMs,
-    );
-    const serverPassed = await verifyDevelopmentServer(
-      appDirectory,
-      path.join(artifactDirectory, "app-dev.log"),
-      serverTimeoutMs,
-      npmCommand,
-      port,
-    );
-
-    const checks = [
+    const checks: TestRun[] = [
       testRun(
         commands.test.display,
         "The generated app's Vitest report contained at least one completed test and no failed, skipped, or todo tests",
         testsPassed ? "passed" : "failed",
       ),
-      testRun(
-        commands.build,
-        "The generated app completed a production build",
-        build.exitCode === 0 ? "passed" : "failed",
-      ),
-      testRun(
-        commands.dev,
-        `The generated app started its own HTTP server on port ${port} and shut down cleanly`,
-        serverPassed ? "passed" : "failed",
-      ),
     ];
+
+    const skipAfterFailedTests = failFast && !testsPassed;
+    if (skipAfterFailedTests || !runBuild) {
+      const reason = skipAfterFailedTests ? "tests failed first" : "skipped for milestone L0";
+      checks.push(testRun(commands.build, `Production build was not run: ${reason}`, "failed"));
+    } else {
+      const build = await runLoggedCommand(
+        npmCommand,
+        ["run", "build"],
+        appDirectory,
+        path.join(artifactDirectory, "app-build.log"),
+        commandTimeoutMs,
+      );
+      const buildPassed = build.exitCode === 0;
+      checks.push(
+        testRun(commands.build, "The generated app completed a production build", buildPassed ? "passed" : "failed"),
+      );
+      if (failFast && !buildPassed) {
+        checks.push(
+          testRun(commands.dev, "HTTP startup probe was not run: production build failed first", "failed"),
+        );
+        return { passed: false, checks };
+      }
+    }
+
+    if (skipAfterFailedTests || !runHttp) {
+      const reason = skipAfterFailedTests ? "tests failed first" : "deferred to official final verify";
+      checks.push(testRun(commands.dev, `HTTP startup probe was not run: ${reason}`, "failed"));
+    } else {
+      const serverPassed = await verifyDevelopmentServer(
+        appDirectory,
+        path.join(artifactDirectory, "app-dev.log"),
+        serverTimeoutMs,
+        npmCommand,
+        port,
+      );
+      checks.push(
+        testRun(
+          commands.dev,
+          `The generated app started its own HTTP server on port ${port} and shut down cleanly`,
+          serverPassed ? "passed" : "failed",
+        ),
+      );
+    }
 
     return { passed: checks.every((entry) => entry.result === "passed"), checks };
   } catch (error) {

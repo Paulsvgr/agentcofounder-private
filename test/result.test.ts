@@ -9,6 +9,7 @@ import {
   normalizePartialResult,
   readPartialResult,
   rootStartCommand,
+  salvageAgentReport,
   writeResult,
 } from "../src/result.js";
 import type {
@@ -79,10 +80,34 @@ describe("result contract", () => {
     expect(result.port_reclamation).toMatchObject({ attempted: false, process_ids: [] });
   });
 
-  it("overrides success when Pi exits unsuccessfully", () => {
-    expect(composeResult(partial, usage, 124, verification, portReclamation, ROOT_START_COMMAND).status).toBe(
-      "failed",
-    );
+  it("does not fail a green official verify when Pi was stopped by the wall clock", () => {
+    const result = composeResult(partial, usage, 124, verification, portReclamation, ROOT_START_COMMAND);
+    expect(result.status).toBe("success");
+    expect(result.pi_exit_code).toBe(0);
+  });
+
+  it("still fails when Pi exits unsuccessfully and official verify did not pass", () => {
+    expect(
+      composeResult(partial, usage, 1, { ...verification, passed: false }, portReclamation, ROOT_START_COMMAND)
+        .status,
+    ).toBe("failed");
+  });
+
+  it("fills tests_run from harness Vitest journeys when report.partial.json is missing", async () => {
+    const directory = await mkdtemp(path.join(os.tmpdir(), "agent-cofounder-no-report-"));
+    try {
+      const missing = await readPartialResult(directory);
+      const journeys = [{ command: "vitest", journey: "Home library lets me add a book", result: "passed" as const }];
+      const salvaged = salvageAgentReport(missing, verification, journeys);
+      expect(salvaged.status).toBe("success");
+      expect(salvaged.tests_run).toEqual(journeys);
+      const result = composeResult(missing, usage, 124, verification, portReclamation, ROOT_START_COMMAND, journeys);
+      expect(result.status).toBe("success");
+      expect(result.tests_run).toEqual(journeys);
+      expect(await validateResultObject(result)).toEqual([]);
+    } finally {
+      await rm(directory, { recursive: true });
+    }
   });
 
   it("overrides success when telemetry contains no model calls", async () => {

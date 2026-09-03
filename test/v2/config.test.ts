@@ -11,6 +11,7 @@ import {
   diffConfig,
   loadConfigFile,
   resolveConfig,
+  resolveRunConfigFromEnvironment,
   validateIntervention,
 } from "../../src/v2/config.js";
 
@@ -19,7 +20,7 @@ describe("DEFAULT_CONFIG", () => {
     expect(DEFAULT_CONFIG.agent_test_authoring).toBe(true);
     expect(DEFAULT_CONFIG.harness_owned_verify).toBe(true);
     expect(DEFAULT_CONFIG.template).toBe("baseline");
-    expect(DEFAULT_CONFIG.execution_strategy).toBe("single_session");
+    expect(DEFAULT_CONFIG.execution_strategy).toBe("milestone_ralph");
 
     const toggles = [
       DEFAULT_CONFIG.planner,
@@ -41,7 +42,7 @@ describe("configHash", () => {
     const reordered = {
       agent_test_authoring: true,
       template: "baseline",
-      execution_strategy: "single_session",
+      execution_strategy: "milestone_ralph",
       planner: false,
       profiles: false,
       component_assembly: false,
@@ -66,6 +67,7 @@ describe("configHash", () => {
       baselineHash,
     );
     expect(configHash({ ...DEFAULT_CONFIG, harness_owned_verify: false })).not.toBe(baselineHash);
+    expect(configHash({ ...DEFAULT_CONFIG, execution_strategy: "single_session" })).not.toBe(baselineHash);
   });
 });
 
@@ -82,6 +84,19 @@ describe("canonicalConfigJson", () => {
     const json = canonicalConfigJson(DEFAULT_CONFIG);
     const keys = Object.keys(JSON.parse(json) as Record<string, unknown>);
     expect(keys).toEqual([...keys].sort());
+  });
+});
+
+describe("resolveRunConfigFromEnvironment", () => {
+  it("honors EXECUTION_STRATEGY", () => {
+    const previous = process.env.EXECUTION_STRATEGY;
+    process.env.EXECUTION_STRATEGY = "single_session";
+    try {
+      expect(resolveRunConfigFromEnvironment().execution_strategy).toBe("single_session");
+    } finally {
+      if (previous === undefined) delete process.env.EXECUTION_STRATEGY;
+      else process.env.EXECUTION_STRATEGY = previous;
+    }
   });
 });
 

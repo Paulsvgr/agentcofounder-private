@@ -28,6 +28,8 @@ describe("Pi launch", () => {
   it("fails an otherwise successful run when a required result destination is missing", () => {
     expect(runRequiresFailureExit(0, "success", ["/challenge/result.json"])).toBe(true);
     expect(runRequiresFailureExit(0, "success", [])).toBe(false);
+    expect(runRequiresFailureExit(124, "success", [])).toBe(false);
+    expect(runRequiresFailureExit(124, "failed", [])).toBe(true);
   });
 
   it("uses deterministic non-interactive flags and defaults thinking off", () => {
@@ -52,6 +54,19 @@ describe("Pi launch", () => {
         "Create, edit, delete, narrow, derive, and persist",
       );
       expect(args.at(-1)).toContain("Build a tool");
+      expect(args).toContain("--skill");
+      const custom = buildPiArguments("Build a tool", "sys", "journeys", "app", "/tmp/run", {
+        sessionDir: "/tmp/run/slices/m00/sessions",
+        userPrompt: "## Current slice\nDo one thing\n",
+      });
+      expect(custom[custom.indexOf("--session-dir") + 1]).toBe("/tmp/run/slices/m00/sessions");
+      expect(custom.at(-1)).toContain("Current slice");
+      expect(custom[custom.indexOf("--append-system-prompt") + 1]).toContain("sys");
+      expect(custom[custom.indexOf("--append-system-prompt") + 1]).toContain("journeys");
+      expect(custom).toContain("--skill");
+      expect(custom).not.toContain("--tools");
+      expect(custom).not.toContain("--exclude-tools");
+      expect(custom.some((arg) => arg.endsWith("slice-worker.ts"))).toBe(false);
     } finally {
       if (previousThinking === undefined) delete process.env.CHALLENGE_THINKING;
       else process.env.CHALLENGE_THINKING = previousThinking;
@@ -82,7 +97,7 @@ describe("Pi launch", () => {
       expect(suppliedSystemPrompt).toContain(contractItem);
     }
     expect(suppliedSystemPrompt).toContain("omit it instead of inventing an equivalent feature");
-    expect(suppliedSystemPrompt).toContain("Never omit an implied journey merely to simplify");
+    expect(suppliedSystemPrompt).toContain("never drop an implied behavior merely to simplify");
     expect(suppliedSystemPrompt.match(/^# Generated application contract$/gmu)).toHaveLength(1);
     expect(suppliedSystemPrompt).not.toMatch(/^## Generated application contract$/mu);
   });

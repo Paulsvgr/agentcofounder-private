@@ -20,6 +20,7 @@
     "seed:overlay": "node --import tsx scripts/seed-runs-overlay.ts",
     "seed:experiments": "node --import tsx scripts/seed-experiments.ts",
     "config:show": "node --import tsx scripts/show-config.ts",
+    "rhi": "node --import tsx scripts/rhi.ts",
     "baseline:lock": "bash scripts/run-baseline-lock.sh",
     "assemble:resources": "node --import tsx scripts/assemble-resources.ts",
     "experiment:a": "bash scripts/run-experiment-a.sh",
