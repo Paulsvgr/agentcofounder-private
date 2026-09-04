@@ -115,6 +115,7 @@ describe("result contract", () => {
       tests_run: [{ command: "verify", journey: "Add a supply", result: "passed" }],
     });
     expect(incomplete?.status).toBe("partial");
+    expect(incomplete?.status_was_explicit).toBe(false);
     expect(incomplete?.summary).toBe("Pi completed without a valid summary.");
 
     const salvaged = salvageAgentReport(incomplete!, verification);
@@ -124,6 +125,20 @@ describe("result contract", () => {
 
     const result = composeResult(incomplete!, usage, 0, verification, portReclamation, ROOT_START_COMMAND);
     expect(result.status).toBe("success");
+    expect(result).not.toHaveProperty("status_was_explicit");
+  });
+
+  it("upgrades omitted status with a real summary when official verify is green", () => {
+    const incomplete = normalizePartialResult({
+      summary: "Replaced seed with modular pottery studio supplies tracker",
+      tests_run: [{ command: "verify", journey: "Add a supply", result: "passed" }],
+      build: "ok",
+    });
+    expect(incomplete?.status_was_explicit).toBe(false);
+    expect(salvageAgentReport(incomplete!, verification).status).toBe("success");
+    expect(composeResult(incomplete!, usage, 0, verification, portReclamation, ROOT_START_COMMAND).status).toBe(
+      "success",
+    );
   });
 
   it("preserves intentional status:partial when the agent wrote a real summary", () => {
@@ -134,6 +149,7 @@ describe("result contract", () => {
       assumptions: [],
       tests_run: [{ command: "npm test", journey: "Filter by type", result: "passed" }],
     });
+    expect(intentional?.status_was_explicit).toBe(true);
     expect(salvageAgentReport(intentional!, verification).status).toBe("partial");
     expect(composeResult(intentional!, usage, 0, verification, portReclamation, ROOT_START_COMMAND).status).toBe(
       "partial",
@@ -250,9 +266,10 @@ describe("result contract", () => {
       implemented_features: ["Feature one", "Feature two"],
       assumptions: [],
       tests_run: [{ command: "npm test", journey: "Kept journey", result: "passed" }],
+      status_was_explicit: false,
     });
     expect(composeResult(normalized!, usage, 0, verification, portReclamation, ROOT_START_COMMAND).status).toBe(
-      "partial",
+      "success",
     );
   });
 

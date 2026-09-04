@@ -52,6 +52,11 @@ export interface PartialRunResult {
   implemented_features: string[];
   assumptions: string[];
   tests_run: TestRun[];
+  /**
+   * True when report.partial.json contained a valid status field.
+   * False when status was defaulted (omitted/invalid). Not written to result.json.
+   */
+  status_was_explicit?: boolean;
 }
 
 export interface AppVerification {

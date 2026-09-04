@@ -18,6 +18,7 @@ const FALLBACK_PARTIAL: PartialRunResult = {
   implemented_features: [],
   assumptions: [],
   tests_run: [],
+  status_was_explicit: false,
 };
 
 /** Default when report.partial.json omits `summary` — not an intentional agent claim. */
@@ -69,8 +70,9 @@ function normalizeTestRun(value: unknown): TestRun | undefined {
 export function normalizePartialResult(value: unknown): PartialRunResult | undefined {
   if (typeof value !== "object" || value === null) return undefined;
   const result = value as Record<string, unknown>;
-  const status = ["success", "partial", "failed"].includes(String(result.status))
-    ? result.status as PartialRunResult["status"]
+  const statusWasExplicit = ["success", "partial", "failed"].includes(String(result.status));
+  const status = statusWasExplicit
+    ? (result.status as PartialRunResult["status"])
     : "partial";
   const testsRun = Array.isArray(result.tests_run)
     ? result.tests_run.map(normalizeTestRun).filter((test): test is TestRun => test !== undefined)
@@ -84,6 +86,7 @@ export function normalizePartialResult(value: unknown): PartialRunResult | undef
     implemented_features: filteredStrings(result.implemented_features),
     assumptions: filteredStrings(result.assumptions),
     tests_run: testsRun,
+    status_was_explicit: statusWasExplicit,
   };
 }
 
@@ -101,12 +104,19 @@ export function isMissingAgentReport(partial: PartialRunResult): boolean {
   return partial.status === "failed" && partial.tests_run.length === 0 && partial.summary === FALLBACK_PARTIAL.summary;
 }
 
-/** Incomplete or absent agent report — not an intentional status:"partial" with a real summary. */
+/**
+ * Incomplete or absent agent report. Intentional `status: "partial"` (explicit field)
+ * is NOT incomplete — even when verify is green.
+ */
 export function isIncompleteAgentReport(partial: PartialRunResult): boolean {
   if (isMissingAgentReport(partial)) return true;
-  if (partial.status === "failed") return false;
   if (partial.status === "success") return false;
+  if (partial.status === "failed" && partial.status_was_explicit) return false;
+  // Explicit partial means the agent chose that outcome.
+  if (partial.status === "partial" && partial.status_was_explicit) return false;
+  // Missing/invalid status (defaulted to partial), or placeholder-only report.
   return (
+    partial.status_was_explicit !== true ||
     partial.summary === PLACEHOLDER_SUMMARY ||
     partial.summary === FALLBACK_PARTIAL.summary
   );
@@ -186,8 +196,9 @@ export function composeResult(
       : "partial";
   const journeysPassed = report.tests_run.filter((t) => t.result === "passed").length;
   const competitionWeighted = competitionWeightedTokens(usage);
+  const { status_was_explicit: _statusWasExplicit, ...reportFields } = report;
   return {
-    ...report,
+    ...reportFields,
     status,
     app_url: "http://localhost:3000",
     start_command: startCommand,

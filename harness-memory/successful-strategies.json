@@ -1,18 +1,22 @@
 {
   "schema": "agentcofounder.harness_memory.strategies.v1",
-  "updated_at": "2026-09-04T09:58:56.335Z",
+  "updated_at": "2026-09-04T12:36:21.949Z",
   "rules": [
     {
       "id": "strategy.lean_suite",
       "rule": "Successful runs stayed ≤10 UI journeys with modular domain/storage/components.",
       "category": "strategy",
-      "confidence": 0.4,
+      "confidence": 1,
       "evidence_runs": [
         "2026-09-04T09-28-02-973Z",
-        "2026-09-04T09-47-30-599Z"
+        "2026-09-04T09-47-30-599Z",
+        "2026-09-04T10-05-51-742Z",
+        "2026-09-04T11-17-24-148Z",
+        "2026-09-04T11-43-24-685Z",
+        "2026-09-04T12-30-02-812Z"
       ],
       "created_at": "2026-09-04T09:31:36.651Z",
-      "updated_at": "2026-09-04T09:58:56.335Z",
+      "updated_at": "2026-09-04T12:36:21.949Z",
       "enabled": true,
       "expires_at": null,
       "provenance": "run:2026-09-04T09-28-02-973Z"
