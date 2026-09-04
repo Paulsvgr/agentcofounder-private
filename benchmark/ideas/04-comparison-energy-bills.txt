@@ -1,0 +1,3 @@
+Our household wants to understand our energy bills. We enter each bill: period, kWh used, amount
+paid. The app should show cost per kWh, compare each month to the average, highlight unusually
+expensive months, and let us correct a bill we typed wrong.

@@ -1,0 +1,340 @@
+{
+  "status": "success",
+  "app_url": "http://localhost:3000",
+  "start_command": "npm --prefix 'output/app' run dev",
+  "summary": "A pottery studio supply tracker that lists every glaze, clay and tool with its supplier and quantity left, filters by type, and highlights anything running low so it jumps out before it runs out.",
+  "implemented_features": [
+    "Add a supply with name, supplier, type (glaze/clay/tools) and quantity left, shown immediately in the list",
+    "Whole-studio list of all supplies with name, supplier, type, quantity and status",
+    "Filter the list to one type at a time (All / Glazes / Clay / Tools) with live counts per type",
+    "Dedicated 'Running low' panel that lists every supply at or below 2 left, most urgent first, with a warning badge",
+    "Low-stock badge on each table row so low items jump out inside the full list too",
+    "Summary stat cards: total supplies tracked, running-low count, and counts per type",
+    "Quick +/− steppers on each row to adjust quantity as supplies are used up (floors at 0)",
+    "Edit any supply (name, supplier, type, quantity) in a dialog and delete supplies",
+    "Validation with one visible error per field: required name/supplier/quantity, whole-number quantity of 0 or more",
+    "Data persists in the browser across refreshes; corrupted or damaged saved entries are skipped with a notice instead of crashing"
+  ],
+  "assumptions": [
+    "'A couple left' is interpreted as 2 or fewer units: any supply with quantity <= 2 is flagged as running low (constant LOW_STOCK_THRESHOLD)",
+    "Type is a fixed set of three categories — glaze, clay, tools — matching the idea's 'glaze or clay or tools, that sort of thing'",
+    "Quantity is a plain whole number of units left; no per-supply unit (kg, bottles) field was added since the idea only asks 'how many I've got left'",
+    "Supplier is required on every supply because the idea lists it as a core attribute of what to track",
+    "Duplicate names are allowed (a studio can stock the same glaze from two suppliers); the idea does not imply records must be unique",
+    "No lifecycle states exist in the idea, so no state machine was added; the only status is the derived running-low flag",
+    "+/− quantity steppers were added as the lightest way to reflect 'how many I've got left' as supplies are used, alongside full editing"
+  ],
+  "tests_run": [
+    {
+      "command": "npm test",
+      "journey": "Add a complete supply and see it in the list",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Incomplete form rejected with visible per-field errors",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Non-whole and negative quantities rejected with a visible message",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Edit a supply through the dialog and see the update",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Delete a supply and see the empty state",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Adjust quantity with steppers, floored at zero",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Filter the list by type and back to all",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Low-stock supplies flagged in the Running low panel and badged in the list",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Calm empty state when nothing is running low",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Supplies persist across a reload",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Corrupted saved data recovers without crashing",
+      "result": "passed"
+    },
+    {
+      "command": "npm test",
+      "journey": "Damaged entries skipped while valid ones are kept",
+      "result": "passed"
+    },
+    {
+      "command": "npm run build",
+      "journey": "Type-check and production build",
+      "result": "passed"
+    }
+  ],
+  "harness_checks": [
+    {
+      "command": "output/app/node_modules/.bin/vitest run --reporter=json --outputFile=artifacts/runs/2026-09-04T16-51-30-503Z/verify-1/app-test-results.json --passWithNoTests=false",
+      "journey": "The generated app's Vitest report contained at least one completed test and no failed, skipped, or todo tests",
+      "result": "passed"
+    },
+    {
+      "command": "npm run build",
+      "journey": "The generated app completed a production build",
+      "result": "passed"
+    },
+    {
+      "command": "npm run dev",
+      "journey": "The generated app started its own HTTP server on port 3000 and shut down cleanly",
+      "result": "passed"
+    }
+  ],
+  "model_calls": 19,
+  "input_tokens": 468472,
+  "output_tokens": 22871,
+  "cache_read_tokens": 0,
+  "cache_write_tokens": 0,
+  "total_tokens": 491343,
+  "reasoning_tokens": 0,
+  "cost_total": 0,
+  "call_log": [
+    {
+      "index": 1,
+      "model": "openai/Qwen/Qwen3.8-27B-FP8",
+      "input_tokens": 4091,
+      "output_tokens": 85,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "total_tokens": 4176,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 2,
+      "model": "openai/Qwen/Qwen3.8-27B-FP8",
+      "input_tokens": 5327,
+      "output_tokens": 325,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "total_tokens": 5652,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 3,
+      "model": "openai/Qwen/Qwen3.8-27B-FP8",
+      "input_tokens": 9368,
+      "output_tokens": 1901,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "total_tokens": 11269,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 4,
+      "model": "openai/Qwen/Qwen3.8-27B-FP8",
+      "input_tokens": 12301,
+      "output_tokens": 187,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "total_tokens": 12488,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 5,
+      "model": "openai/Qwen/Qwen3.8-27B-FP8",
+      "input_tokens": 13070,
+      "output_tokens": 96,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "total_tokens": 13166,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 6,
+      "model": "openai/Qwen/Qwen3.8-27B-FP8",
+      "input_tokens": 13391,
+      "output_tokens": 1691,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "total_tokens": 15082,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 7,
+      "model": "openai/Qwen/Qwen3.8-27B-FP8",
+      "input_tokens": 16322,
+      "output_tokens": 5627,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "total_tokens": 21949,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 8,
+      "model": "openai/Qwen/Qwen3.8-27B-FP8",
+      "input_tokens": 24304,
+      "output_tokens": 1394,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "total_tokens": 25698,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 9,
+      "model": "openai/Qwen/Qwen3.8-27B-FP8",
+      "input_tokens": 25746,
+      "output_tokens": 1708,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "total_tokens": 27454,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 10,
+      "model": "openai/Qwen/Qwen3.8-27B-FP8",
+      "input_tokens": 27528,
+      "output_tokens": 1894,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "total_tokens": 29422,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 11,
+      "model": "openai/Qwen/Qwen3.8-27B-FP8",
+      "input_tokens": 29467,
+      "output_tokens": 5381,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "total_tokens": 34848,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 12,
+      "model": "openai/Qwen/Qwen3.8-27B-FP8",
+      "input_tokens": 34882,
+      "output_tokens": 82,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "total_tokens": 34964,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 13,
+      "model": "openai/Qwen/Qwen3.8-27B-FP8",
+      "input_tokens": 35107,
+      "output_tokens": 110,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "total_tokens": 35217,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 14,
+      "model": "openai/Qwen/Qwen3.8-27B-FP8",
+      "input_tokens": 35317,
+      "output_tokens": 304,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "total_tokens": 35621,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 15,
+      "model": "openai/Qwen/Qwen3.8-27B-FP8",
+      "input_tokens": 35650,
+      "output_tokens": 131,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "total_tokens": 35781,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 16,
+      "model": "openai/Qwen/Qwen3.8-27B-FP8",
+      "input_tokens": 36030,
+      "output_tokens": 232,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "total_tokens": 36262,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 17,
+      "model": "openai/Qwen/Qwen3.8-27B-FP8",
+      "input_tokens": 36324,
+      "output_tokens": 139,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "total_tokens": 36463,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 18,
+      "model": "openai/Qwen/Qwen3.8-27B-FP8",
+      "input_tokens": 36551,
+      "output_tokens": 1101,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "total_tokens": 37652,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    },
+    {
+      "index": 19,
+      "model": "openai/Qwen/Qwen3.8-27B-FP8",
+      "input_tokens": 37696,
+      "output_tokens": 483,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "total_tokens": 38179,
+      "reasoning_tokens": 0,
+      "cost_total": 0
+    }
+  ],
+  "pi_exit_code": 0,
+  "telemetry_source": "pi-json-event-stream",
+  "port_reclamation": {
+    "preexisting_listener": false,
+    "listener_after_pi": false,
+    "attempted": false,
+    "reclaimed": false,
+    "process_ids": [],
+    "diagnostic": "Port 3000 remained free after Pi"
+  }
+}

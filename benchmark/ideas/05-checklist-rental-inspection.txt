@@ -1,0 +1,4 @@
+A letting agent inspects flats. For each inspection they add the flat and date, then work through
+room-by-room checks, marking each as fine or needing repair with a note. They need to see the
+progress of an inspection, a list of everything still needing repair, and reopen an item they
+closed by mistake.

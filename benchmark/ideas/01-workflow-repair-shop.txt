@@ -1,0 +1,4 @@
+A small bicycle repair shop wants to stop losing track of jobs. When a bike comes in they
+note the customer, the bike, and what needs doing. A job moves from booked to in progress
+to waiting for a part to ready for pickup to collected. The mechanic wants to see what is
+in the shop right now, what is blocked on parts, and how many jobs were collected this week.

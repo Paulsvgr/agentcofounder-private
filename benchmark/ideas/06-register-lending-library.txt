@@ -1,0 +1,3 @@
+Our makerspace lends tools to members. We want to register each tool, lend it to a named member
+with a due date, take it back, see what is currently out and what is overdue, and search the tools
+by name or category.

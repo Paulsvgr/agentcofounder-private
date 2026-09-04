@@ -1,0 +1,13 @@
+
+> generated-agent-cofounder-app@0.0.0 build
+> tsc --noEmit && vite build
+
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 41 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.45 kB │ gzip:  0.29 kB
+dist/assets/index-CAhQhtSd.css    5.49 kB │ gzip:  1.70 kB
+dist/assets/index-CdNWPMog.js   207.49 kB │ gzip: 65.57 kB
+✓ built in 515ms

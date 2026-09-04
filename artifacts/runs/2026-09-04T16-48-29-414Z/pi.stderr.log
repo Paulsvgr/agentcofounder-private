@@ -1,0 +1,5 @@
+No API key found for openai.
+
+Use /login to log into a provider via OAuth or API key. See:
+  /home/hossam/Hackathon/agentcofounder-optimized/node_modules/@earendil-works/pi-coding-agent/docs/providers.md
+  /home/hossam/Hackathon/agentcofounder-optimized/node_modules/@earendil-works/pi-coding-agent/docs/models.md
