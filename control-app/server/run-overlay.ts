@@ -228,6 +228,7 @@ export async function patchRunOverlay(
   if (!explicitExperimentId && patch.classification?.experiment) {
     const slug = patch.classification.experiment.trim();
     if (slug && slug !== "unknown") {
+      validateExperimentId(slug);
       const experimentRecord = await getExperiment(repoRoot, slug);
       if (experimentRecord) {
         experimentId = slug;

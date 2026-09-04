@@ -8,8 +8,7 @@ import {
   type ExperimentListEntry,
   type ExperimentRecord,
 } from "../lib/api.js";
-
-const EXPERIMENT_ID_PATTERN = /^[a-z0-9][a-z0-9-]{0,79}$/;
+import { EXPERIMENT_ID_PATTERN } from "../../../shared/experiment-id.js";
 
 function sourceBadge(source: ExperimentListEntry["source"]): string {
   switch (source) {

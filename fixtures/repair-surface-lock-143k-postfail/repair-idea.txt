@@ -1,0 +1,8 @@
+The Home Library / bookshelf app already exists in this workspace (source and tests are present).
+
+Do not rebuild from scratch or replace the whole application.
+
+1. Call `verify` first.
+2. If verification fails, repair until green.
+3. Prefer fixing real failures; avoid unrelated rewrites.
+4. When green, write `report.partial.json` and finish.

@@ -119,10 +119,14 @@ Launch `npm run challenge` with a chosen env profile and overrides:
 
 - Env profile from `~/.pi/agent/challenge-env*.sh` (default: **Z.ai**)
 - Provider, model, thinking, timeout, experiment/arm/rep/intervention, idea file
-- Live job output stream
+- **Harness / template flag board** (KEEP / PARKED / OFF) with per-launch toggles
+- Start / **Stop** / timeout status (`running` · `succeeded` · `failed` · `timed_out` · `stopped`)
+- Live job output stream + link to detected `artifacts/runs/<id>` when available
 
 **Recommended local profile:** `challenge-env-zai.sh` · provider `zai` · model `glm-5.2` ·
 thinking `off`. Berget can emit mega-calls; see [CONTROL-APP.md](../docs/v2/CONTROL-APP.md).
+
+Runs list shows experiment **arm** badges and a compact KEEP/PARKED board strip.
 
 ## Data files
 
@@ -178,7 +182,10 @@ and [`src/v2/`](../src/v2/) remain the source of truth.
 | `POST` | `/api/runs/:id/app/open` | Start generated app dev server |
 | `GET` | `/api/runs/:id/station.html` | Served analysis HTML |
 | `POST` | `/api/challenge` | Launch challenge run |
+| `GET` | `/api/challenge/active` | Active challenge job (or null) |
+| `GET` | `/api/harness-board` | Frozen KEEP/PARKED/OFF flag board + defaults |
 | `GET` | `/api/jobs/:id` | Job status |
+| `POST` | `/api/jobs/:id/stop` | Stop a running job |
 | `GET` | `/api/jobs/:id/stream` | SSE job output |
 | `GET` | `/api/env-profiles` | Available challenge env scripts |
 | `GET` | `/api/publish/status` | Publish config (server key set?, API bases) |

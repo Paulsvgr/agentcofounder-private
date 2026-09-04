@@ -15,6 +15,7 @@ import {
 import { weightedCost } from "./weights.js";
 import type { ExperimentMetadata } from "./experiment-metadata.js";
 import { collectExperimentMetadata } from "./experiment-metadata.js";
+import type { TemplateOverlaysManifestBlock } from "./template-overlays.js";
 
 export type { ExperimentMetadata } from "./experiment-metadata.js";
 export { collectExperimentMetadata, resolveExperimentId } from "./experiment-metadata.js";
@@ -88,6 +89,7 @@ export interface RunManifest {
   config_schema_version: typeof CONFIG_SCHEMA_VERSION;
   config_hash: string;
   template: TemplateProvenance;
+  template_overlays: TemplateOverlaysManifestBlock;
   prompt: PromptProvenance;
   versions: VersionSlots;
   experiment: ExperimentMetadata;
@@ -100,6 +102,7 @@ export interface PreRunManifestInput {
   ideaFile: string;
   ideaText: string;
   templateSnapshotDirectory: string;
+  templateOverlays: TemplateOverlaysManifestBlock;
   systemPrompt: string;
   publicJourneys: string;
   agentsMd: string;
@@ -238,12 +241,16 @@ export async function buildPreRunManifest(input: PreRunManifestInput): Promise<R
       file_count: templateHashes.size,
       snapshot_dir: "app-template",
     },
+    template_overlays: input.templateOverlays,
     prompt: {
       system_prompt_sha256: sha256Text(input.systemPrompt),
       journeys_sha256: sha256Text(input.publicJourneys),
       agents_md_sha256: sha256Text(input.agentsMd),
     },
-    versions: emptyVersionSlots(),
+    versions: {
+      ...emptyVersionSlots(),
+      assembler: input.templateOverlays.assembler_version,
+    },
     experiment: collectExperimentMetadata(),
     outcome: null,
   };

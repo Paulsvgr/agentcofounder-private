@@ -1,0 +1,20 @@
+{
+  "overlay_id": "tailwind-v1",
+  "version": "1.0.0",
+  "files": [
+    { "source": "files/package.json", "target": "package.json" },
+    { "source": "files/package-lock.json", "target": "package-lock.json" },
+    { "source": "files/vite.config.ts", "target": "vite.config.ts" },
+    { "source": "files/styles.css", "target": "src/styles.css" },
+    { "source": "files/App.tsx", "target": "src/App.tsx" }
+  ],
+  "replaces": [
+    "package.json",
+    "package-lock.json",
+    "vite.config.ts",
+    "src/styles.css",
+    "src/App.tsx"
+  ],
+  "agents_section_marker": "## Tailwind CSS (preinstalled)",
+  "guard_profile": null
+}

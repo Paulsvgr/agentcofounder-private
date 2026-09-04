@@ -1,0 +1,5 @@
+Continue this bookshelf app.
+
+Write journey tests covering add / lend / return / persist reload.
+You may also add focused unit tests for the books module if helpful.
+Then run VERIFY until green, build, and write report.partial.json.

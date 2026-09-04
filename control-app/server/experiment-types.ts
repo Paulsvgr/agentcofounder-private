@@ -50,7 +50,7 @@ export interface PatchExperimentRequest {
   tags?: string[];
 }
 
-export const EXPERIMENT_ID_PATTERN = /^[a-z0-9][a-z0-9-]{0,79}$/;
+export { EXPERIMENT_ID_PATTERN } from "../shared/experiment-id.js";
 
 export function titleFromExperimentId(id: string): string {
   return id

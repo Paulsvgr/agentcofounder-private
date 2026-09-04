@@ -1,0 +1,41 @@
+{
+  "version": "1.0.0",
+  "entries": [
+    {
+      "family": "rtl_multiple_elements",
+      "signals": [
+        "Found multiple elements with the role",
+        "Found multiple elements with the text:"
+      ],
+      "cause": "Global Testing Library query matches repeated controls or duplicated text.",
+      "hint": "Scope to the relevant row/card first, then query with within(row). Prefer unique accessible names over global getByRole/getByText.",
+      "verified_count": 2
+    },
+    {
+      "family": "rtl_accessible_name",
+      "signals": [
+        "Unable to find an accessible element with the role"
+      ],
+      "cause": "getByRole uses the accessible name (aria-label), which may differ from visible button text.",
+      "hint": "Check aria-label / accessible name before changing UI. Match getByRole name to the accessible name, not only the visible label.",
+      "verified_count": 1
+    },
+    {
+      "family": "test_storage_isolation",
+      "signals": [
+        "persists books across",
+        "persists across a remount",
+        "across a remount",
+        "across reload"
+      ],
+      "require_any": [
+        "Unable to find",
+        "No books yet",
+        "Expected"
+      ],
+      "cause": "Tests leak state via localStorage / module-time storage capture across cases.",
+      "hint": "Clear the actual JSDOM localStorage the store uses (beforeEach/afterEach). If the store captures storage at import time, do not replace globalThis.localStorage after import — clear the captured storage instead.",
+      "verified_count": 1
+    }
+  ]
+}

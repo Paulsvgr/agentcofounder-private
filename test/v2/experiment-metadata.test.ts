@@ -49,4 +49,15 @@ describe("collectExperimentMetadata", () => {
       else process.env.RUN_COHORT = previousCohort;
     }
   });
+
+  it("rejects invalid RUN_EXPERIMENT ids", () => {
+    const previous = process.env.RUN_EXPERIMENT;
+    process.env.RUN_EXPERIMENT = "css-vocabulary-v1.1";
+    try {
+      expect(() => collectExperimentMetadata()).toThrow(/lowercase/);
+    } finally {
+      if (previous === undefined) delete process.env.RUN_EXPERIMENT;
+      else process.env.RUN_EXPERIMENT = previous;
+    }
+  });
 });

@@ -1,5 +1,6 @@
 import { access, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { assertValidExperimentId } from "./experiment-id.js";
 
 const EXPERIMENT_SCHEMA = "agentcofounder.experiment.v1" as const;
 
@@ -58,6 +59,7 @@ export async function ensureExperimentCatalogEntry(
 ): Promise<void> {
   const id = experimentId.trim();
   if (!id) return;
+  assertValidExperimentId(id);
 
   const dir = path.join(experimentsRoot(repositoryRoot), id);
   const filePath = experimentFilePath(repositoryRoot, id);

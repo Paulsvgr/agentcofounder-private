@@ -1,0 +1,11 @@
+{
+  "schema": "agentcofounder.template_base_provenance.v1",
+  "source_run_id": "2026-08-31T21-16-45-263Z",
+  "source_path": "artifacts/runs/2026-08-31T21-16-45-263Z/app-template",
+  "tree_sha256": "1f897f6388754c98f311031dd79600bd65d1ec476e57a43b67ca70f67dad82f6",
+  "verified_at": "2026-09-01",
+  "byte_anchors": {
+    "src/styles.css": 966,
+    "AGENTS.md": 1581
+  }
+}

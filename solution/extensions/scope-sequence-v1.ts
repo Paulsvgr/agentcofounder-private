@@ -17,6 +17,7 @@ import {
 import {
   getScopeSequenceSessionState,
   resetScopeSequenceSession,
+  resolveScopeSequenceRunIdFromEnvironment,
   resolveScopeSequenceDelivery,
   resolveScopeSequenceExportPath,
   scopeSequenceV1EnabledFromEnvironment,
@@ -37,7 +38,7 @@ export default function scopeSequenceV1(pi: ExtensionAPI) {
 
   pi.on("session_start", async () => {
     toolResultIndex = 0;
-    resetScopeSequenceSession();
+    resetScopeSequenceSession(resolveScopeSequenceRunIdFromEnvironment());
     persistExport();
   });
 

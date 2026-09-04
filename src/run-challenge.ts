@@ -1,11 +1,11 @@
 import { spawn } from "node:child_process";
 import { createWriteStream } from "node:fs";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { appendFile, cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { copyAppTemplateTree, prepareOutput } from "./prepare-output.js";
+import { copyAppTemplateTree, prepareOutput, stripHarnessSelfTestsFromPreparedApp } from "./prepare-output.js";
 import { snapshotGeneratedApp } from "./snapshot-generated-app.js";
-import { auditAppPortAfterPi } from "./port-owner.js";
+import { auditAppPortAfterPi, reclaimSameUserPort } from "./port-owner.js";
 import { signalProcessTree, terminateProcessTree, usesDetachedProcessGroup } from "./process-tree.js";
 import {
   composeResult,
@@ -34,11 +34,13 @@ import {
   buildProductIdeaUserMessage,
   type ChallengePromptBundle,
 } from "./v2/challenge-prompt.js";
+import { applyProductQualityContractV1 } from "../solution/product-quality-contract-v1.js";
 import {
   cssVocabularyGuardsEnabled,
   resolveTemplateOverlayConfigFromEnvironment,
   toTemplateOverlaysManifestBlock,
 } from "./v2/template-overlays.js";
+import { assertMutuallyExclusiveScopeSequenceExperimentFlags } from "../solution/extensions/scope-sequence-core.js";
 
 interface Arguments {
   ideaFile: string;
@@ -85,6 +87,9 @@ Environment:
   TEMPLATE_CSS_VOCABULARY     Enable CSS vocabulary overlay (0/1, default 0)
   TEMPLATE_PERSISTENCE        Enable persistence primitive overlay (0/1, default 0)
   TEMPLATE_TEST_ISOLATION     Enable test isolation overlay (0/1, default 0)
+  TEMPLATE_TAILWIND           Enable preinstalled Tailwind overlay (0/1, default 0)
+  HARNESS_ERROR_MEMORY_V1     Append known-error hints on VERIFY FAIL (0/1, default 0)
+  HARNESS_ROOT_ERROR_FIRST_V1 Surface root/runtime VERIFY errors before RTL symptoms (0/1, default 0)
 `);
 }
 
@@ -233,10 +238,11 @@ export function buildPiArguments(
   if (options.harnessOwnedVerify !== undefined) {
     harnessConfig.harness_owned_verify = options.harnessOwnedVerify;
   }
-  const rawAppend = buildAppendSystemPrompt(systemPrompt, publicJourneys, appContext);
+  const effectiveSystemPrompt = applyProductQualityContractV1(systemPrompt);
+  const rawAppend = buildAppendSystemPrompt(effectiveSystemPrompt, publicJourneys, appContext);
   const bundle: ChallengePromptBundle = {
     idea: idea.trim(),
-    sources: { systemPrompt, publicJourneys, agentsMd: appContext },
+    sources: { systemPrompt: effectiveSystemPrompt, publicJourneys, agentsMd: appContext },
     raw_append_system_prompt: rawAppend,
     effective_append_system_prompt: rawAppend,
     effective_full_system_prompt: rawAppend,
@@ -259,25 +265,87 @@ async function main(): Promise<void> {
   const args = parseArguments(process.argv.slice(2));
   const idea = await readFile(args.ideaFile, "utf8");
   const overlayConfig = resolveTemplateOverlayConfigFromEnvironment();
-  const { outputDirectory, assemblyRecord } = await prepareOutput(REPOSITORY_ROOT, args.outputDirectory);
+  const { outputDirectory, assemblyRecord, reusedNodeModules } = await prepareOutput(
+    REPOSITORY_ROOT,
+    args.outputDirectory,
+  );
   const templateOverlays = toTemplateOverlaysManifestBlock(assemblyRecord);
   console.log(`Prepared clean application workspace: ${outputDirectory}`);
+  if (reusedNodeModules) {
+    console.log("Reused node_modules from same package-lock (skipped npm ci)");
+  }
 
-  if (!args.skipAppInstall) {
+  if (!args.skipAppInstall && !reusedNodeModules) {
     const installCode = await runInherited(
       commandName("npm"),
       ["ci", "--ignore-scripts", "--prefer-offline"],
       outputDirectory,
     );
     if (installCode !== 0) throw new Error(`App dependency installation failed with exit code ${installCode}`);
+  } else if (args.skipAppInstall && !reusedNodeModules) {
+    console.log("Skipping npm ci (--skip-app-install)");
   }
+
+  // Optional sealed fixture overlay (deterministic seeded experiments).
+  // Copies product/src files from HARNESS_SEEDED_FIXTURE_DIR into the prepared app.
+  // Never leak harness provenance into the app workspace (Pi can read it).
+  const seededFixtureRaw = process.env.HARNESS_SEEDED_FIXTURE_DIR?.trim();
+  if (seededFixtureRaw) {
+    const seededFixture = path.isAbsolute(seededFixtureRaw)
+      ? seededFixtureRaw
+      : path.join(REPOSITORY_ROOT, seededFixtureRaw);
+    const seededHarnessOnlyNames = new Set([
+      "repair-idea.txt",
+      "README.md",
+      "SEED_META.json",
+    ]);
+    await cp(seededFixture, outputDirectory, {
+      recursive: true,
+      filter: (src) => {
+        const base = path.basename(src);
+        return !seededHarnessOnlyNames.has(base);
+      },
+    });
+    // Belt-and-suspenders: remove if an older fixture layout nested these under src/.
+    await rm(path.join(outputDirectory, "SEED_META.json"), { force: true }).catch(() => undefined);
+    await rm(path.join(outputDirectory, "repair-idea.txt"), { force: true }).catch(() => undefined);
+    // Fixture cleanup only — harness self-tests are stripped below for all runs.
+    await rm(path.join(outputDirectory, "src", "debug.test.tsx"), { force: true }).catch(
+      () => undefined,
+    );
+    await rm(path.join(outputDirectory, "src", "debug.test.ts"), { force: true }).catch(
+      () => undefined,
+    );
+    console.log(`Overlaid seeded fixture: ${seededFixture}`);
+  }
+
+  // Always strip harness-only reporter self-tests from the product app (natural + seeded).
+  const strippedSelfTests = await stripHarnessSelfTestsFromPreparedApp(outputDirectory);
+  if (strippedSelfTests.length > 0) {
+    console.log(`Stripped harness self-tests: ${strippedSelfTests.join(", ")}`);
+  }
+
+  // Optional probe-only AGENTS.md append (no gate). Path relative to repo or absolute.
+  const agentsAppendRaw = process.env.HARNESS_AGENTS_APPEND_FILE?.trim();
+  if (agentsAppendRaw) {
+    const agentsAppendPath = path.isAbsolute(agentsAppendRaw)
+      ? agentsAppendRaw
+      : path.join(REPOSITORY_ROOT, agentsAppendRaw);
+    const extra = (await readFile(agentsAppendPath, "utf8")).trim();
+    if (extra) {
+      await appendFile(path.join(outputDirectory, "AGENTS.md"), `\n\n${extra}\n`, "utf8");
+      console.log(`Appended AGENTS probe section from ${agentsAppendPath}`);
+    }
+  }
+
   if (args.prepareOnly) return;
 
-  const [systemPrompt, publicJourneys, appContext] = await Promise.all([
+  const [systemPromptRaw, publicJourneys, appContext] = await Promise.all([
     readFile(path.join(REPOSITORY_ROOT, "solution", "system-prompt.md"), "utf8"),
     readFile(path.join(REPOSITORY_ROOT, "contract-public", "journeys.md"), "utf8"),
     readFile(path.join(outputDirectory, "AGENTS.md"), "utf8"),
   ]);
+  const systemPrompt = applyProductQualityContractV1(systemPromptRaw);
 
   const runId = new Date().toISOString().replaceAll(":", "-").replaceAll(".", "-");
   const artifactDirectory = path.join(REPOSITORY_ROOT, "artifacts", "runs", runId);
@@ -293,6 +361,9 @@ async function main(): Promise<void> {
   const runConfig = resolveRunConfigFromEnvironment();
   if (runConfig.harness_owned_verify) {
     process.env.HARNESS_OWNED_VERIFY = "1";
+  }
+  if (process.env.HARNESS_TAIL_SWEEP_V1 === "1" || process.env.HARNESS_TAIL_SWEEP_V1 === "true") {
+    process.env.HARNESS_TAIL_SWEEP_V1 = "1";
   }
   if (process.env.HARNESS_VERIFY_REPAIR_V1 === "1" || process.env.HARNESS_VERIFY_REPAIR_V1 === "true") {
     process.env.HARNESS_VERIFY_REPAIR_V1 = "1";
@@ -324,6 +395,31 @@ async function main(): Promise<void> {
   ) {
     process.env.HARNESS_SCOPE_SEQUENCE_V1 = "1";
   }
+  if (
+    process.env.HARNESS_SCOPE_SEQUENCE_V2 === "1" ||
+    process.env.HARNESS_SCOPE_SEQUENCE_V2 === "true"
+  ) {
+    process.env.HARNESS_SCOPE_SEQUENCE_V2 = "1";
+  }
+  if (
+    process.env.HARNESS_SCOPE_SEQUENCE_V2B === "1" ||
+    process.env.HARNESS_SCOPE_SEQUENCE_V2B === "true"
+  ) {
+    process.env.HARNESS_SCOPE_SEQUENCE_V2B = "1";
+  }
+  if (
+    process.env.HARNESS_ERROR_MEMORY_V1 === "1" ||
+    process.env.HARNESS_ERROR_MEMORY_V1 === "true"
+  ) {
+    process.env.HARNESS_ERROR_MEMORY_V1 = "1";
+  }
+  if (
+    process.env.HARNESS_ROOT_ERROR_FIRST_V1 === "1" ||
+    process.env.HARNESS_ROOT_ERROR_FIRST_V1 === "true"
+  ) {
+    process.env.HARNESS_ROOT_ERROR_FIRST_V1 = "1";
+  }
+  assertMutuallyExclusiveScopeSequenceExperimentFlags();
   process.env.TEMPLATE_CSS_VOCABULARY = cssVocabularyGuardsEnabled(overlayConfig) ? "1" : "0";
 
   const manifest = await buildPreRunManifest({
@@ -379,6 +475,11 @@ async function main(): Promise<void> {
     [rootResultPath, artifactResultPath],
   );
   if (canVerifyApp) {
+    // Belt-and-suspenders: orphan listeners that survived audit must not block the probe.
+    if (await portHasListener(APP_PORT)) {
+      const forced = await reclaimSameUserPort(APP_PORT);
+      console.warn(`Pre-verify port ${APP_PORT} cleanup: ${forced.diagnostic}`);
+    }
     verification = await verifyGeneratedApp(outputDirectory, artifactDirectory, { displayRoot: REPOSITORY_ROOT });
     result = composeResult(partial, usage, pi.exitCode, verification, portReclamation, startCommand);
     resultPaths = await writeResult(outputDirectory, result, [rootResultPath, artifactResultPath]);

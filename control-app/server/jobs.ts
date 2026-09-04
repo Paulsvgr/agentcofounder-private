@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { spawn, type ChildProcess } from "node:child_process";
 import { EventEmitter } from "node:events";
 import { signalProcessTree, usesDetachedProcessGroup } from "../../src/process-tree.js";
+import { assertValidExperimentId } from "../../src/v2/experiment-id.js";
 import type { ChallengeLaunchRequest, JobKind, JobRecord, JobStatus } from "./types.js";
 
 export interface SpawnJobOptions {
@@ -11,26 +12,43 @@ export interface SpawnJobOptions {
   args: string[];
   cwd: string;
   env?: NodeJS.ProcessEnv;
+  /** Soft wall clock; when exceeded, process is killed and status becomes timed_out. */
+  timeout_ms?: number;
 }
+
+const RUN_ID_RE = /artifacts\/runs\/(\d{4}-\d{2}-\d{2}T[\d-]+Z)/;
 
 class JobRegistry extends EventEmitter {
   private jobs = new Map<string, JobRecord>();
   private children = new Map<string, ChildProcess>();
   private activeChallengeJobId: string | null = null;
+  private stopRequested = new Set<string>();
+  private timeouts = new Map<string, ReturnType<typeof setTimeout>>();
 
   get(jobId: string): JobRecord | undefined {
     return this.jobs.get(jobId);
   }
 
-  hasActiveChallenge(): boolean {
-    if (!this.activeChallengeJobId) return false;
-    const job = this.jobs.get(this.activeChallengeJobId);
-    return job?.status === "running";
+  list(): JobRecord[] {
+    return [...this.jobs.values()].sort((a, b) => b.started_at.localeCompare(a.started_at));
   }
 
-  killJob(jobId: string): boolean {
+  getActiveChallenge(): JobRecord | null {
+    if (!this.activeChallengeJobId) return null;
+    const job = this.jobs.get(this.activeChallengeJobId);
+    return job?.status === "running" ? job : null;
+  }
+
+  hasActiveChallenge(): boolean {
+    return this.getActiveChallenge() !== null;
+  }
+
+  killJob(jobId: string, as: "stopped" | "timed_out" = "stopped"): boolean {
     const job = this.jobs.get(jobId);
     if (!job || job.status !== "running") return false;
+
+    this.stopRequested.add(jobId);
+    job.status = as;
 
     const child = this.children.get(jobId);
     if (child) {
@@ -58,6 +76,7 @@ class JobRegistry extends EventEmitter {
       lines: [],
       started_at: new Date().toISOString(),
       finished_at: null,
+      detected_run_id: null,
     };
 
     this.jobs.set(id, record);
@@ -75,7 +94,23 @@ class JobRegistry extends EventEmitter {
 
     this.children.set(id, child);
     this.attachChild(id, child);
+
+    if (options.timeout_ms && options.timeout_ms > 0) {
+      const timer = setTimeout(() => {
+        this.killJob(id, "timed_out");
+      }, options.timeout_ms);
+      this.timeouts.set(id, timer);
+    }
+
     return record;
+  }
+
+  private clearTimeout(jobId: string): void {
+    const timer = this.timeouts.get(jobId);
+    if (timer) {
+      clearTimeout(timer);
+      this.timeouts.delete(jobId);
+    }
   }
 
   private attachChild(jobId: string, child: ChildProcess): void {
@@ -83,6 +118,11 @@ class JobRegistry extends EventEmitter {
       const job = this.jobs.get(jobId);
       if (!job) return;
       job.lines.push(line);
+      const match = line.match(RUN_ID_RE);
+      if (match?.[1]) {
+        job.detected_run_id = match[1];
+        if (!job.run_id) job.run_id = match[1];
+      }
       this.emit("line", jobId, line);
     };
 
@@ -100,10 +140,15 @@ class JobRegistry extends EventEmitter {
 
     child.on("close", (code) => {
       this.children.delete(jobId);
+      this.clearTimeout(jobId);
       const job = this.jobs.get(jobId);
       if (!job) return;
       job.exit_code = code ?? 1;
-      job.status = code === 0 ? "succeeded" : "failed";
+      if (job.status === "running") {
+        job.status = code === 0 ? "succeeded" : "failed";
+      }
+      // stopped / timed_out already set by killJob
+      this.stopRequested.delete(jobId);
       job.finished_at = new Date().toISOString();
       if (this.activeChallengeJobId === jobId) {
         this.activeChallengeJobId = null;
@@ -115,6 +160,9 @@ class JobRegistry extends EventEmitter {
 
 export const jobRegistry = new JobRegistry();
 
+const ALLOWED_ENV_OVERRIDE =
+  /^(HARNESS_[A-Z0-9_]+|TEMPLATE_[A-Z0-9_]+|CHALLENGE_[A-Z0-9_]+|RUN_[A-Z0-9_]+)$/;
+
 export function buildChallengeShellCommand(
   repoRoot: string,
   profilePath: string,
@@ -125,10 +173,24 @@ export function buildChallengeShellCommand(
   if (request.model) exports.push(`export CHALLENGE_MODEL=${shellQuote(request.model)}`);
   if (request.thinking) exports.push(`export CHALLENGE_THINKING=${shellQuote(request.thinking)}`);
   if (request.timeout_ms) exports.push(`export CHALLENGE_TIMEOUT_MS=${String(request.timeout_ms)}`);
-  if (request.experiment_id) exports.push(`export RUN_EXPERIMENT=${shellQuote(request.experiment_id)}`);
+  if (request.experiment_id) {
+    assertValidExperimentId(request.experiment_id);
+    exports.push(`export RUN_EXPERIMENT=${shellQuote(request.experiment_id)}`);
+  }
   if (request.arm) exports.push(`export RUN_ARM=${shellQuote(request.arm)}`);
   if (request.rep !== undefined) exports.push(`export RUN_REP=${String(request.rep)}`);
-  if (request.intervention) exports.push(`export RUN_INTERVENTION=${shellQuote(request.intervention)}`);
+  if (request.intervention) {
+    exports.push(`export RUN_INTERVENTION=${shellQuote(request.intervention)}`);
+  }
+
+  if (request.env_overrides) {
+    for (const [key, raw] of Object.entries(request.env_overrides)) {
+      if (!ALLOWED_ENV_OVERRIDE.test(key)) continue;
+      const value = String(raw ?? "").trim();
+      if (!value) continue;
+      exports.push(`export ${key}=${shellQuote(value)}`);
+    }
+  }
 
   const ideaArg =
     request.idea_file && request.idea_file !== "contract-public/development-idea.txt"
@@ -178,6 +240,10 @@ export function jobStatusLabel(status: JobStatus): string {
       return "succeeded";
     case "failed":
       return "failed";
+    case "timed_out":
+      return "timed_out";
+    case "stopped":
+      return "stopped";
     default: {
       const exhaustive: never = status;
       return exhaustive;

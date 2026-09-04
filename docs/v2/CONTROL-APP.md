@@ -114,10 +114,16 @@ Launch form with:
 - Provider, model, thinking, timeout overrides (applied after sourcing profile)
 - `RUN_EXPERIMENT`, `RUN_ARM`, `RUN_REP`, `RUN_INTERVENTION` (`RUN_COHORT` legacy alias)
 - Idea file path
-- Live console via SSE
+- **Harness / template flag board** — KEEP / PARKED / OFF badges + per-launch toggles
+  (`env_overrides` → `HARNESS_*` / `TEMPLATE_*` exports after profile source)
+- **Start / Stop** — job status `running` · `succeeded` · `failed` · `timed_out` · `stopped`
+- Live console via SSE + link to detected run id when the challenge prints it
 
 Before launch, the server checks port 3000 is free and refuses a second concurrent
-challenge job.
+challenge job. Soft wall timeout kills the job as `timed_out`.
+
+Runs list shows a compact KEEP/PARKED strip and **arm** badges; run detail surfaces
+experiment id + arm in the hero.
 
 **Recommended for local dev:**
 
@@ -155,7 +161,10 @@ mega-calls; use Z.ai until Berget GLM thinking config is fixed.
 | `POST` | `/api/runs/:id/replay` | → `npm run replay:run -- <id>` |
 | `POST` | `/api/runs/:id/app/open` | Start generated app dev server |
 | `POST` | `/api/challenge` | Launch challenge (JSON body, see below) |
+| `GET` | `/api/challenge/active` | Active challenge job or `{ job: null }` |
+| `GET` | `/api/harness-board` | Frozen flag board + default env map |
 | `GET` | `/api/jobs/:id` | Job status + accumulated lines |
+| `POST` | `/api/jobs/:id/stop` | Stop a running job (`stopped`) |
 | `GET` | `/api/jobs/:id/stream` | SSE: `{type:"line"}` and `{type:"done"}` |
 | `GET` | `/api/env-profiles` | Available `challenge-env*.sh` scripts |
 | `GET` | `/api/publish/status` | Publish config (server key set?, API bases) |
@@ -174,12 +183,17 @@ mega-calls; use Z.ai until Berget GLM thinking config is fixed.
   "arm": "control",
   "rep": 1,
   "intervention": "baseline",
-  "idea_file": "contract-public/development-idea.txt"
+  "idea_file": "contract-public/development-idea.txt",
+  "env_overrides": {
+    "HARNESS_VERIFY_TYPECHECK_ON_FAIL_V1": "1",
+    "HARNESS_HARD_STOP_AFTER_GREEN_V1": "0"
+  }
 }
 ```
 
 All fields except `env_profile` are optional; overrides are exported after
-`sourcing` the profile so UI values win over stale shell state.
+`sourcing` the profile so UI values win over stale shell state. `env_overrides`
+only allows `HARNESS_*`, `TEMPLATE_*`, `CHALLENGE_*`, and `RUN_*` keys.
 
 ---
 
@@ -187,7 +201,11 @@ All fields except `env_profile` are optional; overrides are exported after
 
 | Feature | Status |
 |---------|--------|
-| HarnessConfig toggles in UI | Read-only display; not env-wired |
+| Post-run auto-analyze / refresh | Manual analyze still required |
+| Experiment KEEP/PARKED as catalog fields | Board is launch-time only for now |
+| Multi-job queue | One concurrent challenge |
+| Harness / template launch toggles | **Yes** — New run board + `env_overrides` |
+| Stop / timeout job status | **Yes** — stop API + soft wall → `timed_out` |
 | Publish to team runs UI | **Yes** — run detail panel; `POST /api/runs/:id/publish` |
 | Edit run metadata | **Yes** — metadata panel + `artifacts/runs-overlay.json` |
 | Experiments catalog | **Yes** — `/experiments` + `artifacts/experiments/` |

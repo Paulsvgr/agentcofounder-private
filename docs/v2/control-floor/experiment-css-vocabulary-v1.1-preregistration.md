@@ -1,7 +1,7 @@
 # Experiment CSS Vocabulary v1.1 — preregistration
 
 **Status:** PREREGISTERED — treatment frozen (2026-09-01)  
-**Experiment:** `css-vocabulary-v1.1`  
+**Experiment:** `css-vocabulary-v1-1`  
 **Prior experiment:** [CSS Vocabulary v1 analysis](./experiment-css-vocabulary-v1-analysis.md) — REVERT (mechanism PASS, contract FAIL)  
 **Baseline:** [Control floor v2.2](./control-floor-v2.2-baseline.md) (VERIFY v1.1, frozen)
 

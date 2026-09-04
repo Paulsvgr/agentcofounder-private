@@ -209,6 +209,85 @@ async function discoverAppOwnedListeners(port: number, appDirectory: string): Pr
   return { processIds: [], diagnostic: `Port-owner discovery is unsupported on ${process.platform}` };
 }
 
+/**
+ * Same-user LISTEN owners on `port`, regardless of cwd.
+ * Used as a post-Pi fallback when orphaned Vite/npm children are not rooted under
+ * the app directory (app-owned reclaim then misses them and harness verify fails).
+ */
+async function discoverSameUserListeners(port: number): Promise<ProcessDiscovery> {
+  if (process.platform === "linux") {
+    try {
+      const inodes = await listeningSocketInodes(port);
+      if (inodes.size === 0) return { processIds: [] };
+      const expectedUid = process.getuid?.();
+      const entries = await readdir("/proc", { withFileTypes: true });
+      const processIds: number[] = [];
+      for (const entry of entries) {
+        if (!entry.isDirectory() || !/^\d+$/u.test(entry.name)) continue;
+        const processId = Number(entry.name);
+        if (processId === process.pid) continue;
+        if (expectedUid !== undefined && (await processUid(processId)) !== expectedUid) continue;
+        try {
+          const descriptors = await readdir(`/proc/${processId}/fd`);
+          for (const descriptor of descriptors) {
+            try {
+              const target = await readlink(`/proc/${processId}/fd/${descriptor}`);
+              const match = /^socket:\[(\d+)\]$/u.exec(target);
+              const inode = match?.[1];
+              if (inode && inodes.has(inode)) {
+                processIds.push(processId);
+                break;
+              }
+            } catch {
+              // Process/fd races while scanning /proc.
+            }
+          }
+        } catch {
+          continue;
+        }
+      }
+      return { processIds };
+    } catch (error) {
+      return { processIds: [], diagnostic: `Unable to inspect same-user listeners: ${String(error)}` };
+    }
+  }
+
+  if (process.platform === "darwin") {
+    const result = await captureCommand("lsof", [
+      "-b",
+      "-nP",
+      "-a",
+      `-iTCP:${port}`,
+      "-sTCP:LISTEN",
+      "-Fpu",
+    ]);
+    if (result.exitCode === 127) {
+      return { processIds: [], diagnostic: "lsof is unavailable for port-owner discovery" };
+    }
+    if (result.timedOut || result.exitCode !== 0) return { processIds: [] };
+    const expectedUid = process.getuid?.();
+    const processIds: number[] = [];
+    let currentProcessId: number | undefined;
+    for (const line of result.stdout.split(/\r?\n/u)) {
+      if (line.startsWith("p")) {
+        const parsedProcessId = Number(line.slice(1));
+        currentProcessId = Number.isSafeInteger(parsedProcessId) ? parsedProcessId : undefined;
+      } else if (line.startsWith("u") && currentProcessId !== undefined) {
+        const uid = Number(line.slice(1));
+        if (
+          currentProcessId !== process.pid &&
+          (expectedUid === undefined || uid === expectedUid)
+        ) {
+          processIds.push(currentProcessId);
+        }
+      }
+    }
+    return { processIds };
+  }
+
+  return { processIds: [], diagnostic: `Port-owner discovery is unsupported on ${process.platform}` };
+}
+
 async function waitForPortToClose(port: number, timeoutMs: number): Promise<boolean> {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
@@ -230,6 +309,43 @@ function signalProcesses(processIds: number[], signal: NodeJS.Signals): void {
   }
 }
 
+async function reclaimDiscoveredListeners(
+  port: number,
+  discovery: ProcessDiscovery,
+  gracePeriodMs: number,
+  label: string,
+): Promise<PortReclamation> {
+  if (discovery.processIds.length === 0) {
+    return {
+      attempted: false,
+      reclaimed: false,
+      processIds: [],
+      diagnostic: discovery.diagnostic ?? `No ${label} listener owned port ${port}`,
+    };
+  }
+
+  signalProcesses(discovery.processIds, "SIGTERM");
+  if (await waitForPortToClose(port, gracePeriodMs)) {
+    return {
+      attempted: true,
+      reclaimed: true,
+      processIds: discovery.processIds,
+      diagnostic: `Reclaimed port ${port} after SIGTERM (${label})`,
+    };
+  }
+
+  signalProcesses(discovery.processIds, "SIGKILL");
+  const reclaimed = await waitForPortToClose(port, gracePeriodMs);
+  return {
+    attempted: true,
+    reclaimed,
+    processIds: discovery.processIds,
+    diagnostic: reclaimed
+      ? `Reclaimed port ${port} after SIGKILL (${label})`
+      : `${label} listener still held port ${port} after cleanup`,
+  };
+}
+
 export async function reclaimAppOwnedPort(
   port: number,
   appDirectory: string,
@@ -249,27 +365,19 @@ export async function reclaimAppOwnedPort(
     };
   }
 
-  signalProcesses(discovery.processIds, "SIGTERM");
-  if (await waitForPortToClose(port, gracePeriodMs)) {
-    return {
-      attempted: true,
-      reclaimed: true,
-      processIds: discovery.processIds,
-      diagnostic: `Reclaimed port ${port} after SIGTERM`,
-    };
-  }
+  return reclaimDiscoveredListeners(port, discovery, gracePeriodMs, "app-owned");
+}
 
-  const remaining = await discoverAppOwnedListeners(port, appDirectory);
-  signalProcesses(remaining.processIds, "SIGKILL");
-  const reclaimed = await waitForPortToClose(port, gracePeriodMs);
-  return {
-    attempted: true,
-    reclaimed,
-    processIds: discovery.processIds,
-    diagnostic: reclaimed
-      ? `Reclaimed port ${port} after SIGKILL`
-      : `App-owned listener still held port ${port} after cleanup`,
-  };
+/** Kill any same-user LISTEN on `port` (cwd-agnostic). */
+export async function reclaimSameUserPort(
+  port: number,
+  gracePeriodMs = 1_500,
+): Promise<PortReclamation> {
+  if (!(await portHasListener(port))) {
+    return { attempted: false, reclaimed: true, processIds: [], diagnostic: `Port ${port} was already free` };
+  }
+  const discovery = await discoverSameUserListeners(port);
+  return reclaimDiscoveredListeners(port, discovery, gracePeriodMs, "same-user");
 }
 
 export async function auditAppPortAfterPi(
@@ -299,13 +407,26 @@ export async function auditAppPortAfterPi(
     };
   }
 
-  const reclamation = await reclaimAppOwnedPort(port, appDirectory);
+  const appOwned = await reclaimAppOwnedPort(port, appDirectory);
+  if (appOwned.reclaimed || !(await portHasListener(port))) {
+    return {
+      preexisting_listener: false,
+      listener_after_pi: true,
+      attempted: appOwned.attempted,
+      reclaimed: true,
+      process_ids: appOwned.processIds,
+      diagnostic: appOwned.diagnostic,
+    };
+  }
+
+  // Pi often leaves Vite/npm orphans whose cwd is not under output/app.
+  const sameUser = await reclaimSameUserPort(port);
   return {
     preexisting_listener: false,
     listener_after_pi: true,
-    attempted: reclamation.attempted,
-    reclaimed: reclamation.reclaimed,
-    process_ids: reclamation.processIds,
-    diagnostic: reclamation.diagnostic,
+    attempted: appOwned.attempted || sameUser.attempted,
+    reclaimed: sameUser.reclaimed,
+    process_ids: [...new Set([...appOwned.processIds, ...sameUser.processIds])],
+    diagnostic: `${appOwned.diagnostic}; fallback: ${sameUser.diagnostic}`,
   };
 }

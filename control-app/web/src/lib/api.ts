@@ -62,6 +62,8 @@ export interface ChallengeLaunchRequest {
   rep?: number;
   intervention?: string;
   idea_file?: string;
+  /** Explicit HARNESS_* / TEMPLATE_* exports applied after sourcing the env profile. */
+  env_overrides?: Record<string, string>;
 }
 
 export type ReplayVerdict = "identical" | "diverged" | "unverified";
@@ -86,7 +88,7 @@ export interface ReplayReport {
 }
 
 export type JobKind = "analyze" | "reconcile" | "replay" | "challenge" | "app-dev";
-export type JobStatus = "running" | "succeeded" | "failed";
+export type JobStatus = "running" | "succeeded" | "failed" | "timed_out" | "stopped";
 
 export interface JobRecord {
   id: string;
@@ -97,6 +99,21 @@ export interface JobRecord {
   lines: string[];
   started_at: string;
   finished_at: string | null;
+  detected_run_id: string | null;
+}
+
+export interface HarnessBoardFlag {
+  key: string;
+  label: string;
+  decision: "KEEP" | "PARKED" | "OFF" | "BASELINE";
+  defaultValue: "0" | "1";
+  launchToggle: boolean;
+  note: string;
+}
+
+export interface HarnessBoardResponse {
+  flags: HarnessBoardFlag[];
+  defaults: Record<string, string>;
 }
 
 export interface RunDetail {
@@ -461,6 +478,18 @@ export function launchChallenge(body: ChallengeLaunchRequest): Promise<{ job_id:
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
+}
+
+export function fetchHarnessBoard(): Promise<HarnessBoardResponse> {
+  return request("/api/harness-board");
+}
+
+export function fetchActiveChallenge(): Promise<{ job: JobRecord | null }> {
+  return request("/api/challenge/active");
+}
+
+export function stopJob(jobId: string): Promise<JobRecord> {
+  return request(`/api/jobs/${encodeURIComponent(jobId)}/stop`, { method: "POST" });
 }
 
 export function fetchJob(jobId: string): Promise<JobRecord> {

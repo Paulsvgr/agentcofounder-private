@@ -16,14 +16,16 @@ elif [ -f "$REPO_ROOT/pi-agent/challenge-env.sh" ]; then
   source "$REPO_ROOT/pi-agent/challenge-env.sh"
 fi
 
-export RUN_EXPERIMENT="${RUN_EXPERIMENT:-harness-owned-verify-v1.1}"
+export RUN_EXPERIMENT="${RUN_EXPERIMENT:-harness-owned-verify-v1-1}"
 export RUN_ARM="${RUN_ARM:-treatment}"
 export RUN_INTERVENTION="${RUN_INTERVENTION:-harness-owned-verify}"
 
 export HARNESS_OWNED_VERIFY="${HARNESS_OWNED_VERIFY:-1}"
+export TEMPLATE_CSS_VOCABULARY="${TEMPLATE_CSS_VOCABULARY:-0}"
+export TEMPLATE_PERSISTENCE="${TEMPLATE_PERSISTENCE:-0}"
 
 REPS="${1:-5}"
-LOG_DIR="$REPO_ROOT/artifacts/experiments/harness-owned-verify-v1.1"
+LOG_DIR="$REPO_ROOT/artifacts/experiments/harness-owned-verify-v1-1"
 mkdir -p "$LOG_DIR"
 STAMP="$(date -u +%Y-%m-%dT%H-%M-%SZ)"
 LOG_FILE="$LOG_DIR/${STAMP}.log"

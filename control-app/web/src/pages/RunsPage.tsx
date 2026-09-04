@@ -13,7 +13,9 @@ import {
   type RunSummary,
 } from "../lib/api.js";
 import { formatAppRating } from "../../../shared/app-rubric.js";
+import { HARNESS_BOARD_FLAGS } from "../../../shared/harness-board.js";
 import type { ChartGroupKey } from "../lib/run-stats.js";
+import { BoardDecisionBadge } from "../components/BoardDecisionBadge.js";
 
 type SortKey = keyof RunSummary | "provider_model";
 type TriFilter = "all" | "yes" | "no";
@@ -364,6 +366,20 @@ export function RunsPage() {
         </Link>
       </header>
 
+      <div className="harness-board-strip" aria-label="Frozen harness board">
+        <span className="harness-board-strip-label">Board</span>
+        {HARNESS_BOARD_FLAGS.filter((flag) => flag.decision === "KEEP" || flag.decision === "PARKED").map(
+          (flag) => (
+            <span key={flag.key} className="harness-board-strip-item">
+              <BoardDecisionBadge decision={flag.decision} /> {flag.label}
+            </span>
+          ),
+        )}
+        <Link to="/new" className="muted">
+          Configure on New run →
+        </Link>
+      </div>
+
       <div className="runs-card runs-filter-card">
         <RunsFilterBar
         experiments={experiments}
@@ -520,7 +536,7 @@ export function RunsPage() {
                       <td className="num">{formatAppRating(run.app_rating, run.app_rubric)}</td>
                       <td className="cohort-cell">
                         <span>{run.experiment_id ?? "—"}</span>
-                        {run.arm ? <span className="cohort-arm">{run.arm}</span> : null}
+                        {run.arm ? <span className="badge badge-arm">{run.arm}</span> : null}
                       </td>
                       <td>
                         <div className="run-actions">

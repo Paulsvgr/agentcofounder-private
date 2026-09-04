@@ -1,0 +1,10 @@
+The Home Library app already exists in this workspace (source and tests are present).
+
+Do not rebuild from scratch or replace the whole application.
+
+1. Call `verify` first.
+2. Repair until `verify` is green.
+3. Prefer the smallest fix that makes the failing assertions match the UI (or the UI match the intended copy).
+4. When green, write `report.partial.json` and finish.
+
+Product context: personal home library — books with categories, lend-out actions.

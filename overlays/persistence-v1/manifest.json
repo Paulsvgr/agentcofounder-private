@@ -1,0 +1,12 @@
+{
+  "overlay_id": "persistence-v1",
+  "version": "1.0.0",
+  "files": [
+    { "source": "files/src/lib/collectionStore.ts", "target": "src/lib/collectionStore.ts" },
+    { "source": "files/src/lib/useCollection.ts", "target": "src/lib/useCollection.ts" },
+    { "source": "files/src/lib/text.ts", "target": "src/lib/text.ts" }
+  ],
+  "replaces": [],
+  "agents_section_marker": "## Collection persistence (preinstalled)",
+  "guard_profile": null
+}

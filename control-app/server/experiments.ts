@@ -212,6 +212,7 @@ export async function getExperiment(repoRoot: string, id: string): Promise<Exper
 }
 
 export async function appendExperimentToOverlayTaxonomy(repoRoot: string, id: string): Promise<void> {
+  validateExperimentId(id);
   const overlay = await readOverlayForTaxonomy(repoRoot);
   if (!overlay.taxonomy.experiment.includes(id)) {
     overlay.taxonomy.experiment.push(id);

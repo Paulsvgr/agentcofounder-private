@@ -1,0 +1,6 @@
+{
+  "source_run": "2026-09-04T14-48-25-378Z",
+  "snapshot": "final product src (no tests) + mid-spiral App.test.tsx at first sticky Dune miss @65",
+  "fail_line": 65,
+  "note": "Product from end-state (imports resolve); test is pre-All-books-fix spiral state"
+}

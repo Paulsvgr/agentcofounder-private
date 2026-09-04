@@ -1,0 +1,19 @@
+{
+  "source_run": "2026-09-04T12-51-52-540Z",
+  "source_experiment": "product-quality-contract-v1-treatment",
+  "first_fail_call": 9,
+  "first_pass_call": 20,
+  "snapshot": "filesystem after writes C4\u2013C8, immediately before first VERIFY FAIL @9",
+  "historical_post_fail_expansion": [
+    "C11: bash mv src/lib/books.ts src/books.ts  (new path)",
+    "C12: edit src/lib/useBooks.ts (import path chase)",
+    "C15\u2013C19: App.test.tsx thrash"
+  ],
+  "files_written_into_fixture": [
+    "src/lib/books.ts",
+    "src/lib/useBooks.ts",
+    "src/App.tsx",
+    "src/books.test.ts",
+    "src/App.test.tsx"
+  ]
+}

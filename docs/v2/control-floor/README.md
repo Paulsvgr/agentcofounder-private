@@ -77,6 +77,25 @@ Full analysis: [control-floor-v2.1-analysis.md](./control-floor-v2.1-analysis.md
 
 Next experiments compare against **v2.2 (~61k median)**. Resource slice experiments (B/C) remain closed.
 
+### Active default candidate (post Tailwind KEEP, 2026-09-04)
+
+```text
+HARNESS_OWNED_VERIFY=1
+HARNESS_ROOT_ERROR_FIRST_V1=1
+TEMPLATE_PERSISTENCE=1
+TEMPLATE_TAILWIND=1
+TEMPLATE_CSS_VOCABULARY=0
+```
+
+Styling track closed. Next lever: [next-lever-test-as-oracle.md](./next-lever-test-as-oracle.md) (bad test must not prove product wrong).  
+KEEP: [experiment-verify-rtl-evidence-v1-preregistration.md](./experiment-verify-rtl-evidence-v1-preregistration.md) — role+name evidence (mechanism proven; natural cohort inconclusive).  
+KEEP: [experiment-verify-rtl-evidence-v1-preregistration.md](./experiment-verify-rtl-evidence-v1-preregistration.md) — role+name evidence.  
+KEEP: [experiment-verify-rtl-multiple-evidence-v1-keep.md](./experiment-verify-rtl-multiple-evidence-v1-keep.md) — MULTIPLE candidates (seeded proof; no more random MULTIPLE cohorts).  
+NEXT: [roadmap-repair-tail-2026-09-04.md](./roadmap-repair-tail-2026-09-04.md) — 257k diagnosis seed (`tsc` signal) → hard-stop → rtl_text → prompt.  
+Offline signal: [offline-257k-startedit-signal.md](./offline-257k-startedit-signal.md).  
+Parked prompt: [parked-product-quality-prompt.md](./parked-product-quality-prompt.md).  
+Audit: [audit-repair-tail-rtl-text-multiple.md](./audit-repair-tail-rtl-text-multiple.md).
+
 ## Source
 
 Verdicts and original Phase F write-up: `ac-control/docs/phase-f-strategy.md` (frozen on `setup/measure`).

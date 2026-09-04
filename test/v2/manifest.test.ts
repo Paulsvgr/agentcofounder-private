@@ -5,6 +5,10 @@ import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import { copyAppTemplateTree, prepareOutput } from "../../src/prepare-output.js";
 import {
+  assembleTemplate,
+  toTemplateOverlaysManifestBlock,
+} from "../../src/v2/template-overlays.js";
+import {
   CONFIG_SCHEMA_VERSION,
   DEFAULT_CONFIG,
   configHash,
@@ -39,8 +43,8 @@ describe("sha256Text", () => {
 });
 
 describe("hashDirectoryTree", () => {
-  it("produces a stable tree hash for the app template", async () => {
-    const templateDirectory = path.join(REPOSITORY_ROOT, "app-template");
+  it("produces a stable tree hash for the app template base", async () => {
+    const templateDirectory = path.join(REPOSITORY_ROOT, "app-template-base");
     const first = treeSha256(await hashDirectoryTree(templateDirectory));
     const second = treeSha256(await hashDirectoryTree(templateDirectory));
     expect(first).toBe(second);
@@ -48,7 +52,7 @@ describe("hashDirectoryTree", () => {
   });
 
   it("matches between source template and a copied snapshot", async () => {
-    const sourceDirectory = path.join(REPOSITORY_ROOT, "app-template");
+    const sourceDirectory = path.join(REPOSITORY_ROOT, "app-template-base");
     const snapshotRoot = await mkdtemp(path.join(os.tmpdir(), "manifest-template-"));
     temporaryDirectories.push(snapshotRoot);
     const snapshotDirectory = path.join(snapshotRoot, "app-template");
@@ -108,7 +112,7 @@ describe("buildPreRunManifest", () => {
     const [systemPrompt, publicJourneys, agentsMd, ideaText] = await Promise.all([
       readFile(path.join(REPOSITORY_ROOT, "solution", "system-prompt.md"), "utf8"),
       readFile(path.join(REPOSITORY_ROOT, "contract-public", "journeys.md"), "utf8"),
-      readFile(path.join(REPOSITORY_ROOT, "app-template", "AGENTS.md"), "utf8"),
+      readFile(path.join(REPOSITORY_ROOT, "app-template-base", "AGENTS.md"), "utf8"),
       readFile(path.join(REPOSITORY_ROOT, "contract-public", "development-idea.txt"), "utf8"),
     ]);
 
@@ -117,10 +121,12 @@ describe("buildPreRunManifest", () => {
     const runId = "2026-08-28T22-00-00-000Z";
     const runDirectory = path.join(runRoot, runId);
     const snapshotDirectory = path.join(runDirectory, "app-template");
-    await mkdir(snapshotDirectory, { recursive: true });
-    await copyAppTemplateTree(path.join(REPOSITORY_ROOT, "app-template"), snapshotDirectory, {
-      writeMarker: false,
-    });
+    const assemblyRecord = await assembleTemplate(
+      { css_vocabulary: false, persistence_primitive: false, test_isolation: false, tailwind: false },
+      REPOSITORY_ROOT,
+      snapshotDirectory,
+    );
+    const templateOverlays = toTemplateOverlaysManifestBlock(assemblyRecord);
 
     const manifest = await buildPreRunManifest({
       runId,
@@ -128,6 +134,7 @@ describe("buildPreRunManifest", () => {
       ideaFile: path.join(REPOSITORY_ROOT, "contract-public", "development-idea.txt"),
       ideaText,
       templateSnapshotDirectory: snapshotDirectory,
+      templateOverlays,
       systemPrompt,
       publicJourneys,
       agentsMd,
@@ -147,10 +154,16 @@ describe("buildPreRunManifest", () => {
     expect(manifest.prompt.agents_md_sha256).toBe(sha256Text(agentsMd));
     expect(manifest.versions).toEqual({
       planner: null,
-      assembler: null,
+      assembler: "1.0.0",
       guards: null,
       error_memory: null,
       resource_manifest: null,
+    });
+    expect(manifest.template_overlays.schema).toBe("agentcofounder.template_overlays.v1");
+    expect(manifest.template_overlays.active).toEqual({
+      css_vocabulary: false,
+      persistence_primitive: false,
+      test_isolation: false,
     });
     expect(manifest.experiment).toEqual({
       id: null,
@@ -164,8 +177,11 @@ describe("buildPreRunManifest", () => {
     const runRoot = await mkdtemp(path.join(os.tmpdir(), "manifest-roundtrip-"));
     temporaryDirectories.push(runRoot);
     const runDirectory = path.join(runRoot, "2026-08-28T22-00-00-001Z");
-    await mkdir(path.join(runDirectory, "app-template"), { recursive: true });
-    await writeFile(path.join(runDirectory, "app-template", "seed.txt"), "seed\n", "utf8");
+    const assemblyRecord = await assembleTemplate(
+      { css_vocabulary: false, persistence_primitive: false, test_isolation: false, tailwind: false },
+      REPOSITORY_ROOT,
+      path.join(runDirectory, "app-template"),
+    );
 
     const manifest = await buildPreRunManifest({
       runId: path.basename(runDirectory),
@@ -173,6 +189,7 @@ describe("buildPreRunManifest", () => {
       ideaFile: path.join(REPOSITORY_ROOT, "contract-public", "development-idea.txt"),
       ideaText: "Build a bookshelf",
       templateSnapshotDirectory: path.join(runDirectory, "app-template"),
+      templateOverlays: toTemplateOverlaysManifestBlock(assemblyRecord),
       systemPrompt: "system",
       publicJourneys: "journeys",
       agentsMd: "agents",
@@ -209,8 +226,11 @@ describe("finalizeRunManifest", () => {
     const runRoot = await mkdtemp(path.join(os.tmpdir(), "manifest-outcome-"));
     temporaryDirectories.push(runRoot);
     const runDirectory = path.join(runRoot, "2026-08-28T22-00-00-002Z");
-    await mkdir(path.join(runDirectory, "app-template"), { recursive: true });
-    await writeFile(path.join(runDirectory, "app-template", "seed.txt"), "seed\n", "utf8");
+    const assemblyRecord = await assembleTemplate(
+      { css_vocabulary: false, persistence_primitive: false, test_isolation: false, tailwind: false },
+      REPOSITORY_ROOT,
+      path.join(runDirectory, "app-template"),
+    );
 
     const pre = await buildPreRunManifest({
       runId: path.basename(runDirectory),
@@ -218,6 +238,7 @@ describe("finalizeRunManifest", () => {
       ideaFile: path.join(REPOSITORY_ROOT, "contract-public", "development-idea.txt"),
       ideaText: "Build a bookshelf",
       templateSnapshotDirectory: path.join(runDirectory, "app-template"),
+      templateOverlays: toTemplateOverlaysManifestBlock(assemblyRecord),
       systemPrompt: "system",
       publicJourneys: "journeys",
       agentsMd: "agents",
@@ -232,12 +253,12 @@ describe("prepare-only path", () => {
   it("still resets output from the same template without writing a manifest", async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), "manifest-prepare-only-"));
     temporaryDirectories.push(root);
-    await cp(path.join(REPOSITORY_ROOT, "app-template"), path.join(root, "app-template"), {
+    await cp(path.join(REPOSITORY_ROOT, "app-template-base"), path.join(root, "app-template-base"), {
       recursive: true,
       filter: (source) => !source.split(path.sep).includes("node_modules"),
     });
 
-    const output = await prepareOutput(root, "output/app");
+    const { outputDirectory: output } = await prepareOutput(root, "output/app");
     expect(await readFile(path.join(output, "AGENTS.md"), "utf8")).toContain(
       "Generated application contract",
     );

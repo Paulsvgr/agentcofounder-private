@@ -1,6 +1,7 @@
 # Experiment S1 — Convergence Intervention v1 — preregistration
 
-**Status:** PREREGISTERED — frozen (2026-09-02)  
+**Status:** CLOSED — **REVERT** (2026-09-02)  
+**Analysis:** [experiment-s1-convergence-intervention-v1-analysis.md](./experiment-s1-convergence-intervention-v1-analysis.md) — **FINAL / FROZEN**  
 **Experiment ID:** `s1-convergence-intervention-v1`  
 **Short label:** S1 (smallest post-forensic snowball-prevention arm)  
 **Baseline:** [Control floor v2.2](./control-floor-v2.2-baseline.md) via assembler **OFF/OFF**  
@@ -364,6 +365,21 @@ Checklist for implementation review:
 
 ---
 
+## Program position (post-close)
+
+```text
+s1-convergence-intervention-v1   ← CLOSED (mechanism PASS, experiment REVERT)
+        ↓
+investigate 90–105k ordinary-run cost (pre-first-VERIFY bucket, heavy turns)
+        ↓
+S2 / Error Memory                  ← NOT authorized until new prereg
+S3 / external helper               ← NOT authorized
+```
+
+**Extension disposition:** `convergence-intervention-v1` **preserved** in repo; `HARNESS_CONVERGENCE_INTERVENTION_V1` remains **experiment-only** (default **off** on v2.2 floor). Not promoted to active baseline.
+
+---
+
 ## References
 
 - [Harness-owned VERIFY v1.1](./harness-owned-verify.md)
@@ -374,4 +390,4 @@ Checklist for implementation review:
 
 ---
 
-**Next step:** implement `convergence-intervention-v1` extension + export schema per this frozen prereg; **do not** start S2/S3.
+**Closed:** 2026-09-02 — see [analysis](./experiment-s1-convergence-intervention-v1-analysis.md). **Do not** promote to baseline; **do not** start S2/S3 without new prereg.

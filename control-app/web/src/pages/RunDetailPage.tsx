@@ -1097,6 +1097,13 @@ export function RunDetailPage() {
           <div className="station-meta-row">
             <span className={statusBadge(summary.status)}>{summary.status}</span>
             {summary.mega_call_flag ? <span className="badge badge-mega">mega</span> : null}
+            {summary.arm ? <span className="badge badge-arm">{summary.arm}</span> : null}
+            {summary.experiment_id ? (
+              <>
+                <span className="meta-dot">·</span>
+                <span className="muted">{summary.experiment_id}</span>
+              </>
+            ) : null}
             {summary.display_label ? (
               <>
                 <span className="meta-dot">·</span>

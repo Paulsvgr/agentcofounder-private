@@ -1,0 +1,10 @@
+{
+  "source_run": "2026-09-04T12-51-52-540Z",
+  "snapshot": "product writes before first test file @call 7",
+  "historical_second_test": "C7 write src/books.test.ts then C8 src/App.test.tsx",
+  "files": [
+    "src/lib/books.ts",
+    "src/lib/useBooks.ts",
+    "src/App.tsx"
+  ]
+}

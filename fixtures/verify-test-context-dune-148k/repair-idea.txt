@@ -1,0 +1,4 @@
+The bookshelf app and tests are already mostly built, but VERIFY is failing.
+
+Repair until VERIFY PASS, then build and write report.partial.json.
+Do not reinvent the product from scratch — fix what is broken.

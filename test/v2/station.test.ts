@@ -7,8 +7,8 @@ import { describe, expect, it } from "vitest";
 import { CONFIG_SCHEMA_VERSION, DEFAULT_CONFIG, configIdentity } from "../../src/v2/config.js";
 import { buildCallLedger, CALL_LEDGER_SCHEMA, CLASSIFIER_VERSION, type CallLedger } from "../../src/v2/normalize.js";
 import { EFFICIENCY_WEIGHTS } from "../../src/v2/weights.js";
-import { RUN_MANIFEST_SCHEMA } from "../../src/v2/manifest.js";
-import type { RunManifest } from "../../src/v2/manifest.js";
+import { RUN_MANIFEST_SCHEMA, type RunManifest } from "../../src/v2/manifest.js";
+import { TEMPLATE_OVERLAYS_SCHEMA } from "../../src/v2/template-overlays.js";
 import {
   STATION_SCHEMA,
   buildStationReport,
@@ -44,6 +44,15 @@ function minimalManifest(runId: string): RunManifest {
       file_count: 10,
       snapshot_dir: "app-template",
     },
+    template_overlays: {
+      schema: TEMPLATE_OVERLAYS_SCHEMA,
+      active: { css_vocabulary: false, persistence_primitive: false, test_isolation: false, tailwind: false },
+      base_hash: "base",
+      overlay_hashes: {},
+      active_set_hash: "active",
+      assembled_tree_hash: "assembled",
+      assembler_version: "1.0.0",
+    },
     prompt: {
       system_prompt_sha256: "a",
       journeys_sha256: "b",
@@ -51,7 +60,7 @@ function minimalManifest(runId: string): RunManifest {
     },
     versions: {
       planner: null,
-      assembler: null,
+      assembler: "1.0.0",
       guards: null,
       error_memory: null,
       resource_manifest: null,

@@ -20,6 +20,8 @@ export RUN_EXPERIMENT="${RUN_EXPERIMENT:-css-vocabulary-v1}"
 export RUN_ARM="${RUN_ARM:-treatment}"
 export RUN_INTERVENTION="${RUN_INTERVENTION:-css-vocabulary}"
 export HARNESS_OWNED_VERIFY="${HARNESS_OWNED_VERIFY:-1}"
+export TEMPLATE_CSS_VOCABULARY="${TEMPLATE_CSS_VOCABULARY:-1}"
+export TEMPLATE_PERSISTENCE="${TEMPLATE_PERSISTENCE:-0}"
 
 REPS="${1:-5}"
 LOG_DIR="$REPO_ROOT/artifacts/experiments/css-vocabulary-v1"

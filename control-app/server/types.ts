@@ -62,6 +62,8 @@ export interface ChallengeLaunchRequest {
   rep?: number;
   intervention?: string;
   idea_file?: string;
+  /** Explicit HARNESS_* / TEMPLATE_* exports applied after sourcing the env profile. */
+  env_overrides?: Record<string, string>;
 }
 
 export interface ReplayLaunchRequest {
@@ -72,7 +74,7 @@ export type ReplayVerdict = "identical" | "diverged" | "unverified";
 
 export type JobKind = "analyze" | "reconcile" | "replay" | "challenge" | "app-dev";
 
-export type JobStatus = "running" | "succeeded" | "failed";
+export type JobStatus = "running" | "succeeded" | "failed" | "timed_out" | "stopped";
 
 export interface JobRecord {
   id: string;
@@ -83,6 +85,8 @@ export interface JobRecord {
   lines: string[];
   started_at: string;
   finished_at: string | null;
+  /** Detected artifacts/runs/<id> from challenge stdout when available. */
+  detected_run_id: string | null;
 }
 
 export const MEGA_CALL_THRESHOLD = 5000;

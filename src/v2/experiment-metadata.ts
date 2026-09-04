@@ -1,3 +1,5 @@
+import { assertValidExperimentId } from "./experiment-id.js";
+
 /** Per-run experiment metadata stamped into run-manifest.json. */
 export interface ExperimentMetadata {
   id: string | null;
@@ -39,8 +41,10 @@ export function resolveExperimentId(
 export function collectExperimentMetadata(): ExperimentMetadata {
   const repRaw = readOptionalEnv("RUN_REP");
   const rep = repRaw === null ? null : Number.parseInt(repRaw, 10);
+  const id = readOptionalEnv("RUN_EXPERIMENT") ?? readOptionalEnv("RUN_COHORT");
+  if (id) assertValidExperimentId(id);
   return {
-    id: readOptionalEnv("RUN_EXPERIMENT") ?? readOptionalEnv("RUN_COHORT"),
+    id,
     arm: readOptionalEnv("RUN_ARM"),
     rep: Number.isFinite(rep) && rep !== null && rep > 0 ? rep : null,
     intervention: readOptionalEnv("RUN_INTERVENTION"),

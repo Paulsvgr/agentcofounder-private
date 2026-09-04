@@ -11,39 +11,10 @@
 - The runner owns the final `app_url`, location-aware `start_command`, independent `harness_checks`, and telemetry fields. Your product-journey test records remain in the specification-defined `tests_run` field.
 - Do not create or edit `result.json`; the outer challenge runner derives its telemetry from Pi.
 
-## CSS vocabulary (preinstalled)
+## Collection persistence (preinstalled)
 
-A complete design-system stylesheet is already installed. **Do not read or edit the theme stylesheet.** The vocabulary below is sufficient.
+For **flat keyed collections** that must survive browser refresh, use `createCollectionStore` and `useCollection` from `@/lib/`.
 
-Use only these class names for layout, typography, forms, buttons, lists, and cards:
-
-| Class | Use for |
-|-------|---------|
-| `ui-page` | Full-page shell (min-height viewport, page padding) |
-| `ui-container` | Centered max-width content wrapper |
-| `ui-section` | Vertical content section with spacing |
-| `ui-card` | Bordered card panel with padding and shadow |
-| `ui-header` | Header block inside a card or section |
-| `ui-title` | Primary page or section heading |
-| `ui-subtitle` | Secondary or muted descriptive text |
-| `ui-form` | Form layout grid (responsive columns) |
-| `ui-field` | Single form field wrapper (label + control) |
-| `ui-label` | Field label text |
-| `ui-input` | Text input or select styling (apply to `<input>` and `<select>`) |
-| `ui-btn` | Base button (neutral outline) |
-| `ui-btn-primary` | Primary action button (add with `ui-btn`) |
-| `ui-btn-secondary` | Secondary/neutral button (add with `ui-btn`) |
-| `ui-btn-danger` | Destructive action button (add with `ui-btn`) |
-| `ui-list` | Vertical list container (use on `<ul>`) |
-| `ui-list-item` | List row (use on `<li>`) |
-| `ui-empty` | Empty-state message |
-| `ui-badge` | Small status or count badge |
-| `ui-row` | Horizontal flex row with gap |
-| `ui-stack` | Vertical stack with gap |
-
-**Rules:**
-
-- Compose UI from these classes only. Combine modifiers as shown (`className="ui-btn ui-btn-primary"`).
-- **Accept the default appearance. Do not customise merely to make it prettier.**
-- Do not substitute inline `style={{...}}` for the vocabulary.
-- Do not add class names outside this list.
+- Do **not** hand-roll `localStorage` load/save with separate `useEffect`s.
+- You still write: entity type, a `parse` function for one array item, domain validation, UI, and journey tests.
+- For non-collection state (wizards, timers, nested trees), design what fits instead of forcing this hook.

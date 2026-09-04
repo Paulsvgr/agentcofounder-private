@@ -20,6 +20,14 @@ import {
 } from "./verify-command-policy.js";
 import { evaluateTestAuthoringGuardBlock } from "./test-authoring-guard.js";
 import { processCanonicalVerifyForConvergence } from "./convergence-intervention-core.js";
+import { processCanonicalVerifyForErrorMemory } from "./error-memory-core.js";
+import { processCanonicalVerifyForHardStopAfterGreen } from "./hard-stop-after-green-core.js";
+import {
+  applyFullGreenGateAfterVerifyPass,
+  fullGreenGateV1EnabledFromEnvironment,
+} from "./full-green-gate-core.js";
+import { processCanonicalVerifyForRootErrorFirst } from "./root-error-first-core.js";
+import { processCanonicalVerifyForTypecheckOnFail } from "./verify-typecheck-on-fail-core.js";
 import { formatVerifyToolOutput, verifyRepairV1EnabledFromEnvironment } from "./verify-failure-format.js";
 
 const ENABLED =
@@ -34,6 +42,10 @@ export interface HarnessOwnedVerifyExecution {
   exitCode: number;
   status: "PASS" | "FAIL";
   guardBlocked: boolean;
+  /** When FULL_GREEN_GATE fires: agent must stop (no further model calls). */
+  terminate?: boolean;
+  full_green?: boolean;
+  build_exit_code?: number | null;
 }
 
 /** Shared VERIFY execution path used by the Pi tool and harness parity tests. */
@@ -45,8 +57,30 @@ export function runHarnessOwnedVerifyAt(appRoot: string): HarnessOwnedVerifyExec
     output,
     verifyRepairV1EnabledFromEnvironment(),
   );
-  const text = processCanonicalVerifyForConvergence(formatted, exitCode);
-  return { text, exitCode, status, guardBlocked: false };
+  const withRootFirst = processCanonicalVerifyForRootErrorFirst(formatted, exitCode);
+  const withTypecheck = processCanonicalVerifyForTypecheckOnFail(
+    withRootFirst,
+    exitCode,
+    appRoot,
+  );
+  const withConvergence = processCanonicalVerifyForConvergence(withTypecheck, exitCode);
+  const withMemory = processCanonicalVerifyForErrorMemory(withConvergence, exitCode);
+  const withHardStop = processCanonicalVerifyForHardStopAfterGreen(withMemory, exitCode);
+
+  if (!fullGreenGateV1EnabledFromEnvironment() || exitCode !== 0) {
+    return { text: withHardStop, exitCode, status, guardBlocked: false };
+  }
+
+  const gate = applyFullGreenGateAfterVerifyPass(appRoot, withHardStop, exitCode);
+  return {
+    text: gate.text,
+    exitCode,
+    status,
+    guardBlocked: false,
+    terminate: gate.terminate,
+    full_green: gate.fullGreen,
+    build_exit_code: gate.buildExitCode,
+  };
 }
 
 const verifyTool = defineTool({
@@ -60,7 +94,7 @@ const verifyTool = defineTool({
     additionalProperties: false,
   },
 
-  async execute(_toolCallId, _params, _signal, _onUpdate, _ctx) {
+  async execute(_toolCallId, _params, _signal, _onUpdate, ctx) {
     const guardBlock = evaluateTestAuthoringGuardBlock(process.cwd());
     if (guardBlock) {
       return {
@@ -75,15 +109,38 @@ const verifyTool = defineTool({
     }
 
     const result = runHarnessOwnedVerifyAt(process.cwd());
+    if (result.terminate) {
+      // Belt: abort in-flight loop so a parallel non-terminating peer cannot continue.
+      // terminate:true on this result is the primary stop (prevents the next model call).
+      try {
+        ctx.abort();
+      } catch {
+        // ignore — terminate still applies
+      }
+      try {
+        ctx.shutdown();
+      } catch {
+        // print/json mode may no-op shutdown
+      }
+    }
     return {
       content: [{ type: "text", text: result.text }],
-      details: { exit_code: result.exitCode, status: result.status },
+      details: {
+        exit_code: result.exitCode,
+        status: result.status,
+        full_green: result.full_green ?? false,
+        build_exit_code: result.build_exit_code ?? null,
+      },
+      terminate: result.terminate === true,
     };
   },
 });
 
 export default function harnessOwnedVerify(pi: ExtensionAPI) {
   if (!ENABLED) return;
+
+  const tailSweepEnabled =
+    process.env.HARNESS_TAIL_SWEEP_V1 === "1" || process.env.HARNESS_TAIL_SWEEP_V1 === "true";
 
   pi.registerTool(verifyTool);
 
@@ -93,7 +150,9 @@ export default function harnessOwnedVerify(pi: ExtensionAPI) {
       "## Harness-owned verification",
       "- Run product tests with the `verify` tool — not `bash npm test`.",
       "- Do not pipe test output (`| tail`, `| grep`, etc.); the harness returns authoritative PASS/FAIL.",
-      "- After `verify` reports PASS and `npm run build` succeeds, write `report.partial.json` and finish.",
+      tailSweepEnabled
+        ? "- After `verify` reports PASS on the current code, write `report.partial.json` immediately. The harness runs final test/build/server checks when you write the report."
+        : "- After `verify` reports PASS and `npm run build` succeeds, write `report.partial.json` and finish.",
       "- Each `tests_run` entry must use `{ \"command\": \"verify\", \"journey\": \"<behaviour verified>\", \"result\": \"passed\" }` — not `name`/`status`.",
     ].join("\n"),
   }));

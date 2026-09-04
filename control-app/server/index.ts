@@ -43,6 +43,7 @@ import {
   readOverlayFile,
   type RunOverlayPatch,
 } from "./run-overlay.js";
+import { defaultHarnessEnv, HARNESS_BOARD_FLAGS } from "../shared/harness-board.js";
 import type { ChallengeLaunchRequest, ReplayLaunchRequest } from "./types.js";
 
 const SERVER_DIR = path.dirname(fileURLToPath(import.meta.url));
@@ -362,6 +363,7 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
         args: shell.args,
         cwd: REPO_ROOT,
         env: shell.env,
+        ...(body.timeout_ms !== undefined ? { timeout_ms: body.timeout_ms } : {}),
       });
 
       jobRegistry.once("done", (jobId) => {
@@ -374,9 +376,39 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
       return;
     }
 
+    if (method === "GET" && pathname === "/api/challenge/active") {
+      const active = jobRegistry.getActiveChallenge();
+      sendJson(res, 200, { job: active });
+      return;
+    }
+
+    if (method === "GET" && pathname === "/api/harness-board") {
+      sendJson(res, 200, {
+        flags: HARNESS_BOARD_FLAGS,
+        defaults: defaultHarnessEnv(),
+      });
+      return;
+    }
+
     const jobStreamMatch = matchRoute(pathname, "/api/jobs/:id/stream");
     if (method === "GET" && jobStreamMatch) {
       streamJob(jobStreamMatch.id!, req, res);
+      return;
+    }
+
+    const jobStopMatch = matchRoute(pathname, "/api/jobs/:id/stop");
+    if (method === "POST" && jobStopMatch) {
+      const job = jobRegistry.get(jobStopMatch.id!);
+      if (!job) {
+        sendError(res, 404, "Job not found");
+        return;
+      }
+      const stopped = jobRegistry.killJob(jobStopMatch.id!, "stopped");
+      if (!stopped) {
+        sendError(res, 409, `Job is not running (status: ${job.status})`);
+        return;
+      }
+      sendJson(res, 200, jobRegistry.get(jobStopMatch.id!));
       return;
     }
 

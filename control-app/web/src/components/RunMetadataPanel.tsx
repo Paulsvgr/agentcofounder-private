@@ -15,6 +15,7 @@ import {
   ratingChipLabel,
   rubricFromOverlay,
 } from "./AppRubricForm.js";
+import { EXPERIMENT_ID_PATTERN } from "../../../shared/experiment-id.js";
 
 interface RunMetadataPanelProps {
   runId: string;
@@ -28,8 +29,6 @@ interface RunMetadataPanelProps {
   summaryRubric?: AppRubricScores | null;
   onSaved?: () => void;
 }
-
-const EXPERIMENT_ID_PATTERN = /^[a-z0-9][a-z0-9-]{0,79}$/;
 
 function buildAutoLabel(experiment: string, runIndex: string): string {
   const parts = [experiment].filter((part) => part && part !== "unknown");

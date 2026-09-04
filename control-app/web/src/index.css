@@ -161,6 +161,152 @@ a:hover {
   color: #b3261e;
 }
 
+.badge-keep {
+  background: #e7f8ef;
+  color: #137333;
+}
+
+.badge-parked {
+  background: #fff4e5;
+  color: #b05a00;
+}
+
+.badge-off {
+  background: #eef1f6;
+  color: #566178;
+}
+
+.badge-baseline {
+  background: #e8eefc;
+  color: #3659c9;
+}
+
+.badge-arm {
+  background: #e8eefc;
+  color: #3659c9;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-weight: 600;
+}
+
+.job-status-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.75rem 0 1rem;
+}
+
+.harness-board-panel {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e4e8f0;
+}
+
+.harness-board-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.harness-board-head h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.harness-board-note {
+  margin: 0.35rem 0 0.75rem;
+  font-size: 0.85rem;
+}
+
+.harness-flag-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.harness-flag-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.35rem 0.75rem;
+  align-items: center;
+  padding: 0.45rem 0.55rem;
+  border-radius: 0.45rem;
+  background: #f7f8fb;
+}
+
+.harness-flag-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  cursor: pointer;
+}
+
+.harness-flag-label {
+  font-weight: 600;
+}
+
+.harness-flag-key {
+  font-size: 0.75rem;
+  color: #566178;
+}
+
+.harness-flag-note {
+  grid-column: 1 / -1;
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.harness-board-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.5rem;
+  background: #f7f8fb;
+  border: 1px solid #e4e8f0;
+  font-size: 0.85rem;
+}
+
+.harness-board-strip-label {
+  font-weight: 700;
+  color: #566178;
+}
+
+button.btn-ghost,
+.btn-ghost {
+  appearance: none;
+  border: 1px solid #c5cddc;
+  background: #fff;
+  color: #3659c9;
+  border-radius: 0.5rem;
+  padding: 0.35rem 0.7rem;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button.btn-danger,
+.btn-danger {
+  appearance: none;
+  border: 1px solid #b3261e;
+  background: #b3261e;
+  color: #fff;
+  border-radius: 0.5rem;
+  padding: 0.45rem 0.85rem;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;

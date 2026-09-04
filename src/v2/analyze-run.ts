@@ -1,4 +1,5 @@
 import { mkdir, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { buildCallLedger, type CallLedger } from "./normalize.js";
 import { readRunManifestOptional } from "./manifest.js";
@@ -6,10 +7,20 @@ import { buildStationReport, renderStationHtml, type StationReport } from "./sta
 import { readRunResultOptional, enrichVerificationDetails } from "./verification.js";
 import { persistReconcileReport, reconcileRunIfPossible } from "./reconcile.js";
 import {
+  buildEarlyVerifyRunMetrics,
+  mergeAutoEarlyVerifyIntoTrajectory,
+} from "./early-verify-metrics.js";
+import { buildTestStructureRunMetrics } from "./test-structure-metrics.js";
+import {
   buildTrajectoryMetrics,
   formatTrajectorySummary,
   type TrajectoryMetrics,
 } from "./trajectory-metrics.js";
+import {
+  countAuthoredTestsInApp,
+  readEarlyVerifyExportFromRun,
+} from "../../solution/extensions/early-verify-core.js";
+import { readTestStructureExportFromRun } from "../../solution/extensions/test-structure-core.js";
 
 export interface AnalyzeRunPaths {
   outputDirectory: string;
@@ -51,7 +62,10 @@ export async function analyzeRun(options: AnalyzeRunOptions): Promise<AnalyzeRun
   const analysisDirectory = path.join(repositoryRoot, "artifacts", "analysis");
 
   const ledger = await buildCallLedger(runDirectory);
-  const trajectory = buildTrajectoryMetrics(ledger);
+  const earlyExport = readEarlyVerifyExportFromRun(runDirectory);
+  const testStructureExport = readTestStructureExportFromRun(runDirectory);
+  let trajectory = buildTrajectoryMetrics(ledger);
+  trajectory = mergeAutoEarlyVerifyIntoTrajectory(trajectory, earlyExport, ledger);
   const manifest = await readRunManifestOptional(runDirectory);
   const runResult = await readRunResultOptional(runDirectory);
 
@@ -84,14 +98,51 @@ export async function analyzeRun(options: AnalyzeRunOptions): Promise<AnalyzeRun
   };
 
   await mkdir(outputDirectory, { recursive: true });
-  const trajectoryJson = `${JSON.stringify(trajectory, null, 2)}\n`;
+  const appSnapshotDir = path.join(runDirectory, "app");
+  const runEndAuthored = existsSync(appSnapshotDir)
+    ? countAuthoredTestsInApp(appSnapshotDir)
+    : null;
+  const earlyVerifyMetrics = buildEarlyVerifyRunMetrics({
+    ledger,
+    trajectory,
+    runDirectory,
+    runEndJourneyTestCount: runResult?.tests_run?.length ?? null,
+    runEndAuthoredTestCount: runEndAuthored?.authored_test_count ?? null,
+  });
+  const testStructureMetrics = buildTestStructureRunMetrics({
+    ledger,
+    trajectory,
+    runDirectory,
+    runEndJourneyTestCount: runResult?.tests_run?.length ?? null,
+    runEndAuthoredTestCount: runEndAuthored?.authored_test_count ?? null,
+  });
+  const trajectoryWithExtensions = {
+    ...trajectory,
+    early_verify: earlyVerifyMetrics,
+    test_structure: testStructureMetrics,
+  };
+  const trajectoryJson = `${JSON.stringify(trajectoryWithExtensions, null, 2)}\n`;
   const writeTasks: Promise<void>[] = [
     writeFile(paths.ledgerPath, `${JSON.stringify(ledger, null, 2)}\n`, "utf8"),
     writeFile(paths.stationJsonPath, `${JSON.stringify(report, null, 2)}\n`, "utf8"),
     writeFile(paths.stationHtmlPath, renderStationHtml(report), "utf8"),
     writeFile(paths.trajectoryPath, trajectoryJson, "utf8"),
     writeFile(paths.trajectoryV2Path, trajectoryJson, "utf8"),
+    writeFile(
+      path.join(outputDirectory, "early-verify.metrics.json"),
+      `${JSON.stringify(earlyVerifyMetrics, null, 2)}\n`,
+      "utf8",
+    ),
   ];
+  if (testStructureExport) {
+    writeTasks.push(
+      writeFile(
+        path.join(outputDirectory, "test-structure.metrics.json"),
+        `${JSON.stringify(testStructureMetrics, null, 2)}\n`,
+        "utf8",
+      ),
+    );
+  }
 
   const reconcileReport = await reconcileRunIfPossible(runDirectory);
   if (reconcileReport) {

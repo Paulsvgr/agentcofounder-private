@@ -45,6 +45,7 @@ describe("experiments catalog", () => {
 
   it("rejects invalid experiment ids", () => {
     expect(() => validateExperimentId("Bad_Slug")).toThrow(/lowercase/);
+    expect(() => validateExperimentId("css-vocabulary-v1.1")).toThrow(/lowercase/);
     expect(() => validateExperimentId("")).toThrow();
   });
 

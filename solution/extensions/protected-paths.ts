@@ -21,6 +21,13 @@ const BASH_READ_INSPECT_PATTERN =
 const BASH_WRITE_PATTERN =
   /(?:>>|>)\s*['"]?\.?\/?src\/styles\.css|<\s*['"]?\.?\/?src\/styles\.css|\bsed\s+[^|;&]*-i|\btee\b[^|;&]*\.?\/?src\/styles\.css|\b(?:cp|mv)\b[^|;&]*\.?\/?src\/styles\.css/i;
 
+export function cssVocabularyGuardsEnabledFromEnvironment(): boolean {
+  const raw = process.env.TEMPLATE_CSS_VOCABULARY;
+  if (raw === undefined || raw.trim() === "") return false;
+  const normalized = raw.trim().toLowerCase();
+  return normalized === "1" || normalized === "true" || normalized === "yes";
+}
+
 export function normalizeAppRelativePath(appRoot: string, candidate: string): string {
   const absolute = path.resolve(appRoot, candidate);
   return path.relative(appRoot, absolute).split(path.sep).join("/");
@@ -83,13 +90,14 @@ function isProtectedWritePath(appRoot: string, candidate: string): boolean {
 
 export default function protectedPaths(pi: ExtensionAPI) {
   const appRoot = process.cwd();
+  const cssGuardsEnabled = cssVocabularyGuardsEnabledFromEnvironment();
 
   pi.on("before_agent_start", async (event) => ({
     systemPrompt: stripPiDocumentationBlock(event.systemPrompt),
   }));
 
   pi.on("tool_call", async (event, context) => {
-    if (event.toolName === "bash") {
+    if (cssGuardsEnabled && event.toolName === "bash") {
       const command = String((event.input as Record<string, unknown>).command ?? "");
       if (bashCommandModifiesThemeStylesheet(command)) {
         if (context.hasUI) {
@@ -108,7 +116,7 @@ export default function protectedPaths(pi: ExtensionAPI) {
 
     const candidate = String((event.input as Record<string, unknown>).path ?? "");
 
-    if (event.toolName === "read" && isThemeStylesheetPath(appRoot, candidate)) {
+    if (cssGuardsEnabled && event.toolName === "read" && isThemeStylesheetPath(appRoot, candidate)) {
       if (context.hasUI) {
         context.ui.notify(`Blocked read of theme stylesheet: ${candidate}`, "warning");
       }
@@ -117,7 +125,7 @@ export default function protectedPaths(pi: ExtensionAPI) {
 
     if (event.toolName !== "write" && event.toolName !== "edit") return undefined;
 
-    if (isThemeStylesheetPath(appRoot, candidate)) {
+    if (cssGuardsEnabled && isThemeStylesheetPath(appRoot, candidate)) {
       if (context.hasUI) {
         context.ui.notify(`Blocked write to theme stylesheet: ${candidate}`, "warning");
       }

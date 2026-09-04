@@ -1,0 +1,10 @@
+{
+  "overlay_id": "test-isolation-v1",
+  "version": "1.0.0",
+  "files": [
+    { "source": "files/src/test/memoryStorage.ts", "target": "src/test/memoryStorage.ts" }
+  ],
+  "replaces": [],
+  "agents_section_marker": "## Test isolation (preinstalled)",
+  "guard_profile": null
+}

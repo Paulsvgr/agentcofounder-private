@@ -1,0 +1,11 @@
+{
+  "overlay_id": "css-vocabulary-v1.1",
+  "version": "1.0.0",
+  "files": [
+    { "source": "files/src/styles.css", "target": "src/styles.css" },
+    { "source": "files/src/App.tsx", "target": "src/App.tsx" }
+  ],
+  "replaces": ["src/styles.css", "src/App.tsx"],
+  "agents_section_marker": "## CSS vocabulary (preinstalled)",
+  "guard_profile": "css_vocabulary"
+}
