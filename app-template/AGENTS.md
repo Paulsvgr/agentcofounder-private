@@ -3,6 +3,7 @@
 - Keep the application self-contained and runnable with `npm run dev` at `http://localhost:3000`.
 - Store durable single-user browser data locally when persistence is required.
 - Prefer semantic HTML and accessible names so browser automation can use the interface without brittle selectors.
+- Give repeated interactive controls and fields unique accessible names that identify their purpose or item, such as `Edit The Hobbit` and `Edit title` rather than duplicate `Edit` and `Title` names.
 - Add tests for the product's critical user journeys and run them before claiming success. After the full suite and build both pass on the current code, do not re-run them unless you changed code — then verify once and stop.
 - The seed intentionally contains no product tests. Add at least one completed, passing `src/**/*.test.ts` or `src/**/*.test.tsx` test; the runner rejects zero-test reports and any skipped or todo tests.
 - Use only the dependencies already installed from the committed lockfile. Do not add packages or run dependency-install commands.
@@ -44,6 +45,26 @@ Use only these class names for layout, typography, forms, buttons, lists, and ca
 **Rules:**
 
 - Compose UI from these classes only. Combine modifiers as shown (`className="ui-btn ui-btn-primary"`).
-- **Accept the default appearance. Do not customise merely to make it prettier.**
-- Do not substitute inline `style={{...}}` for the vocabulary.
+- Choose exactly one visual theme and one layout for the product and set them on the top-level `ui-page` element.
 - Do not add class names outside this list.
+- Do not create custom styling or inspect the stylesheet.
+
+### Visual themes
+
+Choose the theme that best fits the product:
+
+- `clean` — neutral, crisp product/SaaS appearance.
+- `warm` — softer personal, consumer, lifestyle appearance.
+- `bold` — stronger contrast, compact modern utility appearance.
+
+### Layouts
+
+Choose the layout that best fits the product:
+
+- `focused` — narrow layout for simple forms and single-task workflows.
+- `standard` — general-purpose layout for CRUD, lists, and everyday apps.
+- `workspace` — wider layout for dashboards, admin tools, and information-dense apps.
+
+Set both attributes as HTML data attributes on the top-level `ui-page` element:
+`data-theme="<chosen-theme>" data-layout="<chosen-layout>"`.
+Do not add theme or layout names as class names.

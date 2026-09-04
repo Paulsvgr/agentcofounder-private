@@ -14,7 +14,7 @@ Required outcome:
 - Use only the dependencies already installed from the committed lockfile; do not add packages or run dependency-install commands.
 - Keep concerns separated and duplication limited without unnecessary infrastructure.
 - Before finishing, run `npm test` and `npm run build`, repairing failures until both pass, then write `report.partial.json` (shape in `AGENTS.md`) and finish. Do not re-run tests or build to double-check on unchanged code; if you edit app or test code after green, verify once more and stop again.
-- Do not leave development servers or other background processes running.
+- Do not start dev/preview servers or other background processes; the runner verifies startup.
 - Report `success` or `partial` per the rules in `AGENTS.md`.
 - Do not write `result.json`; the challenge runner owns its audited telemetry fields.
 

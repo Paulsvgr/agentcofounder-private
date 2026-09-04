@@ -813,6 +813,190 @@ select.ui-input {
   margin-top: var(--ui-space-4);
 }
 
+/* --------------------------------------------------------------------------
+   Preinstalled visual themes
+   -------------------------------------------------------------------------- */
+
+/* Clean — current neutral SaaS/product style */
+.ui-page[data-theme="clean"] {
+  --ui-background: #f8fafc;
+  --ui-foreground: #0f172a;
+  --ui-card: #ffffff;
+  --ui-card-muted: #f1f5f9;
+  --ui-border: #e2e8f0;
+  --ui-border-strong: #cbd5e1;
+
+  --ui-primary: #2563eb;
+  --ui-primary-hover: #1d4ed8;
+  --ui-primary-soft: #dbeafe;
+
+  --ui-secondary: #64748b;
+  --ui-secondary-hover: #475569;
+  --ui-secondary-soft: #e2e8f0;
+
+  --ui-muted: #64748b;
+  --ui-muted-foreground: #94a3b8;
+  --ui-ring: #2563eb;
+
+  --ui-radius-sm: 0.375rem;
+  --ui-radius-md: 0.5rem;
+  --ui-radius-lg: 0.75rem;
+  --ui-radius-xl: 1rem;
+}
+
+
+/* Warm — personal / consumer / lifestyle */
+.ui-page[data-theme="warm"] {
+  --ui-background: #faf7f2;
+  --ui-foreground: #2c2520;
+  --ui-card: #fffdf9;
+  --ui-card-muted: #f5eee5;
+  --ui-border: #e8ddd0;
+  --ui-border-strong: #d8c6b3;
+
+  --ui-primary: #a45132;
+  --ui-primary-hover: #863e25;
+  --ui-primary-soft: #f6e3d8;
+
+  --ui-secondary: #78675b;
+  --ui-secondary-hover: #5f5046;
+  --ui-secondary-soft: #eee5dc;
+
+  --ui-muted: #77685d;
+  --ui-muted-foreground: #a39284;
+  --ui-ring: #a45132;
+
+  --ui-shadow-color: rgb(73 49 34 / 7%);
+  --ui-shadow-lg-color: rgb(73 49 34 / 11%);
+
+  --ui-radius-sm: 0.5rem;
+  --ui-radius-md: 0.75rem;
+  --ui-radius-lg: 1rem;
+  --ui-radius-xl: 1.25rem;
+
+  --ui-font-sans:
+    "Trebuchet MS",
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+}
+
+.ui-page[data-theme="warm"] {
+  font-family: var(--ui-font-sans);
+}
+
+.ui-page[data-theme="warm"] .ui-card,
+.ui-page[data-theme="warm"] .ui-list-item,
+.ui-page[data-theme="warm"] .ui-input {
+  background: var(--ui-card);
+}
+
+.ui-page[data-theme="warm"] .ui-title {
+  letter-spacing: -0.01em;
+}
+
+.ui-page[data-theme="warm"] .ui-badge {
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+
+/* Bold — modern utility / high-contrast */
+.ui-page[data-theme="bold"] {
+  --ui-background: #f4f4f5;
+  --ui-foreground: #09090b;
+  --ui-card: #ffffff;
+  --ui-card-muted: #e4e4e7;
+  --ui-border: #d4d4d8;
+  --ui-border-strong: #71717a;
+
+  --ui-primary: #18181b;
+  --ui-primary-hover: #3f3f46;
+  --ui-primary-soft: #e4e4e7;
+
+  --ui-secondary: #52525b;
+  --ui-secondary-hover: #27272a;
+  --ui-secondary-soft: #e4e4e7;
+
+  --ui-muted: #52525b;
+  --ui-muted-foreground: #71717a;
+  --ui-ring: #18181b;
+
+  --ui-shadow-color: rgb(0 0 0 / 5%);
+  --ui-shadow-lg-color: rgb(0 0 0 / 8%);
+
+  --ui-radius-sm: 0.2rem;
+  --ui-radius-md: 0.3rem;
+  --ui-radius-lg: 0.4rem;
+  --ui-radius-xl: 0.5rem;
+}
+
+.ui-page[data-theme="bold"] .ui-card {
+  box-shadow: none;
+  border-color: var(--ui-border-strong);
+}
+
+.ui-page[data-theme="bold"] .ui-list-item {
+  box-shadow: none;
+}
+
+.ui-page[data-theme="bold"] .ui-title {
+  letter-spacing: -0.04em;
+}
+
+.ui-page[data-theme="bold"] .ui-badge {
+  border: 1px solid var(--ui-border-strong);
+  background: transparent;
+  color: var(--ui-foreground);
+}
+
+
+/* --------------------------------------------------------------------------
+   Preinstalled layout variants
+   -------------------------------------------------------------------------- */
+
+/* Focused — single-task / narrow workflow */
+.ui-page[data-layout="focused"] {
+  --ui-container-max: 38rem;
+}
+
+.ui-page[data-layout="focused"] .ui-section {
+  margin-block: var(--ui-space-5);
+}
+
+.ui-page[data-layout="focused"] .ui-form {
+  grid-template-columns: 1fr;
+}
+
+
+/* Standard — existing general-purpose layout */
+.ui-page[data-layout="standard"] {
+  --ui-container-max: 48rem;
+}
+
+
+/* Workspace — dashboards / admin / information-dense apps */
+.ui-page[data-layout="workspace"] {
+  --ui-container-max: 72rem;
+}
+
+.ui-page[data-layout="workspace"] .ui-section {
+  margin-block: var(--ui-space-5);
+}
+
+.ui-page[data-layout="workspace"] .ui-card {
+  padding: var(--ui-space-5);
+}
+
+.ui-page[data-layout="workspace"] .ui-list {
+  gap: var(--ui-space-2);
+}
+
+@media (min-width: 1024px) {
+  .ui-page[data-layout="workspace"] .ui-form {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
 
 /* --------------------------------------------------------------------------
    Print styles
