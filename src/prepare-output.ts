@@ -5,6 +5,7 @@ import {
   assembleTemplate,
   resolveTemplateOverlayConfigFromEnvironment,
   type AssemblyRecord,
+  type TemplateOverlayConfig,
 } from "./v2/template-overlays.js";
 
 export const APP_OUTPUT_MARKER = ".agent-cofounder-output";
@@ -125,6 +126,7 @@ export interface PreparedOutput {
 export async function prepareOutput(
   repositoryRoot: string,
   requestedOutputDirectory: string,
+  requestedOverlayConfig?: TemplateOverlayConfig,
 ): Promise<PreparedOutput> {
   const outputRoot = path.resolve(repositoryRoot, "output");
   const outputDirectory = path.resolve(repositoryRoot, requestedOutputDirectory);
@@ -166,7 +168,7 @@ export async function prepareOutput(
     await rm(outputDirectory, { recursive: true });
   }
 
-  const overlayConfig = resolveTemplateOverlayConfigFromEnvironment();
+  const overlayConfig = requestedOverlayConfig ?? resolveTemplateOverlayConfigFromEnvironment();
   const assemblyRecord = await assembleTemplate(overlayConfig, repositoryRoot, outputDirectory);
   await writeFile(path.join(outputDirectory, MARKER), APP_OUTPUT_MARKER_CONTENT, "utf8");
   const reusedNodeModules = await restoreNodeModulesIfLockMatches(outputRoot, outputDirectory);

@@ -90,13 +90,17 @@ const OVERLAY_DEFINITIONS = [
   { configKey: "stripe" as const, directoryName: "stripe-v1" },
 ] as const;
 
+/** Explicitly "no opinion" — same as leaving the variable unset, so the overlay chooser decides. */
+const AUTO_SENTINEL = "auto";
+
 function parseBooleanEnv(name: string, fallback: boolean): boolean {
   const raw = process.env[name];
   if (raw === undefined || raw.trim() === "") return fallback;
   const normalized = raw.trim().toLowerCase();
+  if (normalized === AUTO_SENTINEL) return fallback;
   if (normalized === "1" || normalized === "true" || normalized === "yes") return true;
   if (normalized === "0" || normalized === "false" || normalized === "no") return false;
-  throw new Error(`${name} must be 0/1, true/false, or yes/no`);
+  throw new Error(`${name} must be 0/1, true/false, yes/no, or auto`);
 }
 
 export function resolveTemplateOverlayConfigFromEnvironment(
@@ -114,6 +118,32 @@ export function resolveTemplateOverlayConfigFromEnvironment(
     throw new Error("TEMPLATE_CSS_VOCABULARY and TEMPLATE_TAILWIND cannot both be enabled");
   }
   return config;
+}
+
+const OVERLAY_ENV_KEYS: ReadonlyArray<readonly [keyof TemplateOverlayConfig, string]> = [
+  ["css_vocabulary", "TEMPLATE_CSS_VOCABULARY"],
+  ["persistence_primitive", "TEMPLATE_PERSISTENCE"],
+  ["test_isolation", "TEMPLATE_TEST_ISOLATION"],
+  ["tailwind", "TEMPLATE_TAILWIND"],
+  ["api_client", "TEMPLATE_API_CLIENT"],
+  ["stripe", "TEMPLATE_STRIPE"],
+];
+
+/**
+ * Only the overlay keys whose TEMPLATE_* variable states an opinion (set, and not
+ * `auto`). Callers that compute an overlay config from something other than the
+ * environment (the overlay chooser) layer this on top so an operator's explicit
+ * value always wins.
+ */
+export function templateOverlayEnvOverrides(): Partial<TemplateOverlayConfig> {
+  const overrides: Partial<TemplateOverlayConfig> = {};
+  for (const [configKey, envName] of OVERLAY_ENV_KEYS) {
+    const raw = process.env[envName];
+    if (raw === undefined || raw.trim() === "") continue;
+    if (raw.trim().toLowerCase() === AUTO_SENTINEL) continue;
+    overrides[configKey] = parseBooleanEnv(envName, false);
+  }
+  return overrides;
 }
 
 export function templateOverlayPaths(repositoryRoot: string): {

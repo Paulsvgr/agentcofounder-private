@@ -106,7 +106,7 @@ export interface HarnessBoardFlag {
   key: string;
   label: string;
   decision: "KEEP" | "PARKED" | "OFF" | "BASELINE";
-  defaultValue: "0" | "1";
+  defaultValue: "0" | "1" | "auto";
   launchToggle: boolean;
   note: string;
 }

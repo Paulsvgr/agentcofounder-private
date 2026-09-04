@@ -38,8 +38,15 @@ import { applyProductQualityContractV1 } from "../solution/product-quality-contr
 import {
   cssVocabularyGuardsEnabled,
   resolveTemplateOverlayConfigFromEnvironment,
+  templateOverlayEnvOverrides,
   toTemplateOverlaysManifestBlock,
 } from "./v2/template-overlays.js";
+import {
+  chooseOverlaysFromIdea,
+  formatOverlayChoice,
+  overlayChooserV1EnabledFromEnvironment,
+  type OverlayChoice,
+} from "./v2/overlay-chooser.js";
 import { assertMutuallyExclusiveScopeSequenceExperimentFlags } from "../solution/extensions/scope-sequence-core.js";
 
 interface Arguments {
@@ -88,8 +95,9 @@ Environment:
   TEMPLATE_PERSISTENCE        Enable persistence primitive overlay (0/1, default 1 — ship)
   TEMPLATE_TEST_ISOLATION     Enable test isolation overlay (0/1, default 0)
   TEMPLATE_TAILWIND           Enable preinstalled Tailwind overlay (0/1, default 1 — ship)
-  TEMPLATE_API_CLIENT         Enable HTTP JSON client overlay (0/1, default 0)
-  TEMPLATE_STRIPE             Enable Stripe Checkout helper overlay (0/1, default 0)
+  TEMPLATE_API_CLIENT         Enable HTTP JSON client overlay (0/1, default: chooser)
+  TEMPLATE_STRIPE             Enable Stripe Checkout helper overlay (0/1, default: chooser)
+  HARNESS_OVERLAY_CHOOSER_V1  Pick persistence/api/stripe overlays from the idea (0/1, default 1)
   HARNESS_ERROR_MEMORY_V1     Append known-error hints on VERIFY FAIL (0/1, default 0)
   HARNESS_ROOT_ERROR_FIRST_V1 Surface root/runtime VERIFY errors before RTL symptoms (0/1, default 1 — ship)
   HARNESS_FULL_GREEN_GATE_V1  Stop after VERIFY+BUILD green (0/1, default 1 — ship)
@@ -267,10 +275,23 @@ function timeoutFromEnvironment(): number {
 async function main(): Promise<void> {
   const args = parseArguments(process.argv.slice(2));
   const idea = await readFile(args.ideaFile, "utf8");
-  const overlayConfig = resolveTemplateOverlayConfigFromEnvironment();
+  // Config phase: pick overlays from the idea before the builder agent starts.
+  // Explicit TEMPLATE_* variables still win over whatever the chooser decides.
+  let overlayChoice: OverlayChoice | null = null;
+  let overlayConfig = resolveTemplateOverlayConfigFromEnvironment();
+  if (overlayChooserV1EnabledFromEnvironment()) {
+    overlayChoice = chooseOverlaysFromIdea(idea);
+    overlayConfig = { ...overlayChoice.config, ...templateOverlayEnvOverrides() };
+    console.log(formatOverlayChoice(overlayChoice));
+  }
+  process.env.TEMPLATE_PERSISTENCE = overlayConfig.persistence_primitive ? "1" : "0";
+  process.env.TEMPLATE_API_CLIENT = overlayConfig.api_client ? "1" : "0";
+  process.env.TEMPLATE_STRIPE = overlayConfig.stripe ? "1" : "0";
+
   const { outputDirectory, assemblyRecord, reusedNodeModules } = await prepareOutput(
     REPOSITORY_ROOT,
     args.outputDirectory,
+    overlayConfig,
   );
   const templateOverlays = toTemplateOverlaysManifestBlock(assemblyRecord);
   console.log(`Prepared clean application workspace: ${outputDirectory}`);
@@ -355,6 +376,13 @@ async function main(): Promise<void> {
   await mkdir(path.join(artifactDirectory, "sessions"), { recursive: true });
   process.env.CHALLENGE_RUN_ARTIFACT_DIR = artifactDirectory;
   await writeFile(path.join(artifactDirectory, "idea.txt"), idea, "utf8");
+  if (overlayChoice) {
+    await writeFile(
+      path.join(artifactDirectory, "overlay-chooser.v1.json"),
+      `${JSON.stringify({ ...overlayChoice, applied: overlayConfig }, null, 2)}\n`,
+      "utf8",
+    );
+  }
   await copyAppTemplateTree(
     outputDirectory,
     path.join(artifactDirectory, "app-template"),

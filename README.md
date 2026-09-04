@@ -63,6 +63,31 @@ export CHALLENGE_THINKING="off"          # cheaper / quieter
 export HARNESS_FULL_GREEN_GATE_V1=0      # disable ship FULL_GREEN
 export TEMPLATE_PERSISTENCE=0            # disable persistence overlay
 export TEMPLATE_TAILWIND=0               # disable Tailwind overlay
+export HARNESS_OVERLAY_CHOOSER_V1=0      # disable the config phase (fixed ship overlays)
+```
+
+## Config phase: overlays chosen from the idea
+
+Before the builder agent starts, `npm run challenge` reads the idea and picks which
+template overlays to preinstall. It is a deterministic keyword classifier, so the
+selection costs no tokens and is reproducible from
+`artifacts/runs/<id>/overlay-chooser.v1.json`.
+
+| Overlay | Turned on by |
+| --- | --- |
+| `persistence_primitive` | on by default; only an explicit "don't save anything" turns it off |
+| `api_client` | API / REST / endpoint / backend / webhook wording, or implied by Stripe |
+| `stripe` | payment / checkout / subscription / billing wording |
+
+Tailwind and the CSS vocabulary overlay are ship decisions and never chosen from the
+idea. Any explicit `TEMPLATE_*` variable overrides the choice, and
+`HARNESS_OVERLAY_CHOOSER_V1=0` pins the fixed ship overlays.
+
+Preview the selection without spending a run:
+
+```bash
+npm run choose:overlays                                  # the shipped idea
+npm run choose:overlays -- --idea "Sell posters, pay at checkout"
 ```
 
 Never commit credentials. `.env.example` documents variable names, but the runner intentionally does not load `.env` files.

@@ -9,8 +9,8 @@ export interface HarnessFlagSpec {
   key: string;
   label: string;
   decision: BoardDecision;
-  /** Default value when launching (string "0" | "1"). */
-  defaultValue: "0" | "1";
+  /** Default value when launching. "auto" leaves the decision to the overlay chooser. */
+  defaultValue: "0" | "1" | "auto";
   /** When true, shown in New Run as a toggle. */
   launchToggle: boolean;
   note: string;
@@ -166,17 +166,25 @@ export const HARNESS_BOARD_FLAGS: HarnessFlagSpec[] = [
     key: "TEMPLATE_API_CLIENT",
     label: "HTTP API client",
     decision: "OFF",
-    defaultValue: "0",
+    defaultValue: "auto",
     launchToggle: true,
-    note: "OFF default — JSON requestJson helper; enable only for networked ideas",
+    note: "auto — chooser enables requestJson helpers for networked ideas; toggle to force",
   },
   {
     key: "TEMPLATE_STRIPE",
     label: "Stripe Checkout helpers",
     decision: "OFF",
-    defaultValue: "0",
+    defaultValue: "auto",
     launchToggle: true,
-    note: "OFF default — Checkout redirect helpers (no Stripe npm package)",
+    note: "auto — chooser enables Checkout redirect helpers for paid ideas; toggle to force",
+  },
+  {
+    key: "HARNESS_OVERLAY_CHOOSER_V1",
+    label: "Overlay chooser (config phase)",
+    decision: "KEEP",
+    defaultValue: "1",
+    launchToggle: true,
+    note: "KEEP — picks persistence/api/stripe overlays from the idea before the builder runs",
   },
 ];
 

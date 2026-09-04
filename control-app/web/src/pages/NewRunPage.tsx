@@ -366,12 +366,18 @@ export function NewRunPage() {
             </p>
             <ul className="harness-flag-list">
               {boardFlags.map((flag) => {
-                const on = flagValues[flag.key] === "1";
+                const value = flagValues[flag.key] ?? flag.defaultValue;
+                const on = value === "1";
+                // "auto" means the overlay chooser decides, which is neither on nor off.
+                const auto = value === "auto";
                 return (
                   <li key={flag.key} className="harness-flag-row">
                     <label className="harness-flag-toggle">
                       <input
                         type="checkbox"
+                        ref={(node) => {
+                          if (node) node.indeterminate = auto;
+                        }}
                         checked={on}
                         onChange={() => toggleFlag(flag.key)}
                         disabled={running}

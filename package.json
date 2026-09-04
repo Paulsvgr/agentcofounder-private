@@ -24,6 +24,7 @@
     "assemble:resources": "node --import tsx scripts/assemble-resources.ts",
     "assemble:template": "node --import tsx scripts/assemble-template.ts",
     "preview:assembler": "node --import tsx scripts/preview-assembler.ts",
+    "choose:overlays": "node --import tsx scripts/choose-overlays.ts",
     "experiment:a": "bash scripts/run-experiment-a.sh",
     "experiment:b": "bash scripts/run-experiment-b.sh",
     "experiment:c": "bash scripts/run-experiment-c.sh",
