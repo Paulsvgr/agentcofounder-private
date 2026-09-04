@@ -297,10 +297,11 @@ L0 is intentionally **mechanical** (tests/build/HTTP). Product quality is **prom
 Cost-aware loop (default **on**):
 
 1. **Quality matrix** (`src/v2/quality/matrix.ts`) — maps sensors to ~100-pt readiness pillars.
-2. **Sensors → diagnosis** — deterministic findings before any Pi call; **pre-agent gate** stops when no high-value gap remains.
+2. **Sensors → diagnosis** — deterministic findings before any Pi call; **pre-agent gate** stops when no high-value gap remains **and** domain+storage exist.
 3. **Cost-aware VOI** (`src/v2/cost-model.ts` + `src/v2/voi/`) —  
    `score = (quality_gain × P(success)) / (input + 3×output + 0.1×cache_read)`.  
-   Output-heavy hops are expensive; prefer stop over low-value continues.
+   Output-heavy hops are expensive; prefer stop over low-value continues.  
+   **Quality floor:** do not early-stop while domain/storage (or other high-value gaps) remain — cheap L0-green monoliths were exiting via `voi_below_cost_threshold` without a fix-architecture slice.
 4. **Slice contracts** (`src/v2/context/slice-contract.ts`) — surgical user prompts: objective, evidence, files, do-not-modify, success, **output budget**.
 5. **Stable prompt hashing** — warns on system-append drift between slices (cache killer).
 6. **Output governance** — worker protocol: no long prose, ≤80 token finale, stop after one verify.

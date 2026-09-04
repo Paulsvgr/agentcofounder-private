@@ -256,12 +256,14 @@ export async function runMilestoneRalph(input: MilestoneRalphInput): Promise<Mil
       if (d.code) allDiagnosisCodes.push(d.code);
     }
 
-    // Quality gate before agent: avoid Pi when L0 is green and sensors show no high-value gap.
+    // Quality gate before agent: avoid Pi when L0 is green and quality floor is met.
     if (
       useIntel &&
       state.last_l0?.passed &&
       observation.productTestFiles.length > 0 &&
       !highValueGapExists(diagnosis) &&
+      observation.hasDomainModule &&
+      observation.hasStorageModule &&
       (observation.reportStatus === "success" || state.last_action === "continue_journeys")
     ) {
       stopReason = "pre_agent_quality_gate_no_high_value_gap";

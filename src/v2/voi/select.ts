@@ -42,6 +42,22 @@ export interface VoiDecision {
 /** Stop when expected value of another hop is too low (cost-aware score units). */
 const VOI_STOP_THRESHOLD = Number(process.env.VOI_STOP_THRESHOLD ?? "0.08");
 
+/**
+ * Hard quality floor: do not early-stop while the app still fails integration/maintainability
+ * (or other high-value matrix gaps). Cheap L0-green monoliths were stopping via
+ * `voi_below_cost_threshold` because fix_architecture's cost-aware score sits under the threshold.
+ */
+export function qualityFloorBlocksStop(
+  observation: WorkspaceObservation,
+  diagnosis: DiagnosisFinding[],
+): boolean {
+  if (highValueGapExists(diagnosis)) return true;
+  if (observation.productTestFiles.length === 0) return false;
+  // Domain + storage are the integration-readiness floor for mutable-data apps.
+  if (!observation.hasDomainModule || !observation.hasStorageModule) return true;
+  return false;
+}
+
 function qualityAndProb(
   kind: CandidateKind,
   diagnosis: DiagnosisFinding[],
@@ -65,13 +81,20 @@ function qualityAndProb(
       quality = state.last_l0 && !state.last_l0.passed ? Math.max(0.7, points / 100) : 0.05;
       probability = hasCritical ? 0.65 : 0.5;
       break;
-    case "fix_architecture":
-      quality = areas.has("architecture") ? Math.max(0.35, points / 120) : 0.05;
-      probability = 0.6;
+    case "fix_architecture": {
+      const needsArch =
+        areas.has("architecture") ||
+        !observation.hasDomainModule ||
+        !observation.hasStorageModule ||
+        !observation.hasComponentModules;
+      quality = needsArch ? Math.max(0.55, points / 100) : 0.05;
+      probability = 0.7;
       break;
+    }
     case "fix_persistence":
-      quality = areas.has("persistence") ? 0.4 : 0.04;
-      probability = 0.62;
+      quality =
+        areas.has("persistence") || !observation.hasStorageModule ? Math.max(0.45, points / 100) : 0.04;
+      probability = 0.65;
       break;
     case "improve_accessibility":
       quality = areas.has("accessibility") ? 0.32 : 0.04;
@@ -172,6 +195,21 @@ export function evaluateStopConditions(input: {
   bestNonStopScore: number;
   unchangedWorkspaceStreak: number;
 }): string | null {
+  const floorBlocks = qualityFloorBlocksStop(input.observation, input.diagnosis);
+
+  // Never early-stop while integration/maintainability (or other high-value) gaps remain.
+  // Cost-aware scores for fix_architecture are often < VOI_STOP_THRESHOLD (~0.08) even when
+  // the gap is real — that produced ~20k flat apps that never got a quality pass.
+  if (floorBlocks) {
+    if (input.unchangedWorkspaceStreak >= 2) {
+      return "unchanged_workspace_streak";
+    }
+    if (input.diagnosis.some((d) => d.area === "repeated_failure") && input.bestNonStopScore < VOI_STOP_THRESHOLD) {
+      return "repeated_failure_low_voi";
+    }
+    return null;
+  }
+
   if (input.state.last_l0?.passed && input.observation.reportStatus === "success" && !criticalGapExists(input.diagnosis)) {
     return "no_critical_gap_report_success";
   }
@@ -308,6 +346,16 @@ export function selectVoiAction(input: {
 
   if (input.state.last_l0 && input.state.last_l0.passed === false && input.observation.productTestFiles.length > 0) {
     return { selected: candidates.find((c) => c.kind === "repair_failure")!, candidates, stop_reason: null };
+  }
+
+  // Prefer architecture repair when the integration floor is still open.
+  if (
+    !input.observation.hasDomainModule ||
+    !input.observation.hasStorageModule ||
+    !input.observation.hasComponentModules
+  ) {
+    const arch = candidates.find((c) => c.kind === "fix_architecture");
+    if (arch) return { selected: arch, candidates, stop_reason: null };
   }
 
   return { selected: nonStop[0]!, candidates, stop_reason: null };

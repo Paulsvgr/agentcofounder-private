@@ -157,6 +157,59 @@ describe("adaptive VOI", () => {
     expect(decision.stop_reason).toBeTruthy();
   });
 
+  it("does not stop on voi_below_cost_threshold while domain/storage are missing", () => {
+    const state = initialMilestoneState();
+    state.slice = 1;
+    state.last_action = "implement_core";
+    state.last_l0 = {
+      passed: true,
+      tests_passed: true,
+      build_passed: true,
+      http_passed: false,
+      summary: "L0 PASS",
+    };
+    const decision = selectVoiAction({
+      observation: {
+        sourceFiles: ["src/App.tsx", "src/App.test.tsx"],
+        productTestFiles: ["src/App.test.tsx"],
+        hasReportPartial: true,
+        reportStatus: "partial",
+        implementedFeatures: [],
+        hasDomainModule: false,
+        hasStorageModule: false,
+        hasComponentModules: false,
+      },
+      diagnosis: [
+        {
+          severity: "high",
+          area: "architecture",
+          evidence: "Missing src/domain/",
+          files: [],
+          recommended_action: "Extract domain",
+          sensor: "architecture",
+          code: "missing_domain",
+        },
+        {
+          severity: "high",
+          area: "architecture",
+          evidence: "Missing src/storage/",
+          files: [],
+          recommended_action: "Add repository",
+          sensor: "architecture",
+          code: "missing_storage",
+        },
+      ],
+      state,
+      maxSlices: 3,
+      unchangedWorkspaceStreak: 0,
+      stableSystemTokens: 5_000,
+      volatileTokens: 300,
+    });
+    expect(decision.stop_reason).toBeNull();
+    expect(decision.selected.kind).toBe("fix_architecture");
+    expect(decision.selected.action).toBe("continue_journeys");
+  });
+
   it("scores actions with competition-weighted cost in the denominator", () => {
     const state = initialMilestoneState();
     // No green L0 yet — otherwise cost-aware stop may prefer "stop" over a medium gap.
