@@ -4,7 +4,14 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { restoreCheckpoint, sealCheckpoint } from "../../src/v2/milestone-ralph/checkpoint.js";
 import { snapshotL0 } from "../../src/v2/milestone-ralph/l0.js";
-import { isProductTestFile, observeWorkspace } from "../../src/v2/milestone-ralph/observe.js";
+import {
+  isComponentModulePath,
+  isDomainModulePath,
+  isProductTestFile,
+  isStorageModulePath,
+  observeWorkspace,
+  qualityGapLines,
+} from "../../src/v2/milestone-ralph/observe.js";
 import { chooseNextSlice, formatWorkerPrompt } from "../../src/v2/milestone-ralph/orchestrator.js";
 import {
   isSealedGreenCheckpoint,
@@ -34,6 +41,50 @@ describe("isProductTestFile", () => {
   });
 });
 
+describe("modular layout detection", () => {
+  it("recognizes domain, storage, and component paths", () => {
+    expect(isDomainModulePath("src/domain/library.ts")).toBe(true);
+    expect(isDomainModulePath("src/domain.ts")).toBe(true);
+    expect(isDomainModulePath("src/App.tsx")).toBe(false);
+    expect(isStorageModulePath("src/storage/libraryRepository.ts")).toBe(true);
+    expect(isStorageModulePath("src/libraryRepository.ts")).toBe(true);
+    expect(isComponentModulePath("src/components/BookForm.tsx")).toBe(true);
+    expect(isComponentModulePath("src/App.tsx")).toBe(false);
+  });
+
+  it("lists quality gaps only after product tests exist", () => {
+    expect(
+      qualityGapLines({
+        sourceFiles: ["src/App.tsx"],
+        productTestFiles: [],
+        hasReportPartial: false,
+        reportStatus: null,
+        implementedFeatures: [],
+        hasDomainModule: false,
+        hasStorageModule: false,
+        hasComponentModules: false,
+      }),
+    ).toEqual([]);
+
+    const gaps = qualityGapLines({
+      sourceFiles: ["src/App.tsx", "src/a.test.tsx"],
+      productTestFiles: ["src/a.test.tsx"],
+      hasReportPartial: false,
+      reportStatus: null,
+      implementedFeatures: [],
+      hasDomainModule: false,
+      hasStorageModule: true,
+      hasComponentModules: false,
+    });
+    expect(gaps.some((line) => line.includes("src/domain/"))).toBe(true);
+    expect(gaps.some((line) => line.includes("src/storage/"))).toBe(false);
+    expect(gaps.some((line) => line.includes("src/components/"))).toBe(true);
+    expect(gaps.some((line) => line.includes("≤10"))).toBe(true);
+    expect(gaps.some((line) => line.includes("aria-invalid"))).toBe(true);
+    expect(gaps.some((line) => line.includes("interaction-stability"))).toBe(true);
+  });
+});
+
 describe("observeWorkspace", () => {
   it("finds product tests and report status", async () => {
     const app = await tempDir("ralph-observe-");
@@ -56,6 +107,27 @@ describe("observeWorkspace", () => {
     expect(observation.productTestFiles).toEqual(["src/library.test.tsx"]);
     expect(observation.reportStatus).toBe("partial");
     expect(observation.implementedFeatures).toEqual(["list"]);
+    expect(observation.hasDomainModule).toBe(false);
+    expect(observation.hasStorageModule).toBe(false);
+    expect(observation.hasComponentModules).toBe(false);
+  });
+
+  it("flags modular layout when modules exist", async () => {
+    const app = await tempDir("ralph-observe-mod-");
+    await mkdir(path.join(app, "src", "domain"), { recursive: true });
+    await mkdir(path.join(app, "src", "storage"), { recursive: true });
+    await mkdir(path.join(app, "src", "components"), { recursive: true });
+    await writeFile(path.join(app, "src", "App.tsx"), "export function App() { return null; }\n", "utf8");
+    await writeFile(path.join(app, "src", "domain", "book.ts"), "export type Book = { title: string };\n", "utf8");
+    await writeFile(path.join(app, "src", "storage", "bookRepository.ts"), "export function load() { return []; }\n", "utf8");
+    await writeFile(path.join(app, "src", "components", "BookList.tsx"), "export function BookList() { return null; }\n", "utf8");
+    await writeFile(path.join(app, "src", "book.test.tsx"), "it('works', () => {});\n", "utf8");
+
+    const observation = await observeWorkspace(app);
+    expect(observation.hasDomainModule).toBe(true);
+    expect(observation.hasStorageModule).toBe(true);
+    expect(observation.hasComponentModules).toBe(true);
+    expect(qualityGapLines(observation).some((line) => line.includes("Missing src/domain/"))).toBe(false);
   });
 });
 
@@ -66,6 +138,9 @@ describe("chooseNextSlice", () => {
     hasReportPartial: false,
     reportStatus: null,
     implementedFeatures: [] as string[],
+    hasDomainModule: false,
+    hasStorageModule: false,
+    hasComponentModules: false,
   };
 
   it("starts with one core slice instead of a waterfall plan", () => {
@@ -158,6 +233,30 @@ describe("chooseNextSlice", () => {
     expect(prompt).toContain("This session is fresh");
     expect(prompt).toContain("Use src/App.tsx, not output/app");
     expect(prompt).not.toContain("slice_done");
+    expect(prompt).not.toContain("## Quality gaps to close this slice");
+  });
+
+  it("includes quality gaps when continuing a flat app with tests", () => {
+    const state = initialMilestoneState();
+    state.slice = 1;
+    state.last_action = "implement_core";
+    state.last_l0 = {
+      passed: true,
+      tests_passed: true,
+      build_passed: true,
+      http_passed: true,
+      summary: "L0 PASS",
+    };
+    const observation = {
+      ...emptyObservation,
+      productTestFiles: ["src/a.test.tsx"],
+      reportStatus: "partial" as const,
+    };
+    const slice = chooseNextSlice(state, observation, 8);
+    const prompt = formatWorkerPrompt("Track books.", slice, state, undefined, observation);
+    expect(slice.action).toBe("continue_journeys");
+    expect(prompt).toContain("## Quality gaps to close this slice");
+    expect(prompt).toContain("Missing src/domain/");
   });
 });
 
@@ -231,7 +330,7 @@ describe("snapshotL0", () => {
 });
 
 describe("sliceBudgetMs", () => {
-  it("gives most of the remaining wall clock to implement_core and reserves a later slice", () => {
+  it("caps implement_core at the configured slice timeout and reserves a later slice", () => {
     expect(
       sliceBudgetMs({
         action: "implement_core",
@@ -239,7 +338,15 @@ describe("sliceBudgetMs", () => {
         remainingMs: 900_000,
         configuredMs: 180_000,
       }),
-    ).toBe(840_000);
+    ).toBe(180_000);
+    expect(
+      sliceBudgetMs({
+        action: "implement_core",
+        productTestCount: 0,
+        remainingMs: 9_000_000,
+        configuredMs: 1_800_000,
+      }),
+    ).toBe(1_800_000);
   });
 
   it("does not reserve when the remaining wall is already short", () => {
@@ -250,7 +357,7 @@ describe("sliceBudgetMs", () => {
         remainingMs: 200_000,
         configuredMs: 180_000,
       }),
-    ).toBe(200_000);
+    ).toBe(180_000);
   });
 
   it("does not treat leftover wall as failure after a green L0", () => {
@@ -305,13 +412,14 @@ describe("runMilestoneRalph", () => {
       overallTimeoutMs: 60_000,
       sliceTimeoutMs: 5_000,
       maxSlices: 4,
+      contextIntelligence: false,
       buildPiArguments: (_idea, _s, _j, _a, _dir, options) => {
         expect(options?.userPrompt).toContain("Current slice");
         expect(options?.sessionDir).toContain(`${path.sep}sessions`);
         return ["pi"];
       },
       runPi: async (_args, _cwd, eventFile, _stderr, timeoutMs) => {
-        expect(timeoutMs).toBeGreaterThan(50_000);
+        expect(timeoutMs).toBe(5_000);
         piCalls += 1;
         await mkdir(path.dirname(eventFile), { recursive: true });
         await writeFile(eventFile, "", "utf8");
@@ -373,6 +481,7 @@ describe("runMilestoneRalph", () => {
       overallTimeoutMs: 60_000,
       sliceTimeoutMs: 5_000,
       maxSlices: 2,
+      contextIntelligence: false,
       buildPiArguments: () => ["pi"],
       runPi: async (_args, _cwd, eventFile) => {
         piCalls += 1;
@@ -419,6 +528,7 @@ describe("runMilestoneRalph", () => {
       overallTimeoutMs: 60_000,
       sliceTimeoutMs: 5_000,
       maxSlices: 3,
+      contextIntelligence: false,
       buildPiArguments: () => ["pi"],
       runPi: async (_args, _cwd, eventFile) => {
         piCalls += 1;

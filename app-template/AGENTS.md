@@ -2,8 +2,12 @@
 
 - Keep the application self-contained and runnable with `npm run dev` at `http://localhost:3000`.
 - Store durable single-user browser data locally when persistence is required.
+- For mutable data, split `src/domain/` (pure logic), `src/storage/` (repository load/save only), `src/components/` (UI), and keep `src/App.tsx` thin. Do not call `localStorage` from components.
 - Prefer semantic HTML and accessible names so browser automation can use the interface without brittle selectors.
-- Add tests for the product's critical user journeys and run them before claiming success. After the full suite and build both pass on the current code, do not re-run them unless you changed code — then verify once and stop.
+- Show visible validation/error text with `aria-invalid` and `role="alert"` or `aria-live="polite"`. Confirm destructive deletes. Surface persistence failures to the user.
+- Keep list order stable while editing a row; use `ui-badge` (or similar vocabulary) for low-stock / derived callouts instead of reshuffling on every +/-.
+- Field-level help or errors may use `ui-empty` inside a `ui-field` (stylesheet already styles that).
+- Keep the product suite to **8–10** focused UI journeys (do not exceed 10). Combine assertions; do not add separate domain/repository unit suites. Run tests before claiming success. After the suite and build both pass on the current code, do not re-run unless you changed code — then verify once and stop.
 - The seed intentionally contains no product tests. Add at least one completed, passing `src/**/*.test.ts` or `src/**/*.test.tsx` test; the runner rejects zero-test reports and any skipped or todo tests.
 - Use only the dependencies already installed from the committed lockfile. Do not add packages or run dependency-install commands.
 - `report.partial.json` contains only `status`, `app_url`, `start_command`, `summary`, `implemented_features`, `assumptions`, and `tests_run`.

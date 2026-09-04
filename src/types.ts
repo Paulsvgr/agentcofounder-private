@@ -73,4 +73,8 @@ export interface RunResult extends PartialRunResult, UsageSummary {
   pi_exit_code: number;
   telemetry_source: "pi-json-event-stream";
   port_reclamation: PortReclamationAudit;
+  /** Competition formula: input + 3*output + 0.1*cache_read */
+  competition_weighted_tokens?: number;
+  /** journeys_passed / competition_weighted_tokens */
+  weighted_efficiency_score?: number;
 }

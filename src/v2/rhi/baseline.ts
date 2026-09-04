@@ -3,28 +3,26 @@ import { RHI_HARNESS_SCHEMA } from "./schema.js";
 
 const IMPLEMENTER_INSTRUCTIONS = [
   "This is one slice. Do not plan a waterfall.",
-  "Implement the core product in src/App.tsx and add focused src/**/*.test.ts(x) journeys in this same slice.",
   "Do not write a textual plan or description before you start editing files.",
-  "The first file-changing action must be using the `write` tool to create/replace `src/App.tsx` (the seed must be replaced, not kept).",
-  "After `src/App.tsx` is written, immediately use `write`/`edit` to create/overwrite `src/**/*.test.ts(x)` (at least one completed passing product test).",
-  "If you need to inspect the repo, use `read` (not bash for editing). Keep inspection minimal.",
-  "Exiting without passing product tests fails L0. No skipped or todo tests.",
-  "Use the CSS vocabulary in AGENTS.md. Do not inspect or edit src/styles.css.",
-  "The harness runs L0 after you exit. Do not start a lingering dev server.",
+  "Ship a modular app: src/domain/, src/storage/, src/components/, thin App.tsx.",
+  "First file-changing actions must create those modules and replace the seed App.",
+  "Usability+robustness in the same journeys where possible: validation+aria-invalid, confirm delete, stable +/- with badge, refresh persist, one recovery path.",
+  "Add ≤10 high-information UI journeys (soft max 10). Combine rubric points per test. No domain/repo unit suites.",
+  "OUTPUT GOVERNANCE: no long explanations; do not repeat the task; do not dump files/logs; prefer write/edit; final message ≤80 tokens; stop immediately after one green npm test + npm run build.",
+  "Use CSS vocabulary in AGENTS.md. Do not edit src/styles.css. Harness runs L0 after exit.",
 ].join("\n");
 
 const CONTINUER_INSTRUCTIONS = [
-  "Observe the current code, tests, and last L0 report. Do not restart from a blank plan.",
-  "Implement only the next missing implied journeys, then add or update the smallest tests that cover them.",
-  "Do not rewrite working sealed behavior. Do not emit a multi-phase roadmap.",
-  "Do not write a textual plan; use `write`/`edit` to implement the missing behavior and its tests.",
-  "The harness will verify after this slice. Write report.partial.json if the app is now complete.",
+  "Only close the single highest-value gap named in the slice contract.",
+  "If L0 is green and no critical sensor gap remains, write a complete report.partial.json (all required fields, status success) and stop — do not polish.",
+  "Do not rewrite sealed behavior. Stay ≤10 tests. No prose plans.",
+  "OUTPUT GOVERNANCE: ≤80 token final message; stop after one verify.",
 ].join("\n");
 
 const REPAIRER_INSTRUCTIONS = [
-  "The previous slice's files are still on disk. Do not restore the seed and do not start over.",
-  "Product tests already exist. Fix only what the L0 report names — usually failing src/**/*.test.ts(x) or the UI they exercise.",
-  "Do not write a textual plan; use `write`/`edit` to fix the specific failing tests and their UI.",
+  "Files are on disk. Do not restore the seed.",
+  "Fix only what L0 names. Prefer domain/storage/components.",
+  "OUTPUT GOVERNANCE: no long explanations; stop after failing tests pass.",
   "L0 report:",
 ].join("\n");
 
@@ -151,7 +149,7 @@ export function baselineHarness(id = "v0"): HarnessDocument {
         ],
         restore_on_repair: true,
         max_slices: 3,
-        slice_timeout_ms: 180_000,
+        slice_timeout_ms: 900_000,
       },
       global_rules: {
         constraints: [

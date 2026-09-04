@@ -6,6 +6,10 @@ export interface NextSlice {
   action: MilestoneAction;
   title: string;
   instruction: string;
+  /** Adaptive VOI kind when context intelligence is enabled. */
+  voi_kind?: string;
+  success_condition?: string;
+  score?: number;
 }
 
 export interface SealedMilestone {
@@ -13,6 +17,7 @@ export interface SealedMilestone {
   title: string;
   action: MilestoneAction;
   l0_passed: boolean;
+  voi_kind?: string;
 }
 
 export interface L0Snapshot {
@@ -23,6 +28,15 @@ export interface L0Snapshot {
   summary: string;
 }
 
+export interface ContextMetricsEntry {
+  slice: number;
+  estimated_tokens_before: number;
+  estimated_tokens_after: number;
+  reduction_ratio: number;
+  compacted: boolean;
+}
+
+/** Backward-compatible milestone state; intelligence fields are optional. */
 export interface MilestoneState {
   schema: typeof MILESTONE_STATE_SCHEMA;
   slice: number;
@@ -33,6 +47,12 @@ export interface MilestoneState {
   last_l0: L0Snapshot | null;
   last_green_checkpoint: string | null;
   done: boolean;
+  stop_reason?: string | null;
+  context_metrics?: ContextMetricsEntry[];
+  last_workspace_fingerprint?: string | null;
+  unchanged_workspace_streak?: number;
+  failure_fingerprints?: string[];
+  last_voi_kind?: string | null;
 }
 
 export function initialMilestoneState(): MilestoneState {
@@ -46,5 +66,11 @@ export function initialMilestoneState(): MilestoneState {
     last_l0: null,
     last_green_checkpoint: null,
     done: false,
+    stop_reason: null,
+    context_metrics: [],
+    last_workspace_fingerprint: null,
+    unchanged_workspace_streak: 0,
+    failure_fingerprints: [],
+    last_voi_kind: null,
   };
 }

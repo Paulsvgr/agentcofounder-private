@@ -21,6 +21,8 @@ This document is the **narrative source of truth** for what we built, why, and h
 - Do not mix experiment patches into `v2` without a deliberate merge plan.
 - Raw run artifacts under `artifacts/runs/` are immutable evidence. Derived analysis goes under `artifacts/analysis/` or `artifacts/replay/`.
 
+**Current harness map:** [`HARNESS-DESIGN.md`](./HARNESS-DESIGN.md) (flowcharts + structure). Interactive canvas: **Harness architecture (current)**. Context intelligence / sensors / adaptive VOI / harness-memory are on by default (`CONTEXT_INTELLIGENCE`, `RALPH_ADAPTIVE`).
+
 ---
 
 ## 1. Environment setup
@@ -377,19 +379,28 @@ checkpoint. Fail keeps the current tree (seed is never restored over in-progress
 work). If a later slice breaks a sealed green tree, that green checkpoint is
 restored. If L0 failed because there are still no product tests, the next slice is
 implementer again — repair only runs when tests already exist. Default budget is
-3 slices so a 15-minute wall clock can finish. Official tests+build+HTTP still
+3 slices with a 15-minute per-slice cap inside a 60-minute wall. Prompts target
+**8–10 UI journeys** (soft max 10) and discourage domain/repo unit suites so runs
+stay cheaper. Official tests+build+HTTP still
 run once at the end when tests actually passed; if tests already failed, that
 last slice L0 is reused so the runner does not rebuild. The orchestrator chooses
 the next slice from observed files + L0, not from a prewritten waterfall.
 Each slice is a normal Pi session (full tools, mvp-builder skill, harness-owned
-verify). The first `implement_core` slice (no product tests yet) uses most of the
-remaining wall clock and reserves three minutes for a later continue/repair
-slice when the wall is long enough. `MILESTONE_TIMEOUT_MS` still caps those later
+verify). The first `implement_core` slice (no product tests yet) is capped at
+`MILESTONE_TIMEOUT_MS` (default 15 minutes) and reserves time for later retries
+when the wall is long enough. `MILESTONE_TIMEOUT_MS` still caps continue/repair
 slices. After official tests+build+HTTP pass, a missing `report.partial.json` does
 not fail the run: `tests_run` is filled from the Vitest JSON report, and a wall-
 clock SIGTERM after a green L0 is not treated as product failure. Per-slice
 artifacts live under `artifacts/runs/<id>/slices/mNN/` plus `milestone-state.json`
 and `checkpoints/`.
+
+**Quality steering (not auto-scored by L0):** prompts require modular
+`domain` / `storage` / `components`, visible validation, confirm-before-delete,
+lean persistence robustness, and interaction-stability inside the ≤10-test budget.
+After product tests exist, `observeWorkspace` detects missing modules and
+`formatWorkerPrompt` injects a **Quality gaps** block that prefers combining
+assertions over growing the suite.
 
 ---
 

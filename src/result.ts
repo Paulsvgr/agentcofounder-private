@@ -8,6 +8,7 @@ import type {
   TestRun,
   UsageSummary,
 } from "./types.js";
+import { competitionWeightedTokens, weightedEfficiencyScore } from "./v2/cost-model.js";
 
 const FALLBACK_PARTIAL: PartialRunResult = {
   status: "failed",
@@ -18,6 +19,9 @@ const FALLBACK_PARTIAL: PartialRunResult = {
   assumptions: [],
   tests_run: [],
 };
+
+/** Default when report.partial.json omits `summary` — not an intentional agent claim. */
+const PLACEHOLDER_SUMMARY = "Pi completed without a valid summary.";
 
 const APP_DIRECTORY_START_COMMAND = "npm run dev";
 
@@ -76,7 +80,7 @@ export function normalizePartialResult(value: unknown): PartialRunResult | undef
     status,
     app_url: "http://localhost:3000",
     start_command: "npm run dev",
-    summary: typeof result.summary === "string" ? result.summary : "Pi completed without a valid summary.",
+    summary: typeof result.summary === "string" ? result.summary : PLACEHOLDER_SUMMARY,
     implemented_features: filteredStrings(result.implemented_features),
     assumptions: filteredStrings(result.assumptions),
     tests_run: testsRun,
@@ -97,21 +101,59 @@ export function isMissingAgentReport(partial: PartialRunResult): boolean {
   return partial.status === "failed" && partial.tests_run.length === 0 && partial.summary === FALLBACK_PARTIAL.summary;
 }
 
-/** When the agent skipped report.partial.json, use harness Vitest journeys if official verify passed. */
+/** Incomplete or absent agent report — not an intentional status:"partial" with a real summary. */
+export function isIncompleteAgentReport(partial: PartialRunResult): boolean {
+  if (isMissingAgentReport(partial)) return true;
+  if (partial.status === "failed") return false;
+  if (partial.status === "success") return false;
+  return (
+    partial.summary === PLACEHOLDER_SUMMARY ||
+    partial.summary === FALLBACK_PARTIAL.summary
+  );
+}
+
+function hasUsableAgentSummary(partial: PartialRunResult): boolean {
+  return (
+    partial.summary.length > 0 &&
+    partial.summary !== PLACEHOLDER_SUMMARY &&
+    partial.summary !== FALLBACK_PARTIAL.summary
+  );
+}
+
+/**
+ * When official verify is green, fill missing tests_run from Vitest and upgrade
+ * missing/incomplete report.partial.json to success. Intentional status:"partial"
+ * with a real summary is preserved.
+ */
 export function salvageAgentReport(
   partial: PartialRunResult,
   verification: AppVerification,
   harnessJourneys: TestRun[] = [],
 ): PartialRunResult {
   const tests = partial.tests_run.length > 0 ? partial.tests_run : harnessJourneys;
-  if (!isMissingAgentReport(partial) || !verification.passed || tests.length === 0) {
+  if (!verification.passed || tests.length === 0) {
     return tests === partial.tests_run ? partial : { ...partial, tests_run: tests };
   }
+
   const allPassed = tests.every((test) => test.result === "passed");
+  if (!allPassed) {
+    return tests === partial.tests_run ? partial : { ...partial, tests_run: tests };
+  }
+
+  const shouldUpgrade =
+    isIncompleteAgentReport(partial) ||
+    isMissingAgentReport(partial) ||
+    partial.status === "failed";
+  if (!shouldUpgrade) {
+    return tests === partial.tests_run ? partial : { ...partial, tests_run: tests };
+  }
+
   return {
     ...partial,
-    status: allPassed ? "success" : "partial",
-    summary: "Generated application passed harness verification.",
+    status: "success",
+    summary: hasUsableAgentSummary(partial)
+      ? partial.summary
+      : "Generated application passed harness verification.",
     implemented_features:
       partial.implemented_features.length > 0 ? partial.implemented_features : tests.map((test) => test.journey),
     tests_run: tests,
@@ -142,6 +184,8 @@ export function composeResult(
         ? "success"
         : report.status
       : "partial";
+  const journeysPassed = report.tests_run.filter((t) => t.result === "passed").length;
+  const competitionWeighted = competitionWeightedTokens(usage);
   return {
     ...report,
     status,
@@ -153,6 +197,11 @@ export function composeResult(
     pi_exit_code: timeoutAfterGreenVerify && status !== "failed" ? 0 : piExitCode,
     telemetry_source: "pi-json-event-stream",
     port_reclamation: portReclamation,
+    competition_weighted_tokens: competitionWeighted,
+    weighted_efficiency_score: weightedEfficiencyScore({
+      journeys_passed: journeysPassed,
+      usage,
+    }),
   };
 }
 

@@ -9,6 +9,10 @@ export interface WorkspaceObservation {
   hasReportPartial: boolean;
   reportStatus: "success" | "partial" | "failed" | null;
   implementedFeatures: string[];
+  /** Mutable-data layout signals for continue/repair quality passes. */
+  hasDomainModule: boolean;
+  hasStorageModule: boolean;
+  hasComponentModules: boolean;
 }
 
 function toPosix(relative: string): string {
@@ -20,6 +24,51 @@ export function isProductTestFile(relativePath: string): boolean {
   if (!isTestFilePath(posix)) return false;
   if (/(^|\/)src\/test\/setup\.[tj]sx?$/.test(posix)) return false;
   return posix.startsWith("src/") && /\.test\.[tj]sx?$/.test(posix);
+}
+
+export function isDomainModulePath(relativePath: string): boolean {
+  const posix = toPosix(relativePath);
+  if (!posix.startsWith("src/") || isProductTestFile(posix)) return false;
+  return /(^|\/)src\/domain\//.test(posix) || /(^|\/)domain\.[tj]sx?$/.test(posix);
+}
+
+export function isStorageModulePath(relativePath: string): boolean {
+  const posix = toPosix(relativePath);
+  if (!posix.startsWith("src/") || isProductTestFile(posix)) return false;
+  return (
+    /(^|\/)src\/storage\//.test(posix) ||
+    /Repository\.[tj]sx?$/.test(posix) ||
+    /(^|\/)repository\.[tj]sx?$/.test(posix)
+  );
+}
+
+export function isComponentModulePath(relativePath: string): boolean {
+  const posix = toPosix(relativePath);
+  if (!posix.startsWith("src/") || isProductTestFile(posix)) return false;
+  return /(^|\/)src\/components\//.test(posix);
+}
+
+export function qualityGapLines(observation: WorkspaceObservation): string[] {
+  const gaps: string[] = [];
+  if (observation.productTestFiles.length === 0) return gaps;
+  if (!observation.hasDomainModule) {
+    gaps.push("- Missing src/domain/ (or domain module): extract types and pure operations out of App.tsx.");
+  }
+  if (!observation.hasStorageModule) {
+    gaps.push(
+      "- Missing src/storage/ repository: move localStorage load/save out of components into a repository module.",
+    );
+  }
+  if (!observation.hasComponentModules) {
+    gaps.push("- Missing src/components/: split focused UI pieces out of App.tsx.");
+  }
+  gaps.push(
+    "- Keep the suite lean (≤10 UI journeys). Prefer combining assertions over adding tests. Skip new domain/repo unit suites.",
+  );
+  gaps.push(
+    "- Only if missing: visible validation + aria-invalid; confirm-before-delete; one persistence robustness path; +/- interaction-stability in an existing multi-item test.",
+  );
+  return gaps;
 }
 
 async function listFiles(root: string, relative = ""): Promise<string[]> {
@@ -51,6 +100,9 @@ export async function observeWorkspace(appDirectory: string): Promise<WorkspaceO
     )
     .sort();
   const productTestFiles = sourceFiles.filter((file) => isProductTestFile(file));
+  const hasDomainModule = sourceFiles.some((file) => isDomainModulePath(file));
+  const hasStorageModule = sourceFiles.some((file) => isStorageModulePath(file));
+  const hasComponentModules = sourceFiles.some((file) => isComponentModulePath(file));
 
   let hasReportPartial = false;
   let reportStatus: WorkspaceObservation["reportStatus"] = null;
@@ -71,5 +123,8 @@ export async function observeWorkspace(appDirectory: string): Promise<WorkspaceO
     hasReportPartial,
     reportStatus,
     implementedFeatures,
+    hasDomainModule,
+    hasStorageModule,
+    hasComponentModules,
   };
 }

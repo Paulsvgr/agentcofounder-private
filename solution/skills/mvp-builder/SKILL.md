@@ -7,13 +7,25 @@ description: Turn a non-technical product idea into a small, tested browser appl
 
 1. Extract the entity, its attributes, every journey detailed or implied by the idea, and any ambiguity.
 2. Use the public journey guidance as a coverage check. Implement every applicable pattern, but omit patterns the idea does not imply instead of inventing substitute features; record the rationale in `assumptions`.
-3. Prefer browser-local persistence unless the idea genuinely requires a backend. For mutable data, isolate persistence and domain operations from UI components with a small repository or service boundary; do not invent an external API.
-4. Implement accessible controls, validation, empty states, errors, and responsive layout. Handle duplicate or repeated actions, boundary values, malformed stored data, and recoverable storage or runtime failures where relevant.
-5. Keep components focused, separate concerns, and avoid duplication so another developer or agent can extend the app without a rewrite.
-6. Use only the dependencies already installed from the committed lockfile. Do not add packages or run dependency-install commands.
-7. Write the smallest sufficient journey suite that covers every applicable observable user behavior. One focused test per requested or clearly implied journey—no duplicate coverage and no speculative edge cases the idea does not require. Prefer `getByRole`, `getByLabelText`, and scoped queries over broad `getByText` or regex that can match multiple elements. Do not assert on exact text-node structure when a role or label suffices. Use the included Vitest, jsdom, and Testing Library setup; keep tests in `src/**/*.test.ts` or `src/**/*.test.tsx`. Startup and assumptions reporting are runner obligations, not UI test journeys. Every committed test must run and pass; do not leave skipped or todo tests.
-8. Run `npm test` and `npm run build`, repairing failures until both pass, then write `report.partial.json` using the shape in step 9 and finish. Do not re-run on unchanged code; after you edit app or test code, verify once and stop.
-9. `report.partial.json` shape:
+3. Prefer browser-local persistence unless the idea genuinely requires a backend. For mutable data, **do not put domain logic or `localStorage` inside React components**. Use this layout (names may vary; folders matter):
+   - `src/domain/` — types + pure operations
+   - `src/storage/` — repository `load` / `save` (and only there talk to `localStorage`)
+   - `src/components/` — presentational / interaction UI
+   - `src/App.tsx` — thin composition only
+4. Usability & accessibility:
+   - Labels via `htmlFor` / accessible names; empty states; responsive vocabulary layout from `AGENTS.md`.
+   - Show **visible** validation and error messages (e.g. “Title is required”). Do not rely only on disabled submit.
+   - Set `aria-invalid="true"` on invalid inputs and announce messages with `role="alert"` or `aria-live="polite"`.
+   - Confirm before destructive remove/delete.
+   - Stable interaction UX: do not re-sort the list on +/- / inline edit; highlight “running low” with `ui-badge`.
+5. Robustness when forms or persistence apply (keep lean):
+   - Empty/invalid required fields → on-screen error.
+   - Malformed stored JSON recovery **or** surfaced save/quota failure (one robustness demo is enough).
+6. Keep modules focused so another developer or agent can extend the app without a rewrite.
+7. Use only the dependencies already installed from the committed lockfile. Do not add packages or run dependency-install commands.
+8. **Test budget: 8–10 UI journeys (do not exceed 10).** Combine assertions; prefer `getByRole` / `getByLabelText` and queries scoped to the list item. When +/- exists, one multi-item test must cover value change + stable order. Do **not** add separate domain/repository unit-test files or speculative edges (qty floor, cancel-delete, filter counts) unless the idea explicitly requires them. Every committed test must run and pass; no skipped or todo tests. Keep tests in `src/**/*.test.ts` or `src/**/*.test.tsx`.
+9. Run `npm test` and `npm run build` once green, write a **complete** `report.partial.json` (all fields below — never `tests_run` alone), and stop. Do not polish further or expand the suite after success.
+10. `report.partial.json` shape (required keys — omit none):
 
 ```json
 {

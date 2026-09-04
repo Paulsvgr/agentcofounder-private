@@ -1,6 +1,6 @@
 import type { NextSlice } from "../milestone-ralph/state.js";
 import type { MilestoneAction, MilestoneState } from "../milestone-ralph/state.js";
-import type { WorkspaceObservation } from "../milestone-ralph/observe.js";
+import { qualityGapLines, type WorkspaceObservation } from "../milestone-ralph/observe.js";
 import { evaluateCondition, type ConditionContext } from "./conditions.js";
 import { baselineHarness } from "./baseline.js";
 import { findAgent, type HarnessDocument } from "./schema.js";
@@ -89,6 +89,7 @@ export function formatContractPrompt(
   slice: NextSlice,
   state: MilestoneState,
   document: HarnessDocument = baselineHarness(),
+  observation?: WorkspaceObservation,
 ): string {
   const agentId = ACTION_TO_AGENT[slice.action];
   const agent = findAgent(document, agentId);
@@ -109,6 +110,11 @@ export function formatContractPrompt(
   const contract = agent?.input_contract ?? ["idea", "slice_title", "slice_action", "sealed_milestones", "last_l0"];
   const selected = inputLines.filter((line) => contract.some((field) => line.startsWith(field.split(".")[0]!)));
   const output = (agent?.output_contract ?? []).map((item) => `- ${item}`).join("\n");
+  const gaps = observation ? qualityGapLines(observation) : [];
+  const qualityBlock =
+    gaps.length === 0
+      ? []
+      : ["## Quality gaps to close this slice", "", ...gaps, ""];
 
   return [
     "## Product idea",
@@ -122,6 +128,7 @@ export function formatContractPrompt(
     "",
     slice.instruction,
     "",
+    ...qualityBlock,
     "## Input contract",
     "",
     selected.join("\n"),

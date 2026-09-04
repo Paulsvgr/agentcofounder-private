@@ -83,9 +83,9 @@ Environment:
   CHALLENGE_THINKING         Optional Pi thinking level (default: off)
   CHALLENGE_MAX_TOKENS       Optional max output tokens (recorded in run manifest)
   CHALLENGE_CONTEXT_WINDOW   Optional model context window (recorded in run manifest)
-  CHALLENGE_TIMEOUT_MS       Wall-clock limit for the whole run (default: 9000000)
+  CHALLENGE_TIMEOUT_MS       Wall-clock limit for the whole run (default: 3600000)
   EXECUTION_STRATEGY         milestone_ralph (default) or single_session
-  MILESTONE_TIMEOUT_MS       Per-slice Pi limit for milestone_ralph (default: 1800000)
+  MILESTONE_TIMEOUT_MS       Per-slice Pi limit for milestone_ralph (default: 900000)
   MILESTONE_MAX_SLICES       Max worker slices for milestone_ralph (default: 3)
   RHI_HARNESS                Optional path to an optimized harness.json (production loads this only)
   RUN_EXPERIMENT / RUN_ARM / RUN_REP / RUN_INTERVENTION  Optional experiment metadata
@@ -279,7 +279,7 @@ export function buildPiArguments(
 }
 
 function timeoutFromEnvironment(): number {
-  const raw = process.env.CHALLENGE_TIMEOUT_MS ?? "900000";
+  const raw = process.env.CHALLENGE_TIMEOUT_MS ?? "3600000";
   const value = Number(raw);
   if (!Number.isSafeInteger(value) || value < 1_000) {
     throw new Error("CHALLENGE_TIMEOUT_MS must be an integer of at least 1000");
@@ -369,6 +369,13 @@ async function main(): Promise<void> {
   }
   let pi: CommandResult;
   let ralphLastVerification: AppVerification | null = null;
+  let ralphStopReason: string | null = null;
+  let ralphSliceCount = 0;
+  let ralphContextMetrics: Array<{
+    estimated_tokens_before: number;
+    estimated_tokens_after: number;
+    reduction_ratio: number;
+  }> = [];
   if (useRalph) {
     const ralph = await runMilestoneRalph({
       idea,
@@ -388,6 +395,9 @@ async function main(): Promise<void> {
     });
     pi = { exitCode: ralph.exitCode, timedOut: ralph.timedOut };
     ralphLastVerification = ralph.lastVerification;
+    ralphStopReason = ralph.stopReason;
+    ralphSliceCount = ralph.state.sealed.length;
+    ralphContextMetrics = ralph.state.context_metrics ?? [];
   } else {
     pi = await runPi(
       buildPiArguments(idea, systemPrompt, publicJourneys, appContext, artifactDirectory, {
@@ -447,9 +457,24 @@ async function main(): Promise<void> {
     resultPaths = await writeResult(outputDirectory, result, [rootResultPath, artifactResultPath]);
   }
   const missingResultPaths = missingRequiredResultPaths(resultPaths, requiredResultPaths);
+  const avg = (values: number[]): number | null =>
+    values.length === 0 ? null : Number((values.reduce((a, b) => a + b, 0) / values.length).toFixed(2));
+  const manifestExtras: {
+    slice_count?: number;
+    stop_reason?: string | null;
+    context_token_before_avg?: number | null;
+    context_token_after_avg?: number | null;
+    context_reduction_ratio_avg?: number | null;
+  } = {
+    stop_reason: ralphStopReason,
+    context_token_before_avg: avg(ralphContextMetrics.map((m) => m.estimated_tokens_before)),
+    context_token_after_avg: avg(ralphContextMetrics.map((m) => m.estimated_tokens_after)),
+    context_reduction_ratio_avg: avg(ralphContextMetrics.map((m) => m.reduction_ratio)),
+  };
+  if (ralphSliceCount > 0) manifestExtras.slice_count = ralphSliceCount;
   await writeRunManifest(
     artifactDirectory,
-    finalizeRunManifest(manifest, buildRunManifestOutcome(result, usage, wallMs)),
+    finalizeRunManifest(manifest, buildRunManifestOutcome(result, usage, wallMs, manifestExtras)),
   );
   const experimentId = resolveExperimentId(manifest.experiment);
   if (experimentId) {

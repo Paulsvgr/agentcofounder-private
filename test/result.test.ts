@@ -110,6 +110,36 @@ describe("result contract", () => {
     }
   });
 
+  it("upgrades tests_run-only report.partial.json to success when official verify is green", () => {
+    const incomplete = normalizePartialResult({
+      tests_run: [{ command: "verify", journey: "Add a supply", result: "passed" }],
+    });
+    expect(incomplete?.status).toBe("partial");
+    expect(incomplete?.summary).toBe("Pi completed without a valid summary.");
+
+    const salvaged = salvageAgentReport(incomplete!, verification);
+    expect(salvaged.status).toBe("success");
+    expect(salvaged.summary).toBe("Generated application passed harness verification.");
+    expect(salvaged.implemented_features).toEqual(["Add a supply"]);
+
+    const result = composeResult(incomplete!, usage, 0, verification, portReclamation, ROOT_START_COMMAND);
+    expect(result.status).toBe("success");
+  });
+
+  it("preserves intentional status:partial when the agent wrote a real summary", () => {
+    const intentional = normalizePartialResult({
+      status: "partial",
+      summary: "Filter works but delete confirm is unfinished",
+      implemented_features: ["List", "Filter"],
+      assumptions: [],
+      tests_run: [{ command: "npm test", journey: "Filter by type", result: "passed" }],
+    });
+    expect(salvageAgentReport(intentional!, verification).status).toBe("partial");
+    expect(composeResult(intentional!, usage, 0, verification, portReclamation, ROOT_START_COMMAND).status).toBe(
+      "partial",
+    );
+  });
+
   it("overrides success when telemetry contains no model calls", async () => {
     const zeroUsage: UsageSummary = {
       model_calls: 0,

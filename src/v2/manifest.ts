@@ -75,6 +75,13 @@ export interface RunManifestOutcome {
   cache_write_tokens: number;
   weighted_cost: number;
   wall_ms: number;
+  /** Optional context-intelligence / VOI telemetry (backward compatible). */
+  slice_count?: number;
+  stop_reason?: string | null;
+  context_token_before_avg?: number | null;
+  context_token_after_avg?: number | null;
+  context_reduction_ratio_avg?: number | null;
+  sensor_finding_count?: number | null;
 }
 
 export interface RunManifest {
@@ -188,7 +195,7 @@ function readOptionalPositiveInteger(name: string): number | null {
 }
 
 export function collectModelSettings(): ModelSettings {
-  const rawTimeout = process.env.CHALLENGE_TIMEOUT_MS ?? "900000";
+  const rawTimeout = process.env.CHALLENGE_TIMEOUT_MS ?? "3600000";
   const timeout = Number(rawTimeout);
   if (!Number.isSafeInteger(timeout) || timeout < 1_000) {
     throw new Error("CHALLENGE_TIMEOUT_MS must be an integer of at least 1000");
@@ -253,6 +260,14 @@ export function buildRunManifestOutcome(
   result: Pick<RunResult, "status" | "pi_exit_code">,
   usage: UsageSummary,
   wallMs: number,
+  extras?: {
+    slice_count?: number;
+    stop_reason?: string | null;
+    context_token_before_avg?: number | null;
+    context_token_after_avg?: number | null;
+    context_reduction_ratio_avg?: number | null;
+    sensor_finding_count?: number | null;
+  },
 ): RunManifestOutcome {
   return {
     status: result.status,
@@ -264,6 +279,7 @@ export function buildRunManifestOutcome(
     cache_write_tokens: usage.cache_write_tokens,
     weighted_cost: weightedCost(usage),
     wall_ms: wallMs,
+    ...(extras ?? {}),
   };
 }
 

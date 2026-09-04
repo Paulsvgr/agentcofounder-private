@@ -34,6 +34,9 @@ const emptyObservation = {
   hasReportPartial: false,
   reportStatus: null,
   implementedFeatures: [] as string[],
+  hasDomainModule: false,
+  hasStorageModule: false,
+  hasComponentModules: false,
 };
 
 function usageEvent(): string {
@@ -143,12 +146,44 @@ describe("RHI harness document", () => {
     const next = chooseNextSlice(initialMilestoneState(), emptyObservation, 8);
     expect(next.action).toBe("implement_core");
     expect(next.instruction).toContain("This is one slice");
+    expect(next.instruction).toContain("src/domain/");
+    expect(next.instruction).toContain("aria-invalid");
+    expect(next.instruction).toMatch(/≤10|8–10|high-information/);
+    expect(next.instruction).toContain("OUTPUT GOVERNANCE");
   });
 
   it("does not put contracts into the v0 worker prompt", () => {
     const prompt = formatWorkerPrompt("Track books.", chooseNextSlice(initialMilestoneState(), emptyObservation, 8), initialMilestoneState());
     expect(prompt).toContain("## Product idea");
     expect(prompt).not.toContain("## Input contract");
+  });
+
+  it("surfaces modular quality gaps on continue when tests exist but layout is flat", () => {
+    const afterCore = {
+      ...emptyObservation,
+      productTestFiles: ["src/library.test.tsx"],
+      hasDomainModule: false,
+      hasStorageModule: false,
+      hasComponentModules: false,
+    };
+    const state = initialMilestoneState();
+    state.slice = 1;
+    state.last_action = "implement_core";
+    state.last_l0 = {
+      passed: true,
+      tests_passed: true,
+      build_passed: true,
+      http_passed: true,
+      summary: "L0 PASS",
+    };
+    const slice = chooseNextSlice(state, afterCore, 8);
+    expect(slice.action).toBe("continue_journeys");
+    const prompt = formatWorkerPrompt("Track books.", slice, state, undefined, afterCore);
+    expect(prompt).toContain("## Quality gaps to close this slice");
+    expect(prompt).toContain("Missing src/domain/");
+    expect(prompt).toContain("Missing src/storage/");
+    expect(prompt).toContain("Missing src/components/");
+    expect(prompt).toContain("aria-invalid");
   });
 
   it("uses explicit contracts once the harness is no longer v0", () => {

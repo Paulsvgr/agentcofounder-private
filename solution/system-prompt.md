@@ -7,13 +7,20 @@ Required outcome:
 - The application starts with `npm run dev` at exactly `http://localhost:3000`.
 - It is responsive, accessible, and usable without external services or login.
 - Required user data survives a page refresh.
-- Where the app has mutable data or domain operations, keep UI, domain logic, and persistence behind small clear boundaries so storage or another client can be added without rewriting the UI. Do not add a backend or external API unless the idea requires one.
-- Handle empty and invalid input, duplicate or repeated actions, boundary cases, malformed persisted data, and recoverable storage/runtime failures where relevant.
-- Implement and run tests for every observable user journey detailed or implied by the idea — use the smallest sufficient suite (one focused test per journey, no duplicate or speculative cases).
+- For mutable data, split the app into small modules so a future database or service can replace storage without rewriting the UI:
+  - `src/domain/` — types and pure domain operations (add/edit/delete/filter/derive)
+  - `src/storage/` — persistence only (e.g. `*Repository.ts` with load/save); never call `localStorage` from React components
+  - `src/components/` — focused UI pieces
+  - `src/App.tsx` — composition/wiring only (keep it thin)
+- Usability: labeled controls, empty states, clear primary actions, and **visible** validation / error text (not only disabled buttons). Mark invalid fields with `aria-invalid="true"` and announce errors with `role="alert"` or `aria-live="polite"`. Use vocabulary classes from `AGENTS.md` (field help may use `ui-empty` under `ui-field`). Keep list order stable while the user edits a row; call out derived states (e.g. low stock) with badges/highlights rather than jumping rows on every +/-.
+- Robustness when the idea has forms or durable data: reject empty/invalid required fields with on-screen messages; confirm destructive deletes; recover from malformed stored JSON **or** surface persistence failures (one path is enough to demonstrate); do not silent-`catch` saves.
+- Persistence: use a versioned storage key; parse defensively; never swallow save failures without UI feedback.
+- **Test budget: ≤10 high-information UI journeys.** Combine multiple rubric points per test when possible. Prefer Testing Library UI tests over domain/repository unit suites. Include validation and one persistence-robustness case when forms/storage apply.
+- **Output governance:** no long explanations; do not dump files/logs; prefer write/edit; run `npm test` and `npm run build` once; final message ≤80 tokens; stop immediately after green.
 - Use the included Vitest, jsdom, and Testing Library setup; keep tests in `src/**/*.test.ts` or `src/**/*.test.tsx`.
 - Use only the dependencies already installed from the committed lockfile; do not add packages or run dependency-install commands.
 - Keep concerns separated and duplication limited without unnecessary infrastructure.
-- Before finishing, run `npm test` and `npm run build`, repairing failures until both pass, then write `report.partial.json` (shape in `AGENTS.md`) and finish. Do not re-run tests or build to double-check on unchanged code; if you edit app or test code after green, verify once more and stop again.
+- Before finishing, write a **complete** `report.partial.json` with every required field (`status`, `app_url`, `start_command`, `summary`, `implemented_features`, `assumptions`, `tests_run`) per `AGENTS.md` — never `tests_run` alone. Use `status: "success"` when journeys pass. Then finish. Do not re-run on unchanged code.
 - Do not leave development servers or other background processes running.
 - Report `success` or `partial` per the rules in `AGENTS.md`.
 - Do not write `result.json`; the challenge runner owns its audited telemetry fields.
