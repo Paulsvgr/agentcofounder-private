@@ -23,30 +23,40 @@ const OFF_OFF: TemplateOverlayConfig = {
   persistence_primitive: false,
   test_isolation: false,
   tailwind: false,
+  api_client: false,
+  stripe: false,
 };
 const CSS_ON: TemplateOverlayConfig = {
   css_vocabulary: true,
   persistence_primitive: false,
   test_isolation: false,
   tailwind: false,
+  api_client: false,
+  stripe: false,
 };
 const PERSISTENCE_ON: TemplateOverlayConfig = {
   css_vocabulary: false,
   persistence_primitive: true,
   test_isolation: false,
   tailwind: false,
+  api_client: false,
+  stripe: false,
 };
 const BOTH_ON: TemplateOverlayConfig = {
   css_vocabulary: true,
   persistence_primitive: true,
   test_isolation: false,
   tailwind: false,
+  api_client: false,
+  stripe: false,
 };
 const Q2_ON: TemplateOverlayConfig = {
   css_vocabulary: false,
   persistence_primitive: false,
   test_isolation: true,
   tailwind: false,
+  api_client: false,
+  stripe: false,
 };
 
 afterEach(async () => {

@@ -1,0 +1,10 @@
+{
+  "overlay_id": "api-client-v1",
+  "version": "1.0.0",
+  "files": [
+    { "source": "files/src/lib/httpClient.ts", "target": "src/lib/httpClient.ts" }
+  ],
+  "replaces": [],
+  "agents_section_marker": "## HTTP API client (preinstalled)",
+  "guard_profile": null
+}

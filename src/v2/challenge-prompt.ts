@@ -202,6 +202,8 @@ export function resolveChallengeRuntimeEnv(
   const runtimeEnv: Record<string, string> = {
     TEMPLATE_CSS_VOCABULARY: cssVocabularyGuardsEnabled(overlayConfig) ? "1" : "0",
     TEMPLATE_TAILWIND: overlayConfig.tailwind ? "1" : "0",
+    TEMPLATE_API_CLIENT: overlayConfig.api_client ? "1" : "0",
+    TEMPLATE_STRIPE: overlayConfig.stripe ? "1" : "0",
   };
   if (harnessConfig.harness_owned_verify) {
     runtimeEnv.HARNESS_OWNED_VERIFY = "1";
@@ -300,15 +302,8 @@ export function resolveChallengeRuntimeEnv(
       runtimeEnv.HARNESS_HARD_STOP_AFTER_GREEN_V1 = "1";
     }
   }
-  const fullGreenGateRaw = process.env.HARNESS_FULL_GREEN_GATE_V1;
-  if (fullGreenGateRaw !== undefined && fullGreenGateRaw.trim() !== "") {
-    const normalized = fullGreenGateRaw.trim().toLowerCase();
-    if (normalized === "0" || normalized === "false" || normalized === "no") {
-      runtimeEnv.HARNESS_FULL_GREEN_GATE_V1 = "0";
-    } else if (normalized === "1" || normalized === "true" || normalized === "yes") {
-      runtimeEnv.HARNESS_FULL_GREEN_GATE_V1 = "1";
-    }
-  }
+  // Ship KEEP: default ON when unset (mirror fullGreenGateV1EnabledFromEnvironment).
+  runtimeEnv.HARNESS_FULL_GREEN_GATE_V1 = fullGreenGateV1EnabledFromEnvironment() ? "1" : "0";
   const repairSurfaceLockRaw = process.env.HARNESS_REPAIR_SURFACE_LOCK_V1;
   if (repairSurfaceLockRaw !== undefined && repairSurfaceLockRaw.trim() !== "") {
     const normalized = repairSurfaceLockRaw.trim().toLowerCase();
@@ -381,7 +376,7 @@ export function buildPiArgumentsFromBundle(
   ];
   if (process.env.CHALLENGE_PROVIDER) args.push("--provider", process.env.CHALLENGE_PROVIDER);
   if (process.env.CHALLENGE_MODEL) args.push("--model", process.env.CHALLENGE_MODEL);
-  args.push("--thinking", process.env.CHALLENGE_THINKING ?? "off");
+  args.push("--thinking", process.env.CHALLENGE_THINKING ?? "high");
   args.push(bundle.user_message);
   return args;
 }

@@ -1,6 +1,6 @@
 /**
  * Full-green gate v1 — VERIFY PASS + harness BUILD PASS → terminate agent loop.
- * Flag: HARNESS_FULL_GREEN_GATE_V1 (default OFF).
+ * Flag: HARNESS_FULL_GREEN_GATE_V1 (default ON — ship KEEP).
  *
  * Treatment must prevent another model call (tool result terminate:true),
  * not merely ask Pi to stop.
@@ -17,8 +17,10 @@ export function fullGreenGateV1EnabledFromEnvironment(
   env: NodeJS.ProcessEnv = process.env,
 ): boolean {
   const raw = env.HARNESS_FULL_GREEN_GATE_V1;
-  if (raw === undefined || raw.trim() === "") return false;
+  // Default ON when unset (ship KEEP). Control / off arms set =0.
+  if (raw === undefined || raw.trim() === "") return true;
   const normalized = raw.trim().toLowerCase();
+  if (normalized === "0" || normalized === "false" || normalized === "no") return false;
   return normalized === "1" || normalized === "true" || normalized === "yes";
 }
 

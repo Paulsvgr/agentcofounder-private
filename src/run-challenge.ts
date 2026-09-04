@@ -79,17 +79,20 @@ Options:
 Environment:
   CHALLENGE_PROVIDER         Optional Pi provider override
   CHALLENGE_MODEL            Optional Pi model override
-  CHALLENGE_THINKING         Optional Pi thinking level (default: off)
+  CHALLENGE_THINKING         Optional Pi thinking level (default: high)
   CHALLENGE_MAX_TOKENS       Optional max output tokens (recorded in run manifest)
   CHALLENGE_CONTEXT_WINDOW   Optional model context window (recorded in run manifest)
   CHALLENGE_TIMEOUT_MS       Wall-clock limit for Pi (default: 900000)
   RUN_EXPERIMENT / RUN_ARM / RUN_REP / RUN_INTERVENTION  Optional experiment metadata
   TEMPLATE_CSS_VOCABULARY     Enable CSS vocabulary overlay (0/1, default 0)
-  TEMPLATE_PERSISTENCE        Enable persistence primitive overlay (0/1, default 0)
+  TEMPLATE_PERSISTENCE        Enable persistence primitive overlay (0/1, default 1 — ship)
   TEMPLATE_TEST_ISOLATION     Enable test isolation overlay (0/1, default 0)
-  TEMPLATE_TAILWIND           Enable preinstalled Tailwind overlay (0/1, default 0)
+  TEMPLATE_TAILWIND           Enable preinstalled Tailwind overlay (0/1, default 1 — ship)
+  TEMPLATE_API_CLIENT         Enable HTTP JSON client overlay (0/1, default 0)
+  TEMPLATE_STRIPE             Enable Stripe Checkout helper overlay (0/1, default 0)
   HARNESS_ERROR_MEMORY_V1     Append known-error hints on VERIFY FAIL (0/1, default 0)
-  HARNESS_ROOT_ERROR_FIRST_V1 Surface root/runtime VERIFY errors before RTL symptoms (0/1, default 0)
+  HARNESS_ROOT_ERROR_FIRST_V1 Surface root/runtime VERIFY errors before RTL symptoms (0/1, default 1 — ship)
+  HARNESS_FULL_GREEN_GATE_V1  Stop after VERIFY+BUILD green (0/1, default 1 — ship)
 `);
 }
 

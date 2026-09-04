@@ -2,4 +2,4 @@
 . "$HOME/.pi/agent/challenge-env.sh"
 export CHALLENGE_PROVIDER="berget"
 export CHALLENGE_MODEL="Qwen/Qwen3.8-27B-FP8"
-export CHALLENGE_THINKING="off"
+export CHALLENGE_THINKING="high"

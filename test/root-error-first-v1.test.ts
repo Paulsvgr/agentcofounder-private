@@ -117,8 +117,10 @@ describe("root-error-first-core", () => {
     else process.env.HARNESS_ROOT_ERROR_FIRST_V1 = previous;
   });
 
-  it("reads HARNESS_ROOT_ERROR_FIRST_V1 from environment", () => {
+  it("reads HARNESS_ROOT_ERROR_FIRST_V1 from environment (default ON)", () => {
     delete process.env.HARNESS_ROOT_ERROR_FIRST_V1;
+    expect(rootErrorFirstV1EnabledFromEnvironment()).toBe(true);
+    process.env.HARNESS_ROOT_ERROR_FIRST_V1 = "0";
     expect(rootErrorFirstV1EnabledFromEnvironment()).toBe(false);
     process.env.HARNESS_ROOT_ERROR_FIRST_V1 = "1";
     expect(rootErrorFirstV1EnabledFromEnvironment()).toBe(true);
@@ -194,9 +196,16 @@ describe("root-error-first-core", () => {
   });
 
   it("processCanonicalVerifyForRootErrorFirst is a no-op when flag is off", () => {
-    delete process.env.HARNESS_ROOT_ERROR_FIRST_V1;
+    process.env.HARNESS_ROOT_ERROR_FIRST_V1 = "0";
     const input = `verify exit_code=1 (FAIL)\n\n${MIXED_FAIL}`;
     expect(processCanonicalVerifyForRootErrorFirst(input, 1)).toBe(input);
+  });
+
+  it("processCanonicalVerifyForRootErrorFirst rewrites FAIL when flag is unset (ship default ON)", () => {
+    delete process.env.HARNESS_ROOT_ERROR_FIRST_V1;
+    const input = `verify exit_code=1 (FAIL)\n\n${MIXED_FAIL}`;
+    const out = processCanonicalVerifyForRootErrorFirst(input, 1);
+    expect(out).toContain("ROOT / RUNTIME ERROR");
   });
 
   it("processCanonicalVerifyForRootErrorFirst rewrites FAIL when flag is on", () => {

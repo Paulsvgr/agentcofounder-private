@@ -94,9 +94,9 @@ export const HARNESS_BOARD_FLAGS: HarnessFlagSpec[] = [
     key: "HARNESS_FULL_GREEN_GATE_V1",
     label: "Full-green gate",
     decision: "KEEP",
-    defaultValue: "0",
+    defaultValue: "1",
     launchToggle: true,
-    note: "KEEP — ship cohort 5/5 OK, median ~81k, post-green 0; prefer default ON for submit",
+    note: "KEEP — default ON for npm run challenge / submit (ship stack)",
   },
   {
     key: "HARNESS_REPAIR_SURFACE_LOCK_V1",
@@ -161,6 +161,22 @@ export const HARNESS_BOARD_FLAGS: HarnessFlagSpec[] = [
     defaultValue: "0",
     launchToggle: true,
     note: "STOPPED / Tailwind KEEP path",
+  },
+  {
+    key: "TEMPLATE_API_CLIENT",
+    label: "HTTP API client",
+    decision: "OFF",
+    defaultValue: "0",
+    launchToggle: true,
+    note: "OFF default — JSON requestJson helper; enable only for networked ideas",
+  },
+  {
+    key: "TEMPLATE_STRIPE",
+    label: "Stripe Checkout helpers",
+    decision: "OFF",
+    defaultValue: "0",
+    launchToggle: true,
+    note: "OFF default — Checkout redirect helpers (no Stripe npm package)",
   },
 ];
 

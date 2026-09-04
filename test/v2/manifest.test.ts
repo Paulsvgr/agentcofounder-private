@@ -122,7 +122,7 @@ describe("buildPreRunManifest", () => {
     const runDirectory = path.join(runRoot, runId);
     const snapshotDirectory = path.join(runDirectory, "app-template");
     const assemblyRecord = await assembleTemplate(
-      { css_vocabulary: false, persistence_primitive: false, test_isolation: false, tailwind: false },
+      { css_vocabulary: false, persistence_primitive: false, test_isolation: false, tailwind: false, api_client: false, stripe: false },
       REPOSITORY_ROOT,
       snapshotDirectory,
     );
@@ -164,6 +164,9 @@ describe("buildPreRunManifest", () => {
       css_vocabulary: false,
       persistence_primitive: false,
       test_isolation: false,
+      tailwind: false,
+      api_client: false,
+      stripe: false,
     });
     expect(manifest.experiment).toEqual({
       id: null,
@@ -178,7 +181,7 @@ describe("buildPreRunManifest", () => {
     temporaryDirectories.push(runRoot);
     const runDirectory = path.join(runRoot, "2026-08-28T22-00-00-001Z");
     const assemblyRecord = await assembleTemplate(
-      { css_vocabulary: false, persistence_primitive: false, test_isolation: false, tailwind: false },
+      { css_vocabulary: false, persistence_primitive: false, test_isolation: false, tailwind: false, api_client: false, stripe: false },
       REPOSITORY_ROOT,
       path.join(runDirectory, "app-template"),
     );
@@ -227,7 +230,7 @@ describe("finalizeRunManifest", () => {
     temporaryDirectories.push(runRoot);
     const runDirectory = path.join(runRoot, "2026-08-28T22-00-00-002Z");
     const assemblyRecord = await assembleTemplate(
-      { css_vocabulary: false, persistence_primitive: false, test_isolation: false, tailwind: false },
+      { css_vocabulary: false, persistence_primitive: false, test_isolation: false, tailwind: false, api_client: false, stripe: false },
       REPOSITORY_ROOT,
       path.join(runDirectory, "app-template"),
     );
@@ -257,13 +260,32 @@ describe("prepare-only path", () => {
       recursive: true,
       filter: (source) => !source.split(path.sep).includes("node_modules"),
     });
-
-    const { outputDirectory: output } = await prepareOutput(root, "output/app");
-    expect(await readFile(path.join(output, "AGENTS.md"), "utf8")).toContain(
-      "Generated application contract",
-    );
-    await expect(readFile(path.join(output, "run-manifest.json"), "utf8")).rejects.toMatchObject({
-      code: "ENOENT",
+    // Ship defaults enable persistence + Tailwind overlays — copy overlay tree.
+    await cp(path.join(REPOSITORY_ROOT, "overlays"), path.join(root, "overlays"), {
+      recursive: true,
+      filter: (source) => !source.split(path.sep).includes("node_modules"),
     });
+
+    const previousPersistence = process.env.TEMPLATE_PERSISTENCE;
+    const previousTailwind = process.env.TEMPLATE_TAILWIND;
+    delete process.env.TEMPLATE_PERSISTENCE;
+    delete process.env.TEMPLATE_TAILWIND;
+    try {
+      const { outputDirectory: output } = await prepareOutput(root, "output/app");
+      expect(await readFile(path.join(output, "AGENTS.md"), "utf8")).toContain(
+        "Generated application contract",
+      );
+      expect(await readFile(path.join(output, "AGENTS.md"), "utf8")).toContain(
+        "## Collection persistence (preinstalled)",
+      );
+      await expect(readFile(path.join(output, "run-manifest.json"), "utf8")).rejects.toMatchObject({
+        code: "ENOENT",
+      });
+    } finally {
+      if (previousPersistence === undefined) delete process.env.TEMPLATE_PERSISTENCE;
+      else process.env.TEMPLATE_PERSISTENCE = previousPersistence;
+      if (previousTailwind === undefined) delete process.env.TEMPLATE_TAILWIND;
+      else process.env.TEMPLATE_TAILWIND = previousTailwind;
+    }
   });
 });

@@ -1,0 +1,10 @@
+{
+  "overlay_id": "stripe-v1",
+  "version": "1.0.0",
+  "files": [
+    { "source": "files/src/lib/stripeCheckout.ts", "target": "src/lib/stripeCheckout.ts" }
+  ],
+  "replaces": [],
+  "agents_section_marker": "## Stripe Checkout (preinstalled)",
+  "guard_profile": null
+}

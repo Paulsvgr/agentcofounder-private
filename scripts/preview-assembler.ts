@@ -28,15 +28,19 @@ Options:
   --persistence on|off       Persistence overlay toggle
   --test-isolation on|off    Test isolation overlay toggle
   --tailwind on|off          Preinstalled Tailwind overlay toggle
+  --api-client on|off        HTTP JSON client overlay toggle
+  --stripe on|off            Stripe Checkout helper overlay toggle
   --out-dir <path>           Preview root (default: output/preview-{css}-{persistence}-{test-isolation}-{tailwind})
   --json                     Print preview.json to stdout only
   --help                     Show this help
 
-Environment (alternative to --css / --persistence / --test-isolation / --tailwind):
+Environment (alternative to --css / --persistence / --test-isolation / --tailwind / --api-client / --stripe):
   TEMPLATE_CSS_VOCABULARY=0|1
   TEMPLATE_PERSISTENCE=0|1
   TEMPLATE_TEST_ISOLATION=0|1
   TEMPLATE_TAILWIND=0|1
+  TEMPLATE_API_CLIENT=0|1
+  TEMPLATE_STRIPE=0|1
   HARNESS_OWNED_VERIFY=0|1
 `);
 }
@@ -67,6 +71,8 @@ async function parseArgs(argv: string[]): Promise<ParsedArgs> {
   let persistenceOverride: boolean | undefined;
   let testIsolationOverride: boolean | undefined;
   let tailwindOverride: boolean | undefined;
+  let apiClientOverride: boolean | undefined;
+  let stripeOverride: boolean | undefined;
 
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
@@ -118,6 +124,16 @@ async function parseArgs(argv: string[]): Promise<ParsedArgs> {
       index += 1;
       continue;
     }
+    if (argument === "--api-client") {
+      apiClientOverride = parseToggleValue("--api-client", argv[index + 1]);
+      index += 1;
+      continue;
+    }
+    if (argument === "--stripe") {
+      stripeOverride = parseToggleValue("--stripe", argv[index + 1]);
+      index += 1;
+      continue;
+    }
     throw new Error(`Unknown argument: ${argument}`);
   }
 
@@ -132,6 +148,12 @@ async function parseArgs(argv: string[]): Promise<ParsedArgs> {
   }
   if (tailwindOverride !== undefined) {
     process.env.TEMPLATE_TAILWIND = tailwindOverride ? "1" : "0";
+  }
+  if (apiClientOverride !== undefined) {
+    process.env.TEMPLATE_API_CLIENT = apiClientOverride ? "1" : "0";
+  }
+  if (stripeOverride !== undefined) {
+    process.env.TEMPLATE_STRIPE = stripeOverride ? "1" : "0";
   }
 
   const overlayConfig = resolveTemplateOverlayConfigFromEnvironment();

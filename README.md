@@ -2,6 +2,26 @@
 
 **Team working on analysis / V2:** read [`docs/v2/TEAM-GUIDE.md`](docs/v2/TEAM-GUIDE.md) first (branch map, what we built, and how to run each tool). Milestone plan: [`docs/v2/PLAN.md`](docs/v2/PLAN.md).
 
+## Quick start (after pull / clone)
+
+Node **22.19.x** · port **3000** free · WSL/Ubuntu preferred.
+
+```bash
+npm ci --ignore-scripts
+npm --prefix app-template ci --ignore-scripts
+
+./pi-agent/setup.sh
+# once: put API key in ~/.pi/agent/zai-api-key  (or berget-api-key)
+
+source ~/.pi/agent/challenge-env-zai.sh   # model + thinking=high
+npm run challenge                        # ship KEEP defaults
+```
+
+That is the good path: persistence + Tailwind + FULL_GREEN + root-error-first + RTL/TYPECHECK, thinking **high**.  
+Optional: `export CHALLENGE_THINKING=off` for a cheaper run. Details below.
+
+---
+
 A forkable baseline for the AgentCofounder challenge. It gives every team the same pinned Pi runtime, neutral web application seed, execution command, telemetry collector, and public contract while leaving the actual agent strategy participant-owned.
 
 This repository installs Pi as a local dependency at exactly `@earendil-works/pi-coding-agent@0.84.1`. Do not use the floating shell installer and do not run `pi update` during the challenge.
@@ -25,7 +45,29 @@ Official hidden prompts, hidden tests, model credentials, and final scoring code
 - npm 10.9.3, matching the committed lockfiles and container image.
 - Provider authentication supported by Pi, or organizer-provided provider/model environment variables.
 
-## Setup
+## Fresh pull → ship challenge (same as Quick start)
+
+After cloning or pulling, use the **Quick start** block at the top of this file.
+
+`npm run challenge` already enables the ship KEEP stack when env flags are unset
+(persistence, Tailwind, FULL_GREEN, root-error-first, RTL/TYPECHECK; thinking **high**
+via `challenge-env*.sh` / code default).
+
+Re-run `./pi-agent/setup.sh` after a pull if your `~/.pi/agent/challenge-env*.sh`
+still has `CHALLENGE_THINKING=off`.
+
+Optional overrides (rarely needed):
+
+```bash
+export CHALLENGE_THINKING="off"          # cheaper / quieter
+export HARNESS_FULL_GREEN_GATE_V1=0      # disable ship FULL_GREEN
+export TEMPLATE_PERSISTENCE=0            # disable persistence overlay
+export TEMPLATE_TAILWIND=0               # disable Tailwind overlay
+```
+
+Never commit credentials. `.env.example` documents variable names, but the runner intentionally does not load `.env` files.
+
+## Setup (checks)
 
 ```bash
 npm ci --ignore-scripts
@@ -33,19 +75,15 @@ npm --prefix app-template ci --ignore-scripts
 npm run check
 ```
 
-**Team Berget / Pi setup:** see [`pi-agent/README.md`](pi-agent/README.md). Run `./pi-agent/setup.sh` once, add your own API key to `~/.pi/agent/berget-api-key`, then `source ~/.pi/agent/challenge-env.sh` before each challenge.
+**Team Berget / Pi setup detail:** see [`pi-agent/README.md`](pi-agent/README.md).
 
 Provider-specific credentials are read by Pi. The optional challenge variables select the organizer's runtime configuration:
 
 ```bash
-export CHALLENGE_PROVIDER="provider-name"
-export CHALLENGE_MODEL="model-id"
-export CHALLENGE_THINKING="off"
+export CHALLENGE_PROVIDER="zai"          # or berget
+export CHALLENGE_MODEL="glm-5.2"
+export CHALLENGE_THINKING="high"         # ship default; use off|minimal|low|medium|high
 ```
-
-Never commit credentials. `.env.example` documents variable names, but the runner intentionally does not load `.env` files.
-
-The default thinking level is `off` to avoid multiplying output-token cost in the efficiency ranking. Raise it only when measurements show the extra reasoning improves completion quality.
 
 The strict Node engine is intentional. `npm ci` fails on Node 23+ (including Node 26); use `.nvmrc` or the provided container rather than regenerating the lockfile with a newer runtime.
 

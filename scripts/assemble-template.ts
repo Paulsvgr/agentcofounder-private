@@ -19,6 +19,8 @@ Options:
   --persistence      Enable persistence primitive overlay
   --test-isolation   Enable test isolation overlay
   --tailwind         Enable preinstalled Tailwind overlay
+  --api-client       Enable HTTP JSON client overlay
+  --stripe           Enable Stripe Checkout helper overlay
   --help             Show this help
 
 Environment (alternative to flags):
@@ -26,6 +28,8 @@ Environment (alternative to flags):
   TEMPLATE_PERSISTENCE=0|1
   TEMPLATE_TEST_ISOLATION=0|1
   TEMPLATE_TAILWIND=0|1
+  TEMPLATE_API_CLIENT=0|1
+  TEMPLATE_STRIPE=0|1
 `);
 }
 
@@ -53,6 +57,14 @@ function parseArgs(argv: string[]): { outDir: string; help: boolean } {
     }
     if (argument === "--tailwind") {
       process.env.TEMPLATE_TAILWIND = "1";
+      continue;
+    }
+    if (argument === "--api-client") {
+      process.env.TEMPLATE_API_CLIENT = "1";
+      continue;
+    }
+    if (argument === "--stripe") {
+      process.env.TEMPLATE_STRIPE = "1";
       continue;
     }
     if (argument === "--out-dir") {

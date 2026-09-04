@@ -58,8 +58,10 @@ export interface RootErrorFirstResult {
 
 export function rootErrorFirstV1EnabledFromEnvironment(): boolean {
   const raw = process.env.HARNESS_ROOT_ERROR_FIRST_V1;
-  if (raw === undefined || raw.trim() === "") return false;
+  // Default ON when unset (ship KEEP). Control / off arms set =0.
+  if (raw === undefined || raw.trim() === "") return true;
   const normalized = raw.trim().toLowerCase();
+  if (normalized === "0" || normalized === "false" || normalized === "no") return false;
   return normalized === "1" || normalized === "true" || normalized === "yes";
 }
 

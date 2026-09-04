@@ -124,7 +124,7 @@ Launch `npm run challenge` with a chosen env profile and overrides:
 - Live job output stream + link to detected `artifacts/runs/<id>` when available
 
 **Recommended local profile:** `challenge-env-zai.sh` · provider `zai` · model `glm-5.2` ·
-thinking `off`. Berget can emit mega-calls; see [CONTROL-APP.md](../docs/v2/CONTROL-APP.md).
+thinking `high`. Berget can emit mega-calls; see [CONTROL-APP.md](../docs/v2/CONTROL-APP.md).
 
 Runs list shows experiment **arm** badges and a compact KEEP/PARKED board strip.
 

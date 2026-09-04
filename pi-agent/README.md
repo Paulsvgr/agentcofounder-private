@@ -2,7 +2,8 @@
 
 Pi reads provider configuration from `~/.pi/agent/` on your machine. This folder is a **template** you copy there once. The repo never contains real API keys.
 
-Default challenge model: **Berget `zai-org/GLM-5.2`** with thinking **off** (required for token efficiency).
+Default challenge model: **Berget `zai-org/GLM-5.2`** with thinking **high** (ship default).
+Use `export CHALLENGE_THINKING=off` for cheaper practice runs.
 
 Use **WSL Ubuntu**, not PowerShell.
 
@@ -41,7 +42,7 @@ echo "${BERGET_API_KEY:+API key loaded}"
 ./node_modules/.bin/pi --mode json \
   --provider berget \
   --model zai-org/GLM-5.2 \
-  --thinking off \
+  --thinking high \
   "Reply with exactly: ok"
 ```
 

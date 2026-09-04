@@ -46,7 +46,7 @@ export function NewRunPage() {
     env_profile: "challenge-env-zai.sh",
     provider: "zai",
     model: "glm-5.2",
-    thinking: "off",
+    thinking: "high",
     timeout_ms: 900_000,
     idea_file: "contract-public/development-idea.txt",
   });
@@ -165,7 +165,7 @@ export function NewRunPage() {
     try {
       const payload: ChallengeLaunchRequest = {
         env_profile: form.env_profile,
-        thinking: form.thinking ?? "off",
+        thinking: form.thinking ?? "high",
         timeout_ms: form.timeout_ms ?? 900_000,
         idea_file: form.idea_file ?? "contract-public/development-idea.txt",
         env_overrides: { ...flagValues },
@@ -233,7 +233,7 @@ export function NewRunPage() {
         <h2>Launch challenge</h2>
         <p className="muted">
           Configure flags, experiment arm, and template overlays — then start/stop from here.
-          Default: Z.ai GLM-5.2 (thinking off). Port 3000 must be free.
+          Default: Z.ai GLM-5.2 (thinking high, ship KEEP stack). Port 3000 must be free.
         </p>
 
         {error ? <div className="error-banner">{error}</div> : null}
@@ -285,7 +285,7 @@ export function NewRunPage() {
             <label>
               Thinking
               <select
-                value={form.thinking ?? "off"}
+                value={form.thinking ?? "high"}
                 onChange={(event) => updateField("thinking", event.target.value)}
                 disabled={running}
               >

@@ -15,4 +15,4 @@ fi
 
 export CHALLENGE_PROVIDER="berget"
 export CHALLENGE_MODEL="zai-org/GLM-5.2"
-export CHALLENGE_THINKING="off"
+export CHALLENGE_THINKING="high"

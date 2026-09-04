@@ -28,7 +28,7 @@ describe("Pi launch", () => {
     expect(runRequiresFailureExit(0, "success", [])).toBe(false);
   });
 
-  it("uses deterministic non-interactive flags and defaults thinking off", () => {
+  it("uses deterministic non-interactive flags and defaults thinking high", () => {
     const previousThinking = process.env.CHALLENGE_THINKING;
     delete process.env.CHALLENGE_THINKING;
     try {
@@ -43,7 +43,7 @@ describe("Pi launch", () => {
       expect(args).toContain("--no-context-files");
       expect(args).not.toContain("--print");
       expect(args).not.toContain("--approve");
-      expect(args[args.indexOf("--thinking") + 1]).toBe("off");
+      expect(args[args.indexOf("--thinking") + 1]).toBe("high");
       expect(args).not.toContain("--system-prompt");
       expect(args[args.indexOf("--append-system-prompt") + 1]).toContain("Stable app contract");
       expect(args[args.indexOf("--append-system-prompt") + 1]).toContain(

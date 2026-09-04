@@ -46,7 +46,14 @@ function minimalManifest(runId: string): RunManifest {
     },
     template_overlays: {
       schema: TEMPLATE_OVERLAYS_SCHEMA,
-      active: { css_vocabulary: false, persistence_primitive: false, test_isolation: false, tailwind: false },
+      active: {
+        css_vocabulary: false,
+        persistence_primitive: false,
+        test_isolation: false,
+        tailwind: false,
+        api_client: false,
+        stripe: false,
+      },
       base_hash: "base",
       overlay_hashes: {},
       active_set_hash: "active",

@@ -27,30 +27,44 @@ This document is the **narrative source of truth** for what we built, why, and h
 
 **Requirements:** Node 22.19.x, npm 10.9.3 (see `.nvmrc`).
 
+### Fresh pull → good `npm run challenge` (ship KEEP)
+
 ```bash
-git clone <repo-url>
+git clone <repo-url>   # or: git pull
 cd agentcofounder
-git checkout v2
+# use this team's ship branch (e.g. v2-paul / current ship branch)
 
 npm ci --ignore-scripts
 npm --prefix app-template ci --ignore-scripts
-npm run check
-```
 
-**Pi / Berget credentials** (once per machine):
-
-```bash
 ./pi-agent/setup.sh
-# add API key to ~/.pi/agent/berget-api-key
-source ~/.pi/agent/challenge-env.sh   # before each challenge run
+# add API key: ~/.pi/agent/zai-api-key  (or berget-api-key)
+
+source ~/.pi/agent/challenge-env-zai.sh   # model + thinking=high
+npm run challenge                        # port 3000 must be free
 ```
+
+**What `npm run challenge` defaults to now (ship stack):**
+
+| Knob | Default |
+|------|---------|
+| Thinking | `high` |
+| `TEMPLATE_PERSISTENCE` | ON |
+| `TEMPLATE_TAILWIND` | ON |
+| `HARNESS_FULL_GREEN_GATE_V1` | ON |
+| `HARNESS_ROOT_ERROR_FIRST_V1` | ON |
+| RTL evidence / MULTIPLE / text | ON |
+| TYPECHECK on FAIL | ON |
+| API client / Stripe overlays | OFF |
+
+Override any flag with `=0` / `CHALLENGE_THINKING=off` if you need an older control arm.
 
 **Optional runtime env:**
 
 ```bash
 export CHALLENGE_PROVIDER="zai"
 export CHALLENGE_MODEL="glm-5.2"
-export CHALLENGE_THINKING="off"    # default — lower output token cost
+export CHALLENGE_THINKING="high"   # ship default
 export CHALLENGE_MAX_TOKENS="8192"          # recorded in run manifest (optional)
 export CHALLENGE_CONTEXT_WINDOW="128000"    # recorded in run manifest (optional)
 export CHALLENGE_TIMEOUT_MS="900000"        # default 15 minutes

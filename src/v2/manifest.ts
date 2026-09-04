@@ -200,7 +200,7 @@ export function collectModelSettings(): ModelSettings {
   return {
     provider: readOptionalEnv("CHALLENGE_PROVIDER"),
     model: readOptionalEnv("CHALLENGE_MODEL"),
-    thinking: process.env.CHALLENGE_THINKING ?? "off",
+    thinking: process.env.CHALLENGE_THINKING ?? "high",
     max_tokens: readOptionalPositiveInteger("CHALLENGE_MAX_TOKENS"),
     context_window: readOptionalPositiveInteger("CHALLENGE_CONTEXT_WINDOW"),
     timeout_ms: timeout,

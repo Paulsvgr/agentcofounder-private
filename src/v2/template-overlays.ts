@@ -12,6 +12,8 @@ export interface TemplateOverlayConfig {
   persistence_primitive: boolean;
   test_isolation: boolean;
   tailwind: boolean;
+  api_client: boolean;
+  stripe: boolean;
 }
 
 export interface OverlayFileEntry {
@@ -72,9 +74,11 @@ export function assertOverlayTargetAllowed(
 
 export const DEFAULT_TEMPLATE_OVERLAY_CONFIG: TemplateOverlayConfig = {
   css_vocabulary: false,
-  persistence_primitive: false,
+  persistence_primitive: true,
   test_isolation: false,
-  tailwind: false,
+  tailwind: true,
+  api_client: false,
+  stripe: false,
 };
 
 const OVERLAY_DEFINITIONS = [
@@ -82,6 +86,8 @@ const OVERLAY_DEFINITIONS = [
   { configKey: "persistence_primitive" as const, directoryName: "persistence-v1" },
   { configKey: "test_isolation" as const, directoryName: "test-isolation-v1" },
   { configKey: "tailwind" as const, directoryName: "tailwind-v1" },
+  { configKey: "api_client" as const, directoryName: "api-client-v1" },
+  { configKey: "stripe" as const, directoryName: "stripe-v1" },
 ] as const;
 
 function parseBooleanEnv(name: string, fallback: boolean): boolean {
@@ -101,6 +107,8 @@ export function resolveTemplateOverlayConfigFromEnvironment(
     persistence_primitive: parseBooleanEnv("TEMPLATE_PERSISTENCE", fallback.persistence_primitive),
     test_isolation: parseBooleanEnv("TEMPLATE_TEST_ISOLATION", fallback.test_isolation),
     tailwind: parseBooleanEnv("TEMPLATE_TAILWIND", fallback.tailwind),
+    api_client: parseBooleanEnv("TEMPLATE_API_CLIENT", fallback.api_client),
+    stripe: parseBooleanEnv("TEMPLATE_STRIPE", fallback.stripe),
   };
   if (config.css_vocabulary && config.tailwind) {
     throw new Error("TEMPLATE_CSS_VOCABULARY and TEMPLATE_TAILWIND cannot both be enabled");
@@ -168,6 +176,8 @@ export function computeActiveSetHash(input: {
       persistence_primitive: input.active.persistence_primitive,
       test_isolation: input.active.test_isolation,
       tailwind: input.active.tailwind,
+      api_client: input.active.api_client,
+      stripe: input.active.stripe,
     },
     overlay_ids: [...input.overlayIds].sort(),
     overlay_hashes: Object.fromEntries(

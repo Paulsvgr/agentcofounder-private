@@ -34,11 +34,14 @@ afterEach(() => {
 });
 
 describe("full-green-gate-v1", () => {
-  it("env defaults OFF", () => {
-    expect(fullGreenGateV1EnabledFromEnvironment({})).toBe(false);
+  it("env defaults ON (ship KEEP)", () => {
+    expect(fullGreenGateV1EnabledFromEnvironment({})).toBe(true);
     expect(
       fullGreenGateV1EnabledFromEnvironment({ HARNESS_FULL_GREEN_GATE_V1: "1" }),
     ).toBe(true);
+    expect(
+      fullGreenGateV1EnabledFromEnvironment({ HARNESS_FULL_GREEN_GATE_V1: "0" }),
+    ).toBe(false);
   });
 
   it("formatters are factual only", () => {

@@ -24,6 +24,8 @@ afterEach(async () => {
   delete process.env.TEMPLATE_CSS_VOCABULARY;
   delete process.env.TEMPLATE_TEST_ISOLATION;
   delete process.env.TEMPLATE_TAILWIND;
+  delete process.env.TEMPLATE_API_CLIENT;
+  delete process.env.TEMPLATE_STRIPE;
 });
 
 async function tempOutputDirectory(): Promise<string> {
@@ -47,42 +49,56 @@ const OFF_OFF: TemplateOverlayConfig = {
   persistence_primitive: false,
   test_isolation: false,
   tailwind: false,
+  api_client: false,
+  stripe: false,
 };
 const CSS_ON: TemplateOverlayConfig = {
   css_vocabulary: true,
   persistence_primitive: false,
   test_isolation: false,
   tailwind: false,
+  api_client: false,
+  stripe: false,
 };
 const PERSISTENCE_ON: TemplateOverlayConfig = {
   css_vocabulary: false,
   persistence_primitive: true,
   test_isolation: false,
   tailwind: false,
+  api_client: false,
+  stripe: false,
 };
 const BOTH_ON: TemplateOverlayConfig = {
   css_vocabulary: true,
   persistence_primitive: true,
   test_isolation: false,
   tailwind: false,
+  api_client: false,
+  stripe: false,
 };
 const Q2_ON: TemplateOverlayConfig = {
   css_vocabulary: false,
   persistence_primitive: false,
   test_isolation: true,
   tailwind: false,
+  api_client: false,
+  stripe: false,
 };
 const TAILWIND_ON: TemplateOverlayConfig = {
   css_vocabulary: false,
   persistence_primitive: false,
   test_isolation: false,
   tailwind: true,
+  api_client: false,
+  stripe: false,
 };
 const TAILWIND_PERSISTENCE: TemplateOverlayConfig = {
   css_vocabulary: false,
   persistence_primitive: true,
   test_isolation: false,
   tailwind: true,
+  api_client: false,
+  stripe: false,
 };
 
 const FROZEN_V22_SNAPSHOT = path.join(
@@ -241,6 +257,8 @@ describe("template assembler acceptance", () => {
         persistence_primitive: false,
         test_isolation: false,
         tailwind: false,
+        api_client: false,
+        stripe: false,
       }),
     ).toThrow(/cannot both be enabled/);
     delete process.env.TEMPLATE_CSS_VOCABULARY;
@@ -277,6 +295,29 @@ describe("template assembler acceptance", () => {
     await expect(stat(path.join(outDir, "src/test/memoryStorage.ts"))).rejects.toMatchObject({
       code: "ENOENT",
     });
+  });
+
+  it("T10: api-client overlay installs httpClient and AGENTS section", async () => {
+    const outDir = await tempOutputDirectory();
+    const record = await assembleTemplate(
+      { ...OFF_OFF, api_client: true },
+      REPOSITORY_ROOT,
+      outDir,
+    );
+    const agents = await readAgents(outDir);
+    expect(agents).toContain("## HTTP API client (preinstalled)");
+    await expect(stat(path.join(outDir, "src/lib/httpClient.ts"))).resolves.toBeDefined();
+    expect(record.overlay_hashes).toEqual({ "api-client-v1": expect.any(String) });
+    expect(record.assembled_tree_hash).not.toBe(CANONICAL_V22_BASE_HASH);
+  });
+
+  it("T11: stripe overlay installs stripeCheckout and AGENTS section", async () => {
+    const outDir = await tempOutputDirectory();
+    const record = await assembleTemplate({ ...OFF_OFF, stripe: true }, REPOSITORY_ROOT, outDir);
+    const agents = await readAgents(outDir);
+    expect(agents).toContain("## Stripe Checkout (preinstalled)");
+    await expect(stat(path.join(outDir, "src/lib/stripeCheckout.ts"))).resolves.toBeDefined();
+    expect(record.overlay_hashes).toEqual({ "stripe-v1": expect.any(String) });
   });
 
   it("T7: undeclared overlay collisions fail assembly", () => {

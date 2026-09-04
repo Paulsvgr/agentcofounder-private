@@ -1,0 +1,16 @@
+{
+  "files.watcherExclude": {
+    "**/artifacts/**": true,
+    "**/output/**": true,
+    "**/node_modules/**": true,
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/dist/**": true,
+    "**/coverage/**": true
+  },
+  "search.exclude": {
+    "**/artifacts/**": true,
+    "**/output/**": true,
+    "**/node_modules/**": true
+  }
+}

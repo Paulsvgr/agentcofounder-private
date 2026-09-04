@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Hackathon ship stack — natural bookshelf cohort (KEEP + FULL_GREEN).
-# All REVERT / parked experiment flags OFF.
+# Ship KEEP + FULL_GREEN with CHALLENGE_THINKING=high (A/B vs thinking-off ship cohort).
+# Sequential only — port 3000 / single app workspace.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -17,14 +17,16 @@ elif [ -f "$REPO_ROOT/pi-agent/challenge-env.sh" ]; then
   source "$REPO_ROOT/pi-agent/challenge-env.sh"
 fi
 
+# Force after profile source (profiles default thinking off).
+export CHALLENGE_THINKING=high
+
 REPS="${1:-5}"
 IDEA_FILE="${2:-$REPO_ROOT/contract-public/development-idea.txt}"
 
-export RUN_EXPERIMENT="${RUN_EXPERIMENT:-ship-keep-full-green-v1}"
-export RUN_ARM="${RUN_ARM:-ship}"
-export RUN_INTERVENTION="${RUN_INTERVENTION:-ship-keep-full-green-v1}"
+export RUN_EXPERIMENT="${RUN_EXPERIMENT:-ship-keep-thinking-high-v1}"
+export RUN_ARM="${RUN_ARM:-thinking-high}"
+export RUN_INTERVENTION="${RUN_INTERVENTION:-thinking-high}"
 
-# KEEP / baseline stack
 export HARNESS_OWNED_VERIFY=1
 export HARNESS_ROOT_ERROR_FIRST_V1=1
 export HARNESS_VERIFY_RTL_EVIDENCE_V1=1
@@ -36,11 +38,8 @@ export TEMPLATE_TAILWIND=1
 export TEMPLATE_CSS_VOCABULARY=0
 export TEMPLATE_API_CLIENT=0
 export TEMPLATE_STRIPE=0
-
-# Proven KEEP, default-on for this ship cohort
 export HARNESS_FULL_GREEN_GATE_V1=1
 
-# Explicit OFF — REVERT / parked / closed
 export HARNESS_HARD_STOP_AFTER_GREEN_V1=0
 export HARNESS_PRODUCT_QUALITY_CONTRACT_V1=0
 export HARNESS_REPAIR_SURFACE_LOCK_V1=0
@@ -58,7 +57,7 @@ export HARNESS_SCOPE_SEQUENCE_V2B=0
 export TEMPLATE_TEST_ISOLATION=0
 unset HARNESS_SEEDED_FIXTURE_DIR
 
-LOG_DIR="$REPO_ROOT/artifacts/experiments/ship-keep-full-green-v1"
+LOG_DIR="$REPO_ROOT/artifacts/experiments/ship-keep-thinking-high-v1"
 mkdir -p "$LOG_DIR"
 STAMP="$(date -u +%Y-%m-%dT%H-%M-%SZ)"
 LOG_FILE="$LOG_DIR/${STAMP}.log"
@@ -94,8 +93,8 @@ free_app_port() {
 }
 
 {
-  echo "=== ship-keep-full-green-v1 start $(date -u +%Y-%m-%dT%H:%M:%SZ) reps=$REPS ==="
-  echo "Stack: VERIFY + root-error-first + RTL evidence/MULTIPLE/text + TYPECHECK + persist + Tailwind + FULL_GREEN"
+  echo "=== ship-keep-thinking-high-v1 start $(date -u +%Y-%m-%dT%H:%M:%SZ) reps=$REPS thinking=$CHALLENGE_THINKING ==="
+  echo "Stack: identical ship KEEP + FULL_GREEN; thinking=high"
   echo "Idea: $IDEA_FILE"
   npm run config:show || true
 
@@ -103,7 +102,7 @@ free_app_port() {
     export RUN_REP="$rep"
     free_app_port
     echo ""
-    echo "=== ship rep $rep / $REPS $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
+    echo "=== thinking-high rep $rep / $REPS $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
     BEFORE="$(ls -1 "$REPO_ROOT/artifacts/runs" 2>/dev/null | sort | tail -1 || true)"
     if npm run challenge -- --idea-file "$IDEA_FILE"; then
       echo "rep $rep: OK"
@@ -112,22 +111,19 @@ free_app_port() {
       FAILURES=$((FAILURES + 1))
     fi
     AFTER="$(ls -1 "$REPO_ROOT/artifacts/runs" 2>/dev/null | sort | tail -1 || true)"
-    if [ -n "$AFTER" ] && [ "$AFTER" != "$BEFORE" ]; then
+    if [ -n "$AFTER" ]; then
       echo "$AFTER" >> "$RUN_IDS_FILE"
       echo "run_id: $AFTER"
-    elif [ -n "$AFTER" ]; then
-      echo "$AFTER" >> "$RUN_IDS_FILE"
-      echo "run_id (best-effort): $AFTER"
     fi
     free_app_port
   done
 
   echo ""
   if [ "$FAILURES" -eq 0 ]; then
-    echo "=== ship-keep-full-green-v1 complete ($REPS/$REPS OK) $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
+    echo "=== ship-keep-thinking-high-v1 complete ($REPS/$REPS OK) $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
   else
     OK_COUNT=$((REPS - FAILURES))
-    echo "=== ship-keep-full-green-v1 complete ($OK_COUNT/$REPS OK, $FAILURES failed) $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
+    echo "=== ship-keep-thinking-high-v1 complete ($OK_COUNT/$REPS OK, $FAILURES failed) $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
   fi
   echo "Log: $LOG_FILE"
   echo "Run IDs: $RUN_IDS_FILE"
